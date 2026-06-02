@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment - PickMySeat.AI</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <div class="navbar-content">
+        <a href="dashboard-grade1.html" class="navbar-brand">PickMySeat.AI</a>
+        <ul class="navbar-nav">
+          <li><a href="dashboard-grade1.html" class="nav-link">Dashboard</a></li>
+          <li><button class="btn btn-sm btn-outline" id="logout-btn">Logout</button></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container-md py-8">
+    <div id="alert-container"></div>
+
+    <!-- Countdown Timer -->
+    <div class="card mb-6" style="background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); border: 2px solid var(--danger-color);">
+      <div class="card-body text-center">
+        <p class="font-bold text-lg mb-2">🔥 EARLY BIRD OFFER EXPIRES IN:</p>
+        <div class="countdown" id="payment-countdown">
+          <div class="countdown-item">
+            <span class="countdown-value" id="pay-hours">47</span>
+            <span class="countdown-label">Hours</span>
+          </div>
+          <div class="countdown-item">
+            <span class="countdown-value" id="pay-minutes">59</span>
+            <span class="countdown-label">Minutes</span>
+          </div>
+          <div class="countdown-item">
+            <span class="countdown-value" id="pay-seconds">59</span>
+            <span class="countdown-label">Seconds</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="text-center mb-8">
+      <h1 class="text-4xl font-bold mb-4">Unlock Premium Features</h1>
+      <p class="text-xl text-secondary">Join 12,847+ students who made better college choices</p>
+    </div>
+
+    <div class="card pricing-card">
+      <div class="pricing-badge">EARLY BIRD - 70% OFF</div>
+      <div class="card-body">
+        <div class="text-center mb-8">
+          <p class="text-sm text-secondary mb-2">One-time payment • Lifetime access</p>
+          <div class="flex items-center justify-center gap-2 mb-2">
+            <span class="price-tag">₹149</span>
+            <span class="price-original">₹500</span>
+          </div>
+          <p class="text-sm font-bold" style="color: var(--success-color);">💰 Save ₹351 Today!</p>
+        </div>
+
+        <!-- Social Proof -->
+        <div class="social-proof mb-6">
+          <p class="font-bold mb-2">⭐ Why 12,847 Students Chose Premium:</p>
+          <p class="text-sm">"Students with Premium made 3x better college choices"</p>
+        </div>
+
+        <div class="mb-8">
+          <h3 class="text-lg font-bold mb-4">What You Get:</h3>
+          <ul class="feature-list grid grid-cols-2">
+            <li class="feature-item"><span class="feature-icon">✓</span><span class="text-sm">AI rank prediction (95% accuracy)</span></li>
+            <li class="feature-item"><span class="feature-icon">✓</span><span class="text-sm">Smart choice list builder</span></li>
+            <li class="feature-item"><span class="feature-icon">✓</span><span class="text-sm">Full counselling simulation</span></li>
+            <li class="feature-item"><span class="feature-icon">✓</span><span class="text-sm">Aggregate calculator</span></li>
+            <li class="feature-item"><span class="feature-icon">✓</span><span class="text-sm">Rank verification & training</span></li>
+            <li class="feature-item"><span class="feature-icon">✓</span><span class="text-sm">Unlimited predictions</span></li>
+            <li class="feature-item"><span class="feature-icon">✓</span><span class="text-sm">Save & compare results</span></li>
+            <li class="feature-item"><span class="feature-icon">✓</span><span class="text-sm">Priority support</span></li>
+          </ul>
+        </div>
+
+        <!-- Testimonial -->
+        <div class="testimonial mb-6">
+          <p class="text-sm mb-2">"Best ₹149 I spent! Got my exact rank predicted. The choice builder was a game-changer!"</p>
+          <div class="testimonial-author">
+            <div class="testimonial-avatar">S</div>
+            <div>
+              <p class="font-bold text-sm">Sneha K.</p>
+              <p class="text-sm text-secondary">CSE @ CEG • ⭐⭐⭐⭐⭐</p>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn btn-success btn-block btn-lg" id="pay-btn">
+          🔒 Pay ₹149 & Unlock Premium
+        </button>
+
+        <p class="text-center mt-6 text-sm text-secondary">
+          🔐 Secure payment via Razorpay • UPI, Cards, Net Banking accepted
+        </p>
+      </div>
+    </div>
+
+    <!-- Money Back Guarantee -->
+    <div class="card mt-6" style="background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); border: 2px solid var(--success-color);">
+      <div class="card-body text-center">
+        <p class="font-bold mb-2">✓ 100% Satisfaction Guarantee</p>
+        <p class="text-sm">If our prediction is off by more than 500 ranks, get full refund. No questions asked.</p>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

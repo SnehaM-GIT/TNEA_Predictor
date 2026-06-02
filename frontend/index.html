@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PickMySeat.AI - TNEA Rank & College Predictor</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <!-- Navbar -->
+  <div class="navbar">
+    <div class="container">
+      <div class="navbar-content">
+        <a href="index.html" class="navbar-brand">PickMySeat.AI</a>
+        <div class="flex items-center gap-4">
+          <div id="guest-prediction-counter" class="text-sm text-secondary hidden">
+            Free predictions: <span id="predictions-remaining" class="font-bold text-primary">2/2</span>
+          </div>
+          <a href="login.html" class="btn btn-sm btn-outline">Login</a>
+          <a href="signup.html" class="btn btn-sm btn-primary">Sign Up</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hero Section -->
+  <section class="hero-gradient" style="padding: 3rem 0;">
+    <div class="container">
+      <div class="text-center">
+        <h1 class="font-bold mb-4" style="font-size: 3.5rem;">PickMySeat.AI</h1>
+        <p class="text-xl mb-4" style="opacity: 0.95; max-width: 700px; margin: 0 auto;">
+          AI-Powered TNEA Rank Prediction & College Recommendation System
+        </p>
+        <div class="social-proof" style="background: rgba(255,255,255,0.2); max-width: 600px; margin: 0 auto; border: none;">
+          <p class="font-bold mb-2">🎉 12,847 Students Already Upgraded</p>
+          <p style="font-size: 0.875rem;">⭐ 4.9/5 from 5,200+ reviews</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Guest Quick Predictor -->
+  <section style="background: white; padding: 4rem 0;">
+    <div class="container-md">
+      <div class="guest-predictor">
+        <div class="flex justify-between items-center mb-4">
+          <div>
+            <h2 class="text-3xl font-bold mb-2">Quick College Probability Check</h2>
+            <p style="opacity: 0.9;">Get instant probability - No signup required!</p>
+          </div>
+          <div class="text-right">
+            <div class="badge badge-warning" style="font-size: 1rem; padding: 0.5rem 1rem;">
+              <span id="guest-remaining-count">2</span> Free Predictions Left
+            </div>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-2" style="margin-bottom: 1.5rem;">
+          <div class="form-group">
+            <label class="form-label" style="color: white;">Select Course</label>
+            <select id="guest-course" class="form-select">
+              <option value="">Choose Course</option>
+              <option value="CSE">Computer Science Engineering</option>
+              <option value="IT">Information Technology</option>
+              <option value="ECE">Electronics & Communication</option>
+              <option value="EEE">Electrical & Electronics</option>
+              <option value="MECH">Mechanical Engineering</option>
+              <option value="CIVIL">Civil Engineering</option>
+              <option value="AI&DS">AI & Data Science</option>
+              <option value="AIML">AI & Machine Learning</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="color: white;">Select College</label>
+            <select id="guest-college" class="form-select">
+              <option value="">Choose College</option>
+              <option value="CEG">College of Engineering, Guindy</option>
+              <option value="MIT">MIT Campus, Anna University</option>
+              <option value="ACT">Alagappa College of Technology</option>
+              <option value="PSG">PSG College of Technology</option>
+              <option value="TCE">Thiagarajar College of Engineering</option>
+              <option value="SSN">SSN College of Engineering</option>
+              <option value="REC">Regional Engineering College</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" style="color: white;">Your Total Marks: <span id="guest-marks-display" class="font-bold">100 / 200</span></label>
+          <input type="range" id="guest-marks-slider" class="marks-slider" min="0" max="200" value="100" step="1">
+          <div class="flex justify-between text-sm mt-2" style="opacity: 0.9;">
+            <span>0 (Low)</span>
+            <span>100 (Average)</span>
+            <span>200 (Excellent)</span>
+          </div>
+        </div>
+
+        <button class="btn btn-block btn-lg" style="background: white; color: #667eea; font-weight: 700;" id="guest-predict-btn">
+          🎯 Get My Probability
+        </button>
+
+        <div id="guest-result" class="quick-result hidden">
+          <div class="text-center">
+            <h3 class="text-2xl font-bold mb-4">Your Prediction Result</h3>
+            <div class="probability-meter">
+              <div class="probability-indicator" id="guest-prob-indicator">
+                <span class="probability-label" id="guest-prob-label">0%</span>
+              </div>
+            </div>
+            <div id="guest-prob-text" class="text-lg mt-4"></div>
+            
+            <div class="mt-6 p-4" style="background: rgba(255,255,255,0.2); border-radius: 0.5rem;">
+              <p class="font-bold mb-2">⚠️ Students with Premium made 3x better college choices</p>
+              <p class="text-sm mb-4" style="opacity: 0.9;">Without Choice Builder, you might miss your dream college</p>
+              <div class="grid grid-cols-3 gap-2 text-sm mb-4">
+                <div>✓ Rank Prediction</div>
+                <div>✓ Multiple Colleges</div>
+                <div>✓ Choice Builder</div>
+                <div>✓ Save History</div>
+                <div>✓ AI Simulation</div>
+                <div>✓ Unlimited Access</div>
+              </div>
+              <a href="signup.html" class="btn btn-lg" style="background: white; color: #667eea;">
+                Upgrade Now - From FREE
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div class="text-center mt-6" style="opacity: 0.8; font-size: 0.875rem;">
+          <p>🍪 Cookie-based tracking • <a href="#" class="font-bold" onclick="clearGuestData(); return false;" style="color: white; text-decoration: underline;">Reset predictions</a></p>
+        </div>
+      </div>
+
+      <!-- Guest History -->
+      <div id="guest-history" class="hidden mt-6">
+        <div class="card">
+          <div class="card-body">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="font-bold text-lg">Your Recent Predictions</h3>
+              <button class="btn btn-sm btn-outline" onclick="clearGuestHistory()">Clear History</button>
+            </div>
+            <div id="guest-history-list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing Comparison -->
+  <section style="background: var(--bg-color); padding: 4rem 0;">
+    <div class="container">
+      <!-- Early Bird Timer -->
+      <div class="text-center mb-8">
+        <div class="card" style="background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); border: 2px solid var(--danger-color); max-width: 600px; margin: 0 auto;">
+          <div class="card-body">
+            <p class="font-bold text-lg mb-2">🔥 EARLY BIRD OFFER - LIMITED TIME!</p>
+            <p class="text-sm mb-4">Offer expires in:</p>
+            <div class="countdown" id="countdown">
+              <div class="countdown-item">
+                <span class="countdown-value" id="hours">47</span>
+                <span class="countdown-label">Hours</span>
+              </div>
+              <div class="countdown-item">
+                <span class="countdown-value" id="minutes">59</span>
+                <span class="countdown-label">Minutes</span>
+              </div>
+              <div class="countdown-item">
+                <span class="countdown-value" id="seconds">59</span>
+                <span class="countdown-label">Seconds</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h2 class="text-3xl font-bold text-center mb-8">Choose Your Experience Level</h2>
+      
+      <div class="user-type-cards">
+        <!-- Grade 3: Guest -->
+        <div class="card text-center" style="border: 3px solid var(--success-color);">
+          <div class="user-type-badge" style="background: var(--success-color);">YOU ARE HERE</div>
+          <div class="user-type-icon">🎯</div>
+          <h3 class="user-type-title">Quick Try</h3>
+          <div class="user-type-price">FREE</div>
+          <ul class="user-type-features">
+            <li>1 Course + 1 College</li>
+            <li>Basic Probability Only</li>
+            <li>2 Predictions Max</li>
+            <li class="disabled">No Account Needed</li>
+            <li class="disabled">No Data Saved</li>
+          </ul>
+          <p class="text-sm text-secondary">This is what you're using now!</p>
+        </div>
+
+        <!-- Grade 2: Explorer -->
+        <div class="card text-center">
+          <div class="user-type-icon">📊</div>
+          <h3 class="user-type-title">Explorer</h3>
+          <div class="user-type-price">FREE</div>
+          <ul class="user-type-features">
+            <li>3 Courses + 5 Colleges</li>
+            <li>15 Combinations</li>
+            <li>Save Your Data</li>
+            <li>Unlimited Predictions</li>
+            <li class="disabled">No Rank Prediction</li>
+          </ul>
+          <a href="signup.html?type=2" class="btn btn-primary btn-block">Upgrade Free →</a>
+          <p class="text-sm text-success mt-2">Popular choice for explorers</p>
+        </div>
+
+        <!-- Grade 1: Premium -->
+        <div class="card text-center" style="border-color: var(--danger-color); border-width: 3px; transform: scale(1.05);">
+          <div class="user-type-badge" style="background: var(--danger-color);">BEST VALUE - 70% OFF</div>
+          <div class="user-type-icon">🏆</div>
+          <h3 class="user-type-title">Premium</h3>
+          <div>
+            <span class="price-tag" style="font-size: 2.5rem;">₹149</span>
+            <span class="price-original">₹500</span>
+          </div>
+          <p class="text-sm text-success font-bold mb-4">Save ₹351 Today!</p>
+          <ul class="user-type-features">
+            <li>Full Rank Prediction</li>
+            <li>AI Choice Builder</li>
+            <li>Counselling Simulation</li>
+            <li>Aggregate Calculator</li>
+            <li>Rank Verification</li>
+            <li>Priority Support</li>
+          </ul>
+          <a href="signup.html?type=1" class="btn btn-success btn-block btn-lg">Get Premium →</a>
+          <p class="text-sm font-bold mt-2" style="color: var(--danger-color);">⚡ Most popular - 89% choose this</p>
+        </div>
+      </div>
+
+      <!-- Social Proof Section -->
+      <div class="mt-12">
+        <h3 class="text-2xl font-bold text-center mb-6">What Students Say</h3>
+        <div class="grid grid-cols-3 gap-6">
+          <div class="testimonial">
+            <p class="mb-4">"Got my exact rank predicted! The Choice Builder helped me prioritize perfectly. Worth every rupee!"</p>
+            <div class="testimonial-author">
+              <div class="testimonial-avatar">S</div>
+              <div>
+                <p class="font-bold">Sneha Krishnan</p>
+                <p class="text-sm text-secondary">Chennai • CSE @ CEG</p>
+                <p class="text-sm">⭐⭐⭐⭐⭐</p>
+              </div>
+            </div>
+          </div>
+          <div class="testimonial">
+            <p class="mb-4">"The counselling simulation was a game-changer. I knew exactly what to expect. Highly recommend!"</p>
+            <div class="testimonial-author">
+              <div class="testimonial-avatar">R</div>
+              <div>
+                <p class="font-bold">Rajesh Kumar</p>
+                <p class="text-sm text-secondary">Coimbatore • IT @ PSG</p>
+                <p class="text-sm">⭐⭐⭐⭐⭐</p>
+              </div>
+            </div>
+          </div>
+          <div class="testimonial">
+            <p class="mb-4">"Best investment for TNEA! My predicted rank was within 150 of actual. Amazing accuracy!"</p>
+            <div class="testimonial-author">
+              <div class="testimonial-avatar">P</div>
+              <div>
+                <p class="font-bold">Priya Anand</p>
+                <p class="text-sm text-secondary">Madurai • ECE @ TCE</p>
+                <p class="text-sm">⭐⭐⭐⭐⭐</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Why Upgrade -->
+  <section style="background: white; padding: 4rem 0;">
+    <div class="container-md">
+      <h2 class="text-3xl font-bold text-center mb-8">Why Students Upgrade</h2>
+      <div class="grid grid-cols-3 gap-6">
+        <div class="card text-center">
+          <div class="card-body">
+            <div class="text-4xl mb-4">📈</div>
+            <h4 class="font-bold mb-2">95%+ Accuracy</h4>
+            <p class="text-sm text-secondary">ML model trained on 4 years of TNEA data</p>
+          </div>
+        </div>
+        <div class="card text-center">
+          <div class="card-body">
+            <div class="text-4xl mb-4">🎓</div>
+            <h4 class="font-bold mb-2">3x Better Choices</h4>
+            <p class="text-sm text-secondary">Premium users get significantly better college seats</p>
+          </div>
+        </div>
+        <div class="card text-center">
+          <div class="card-body">
+            <div class="text-4xl mb-4">💰</div>
+            <h4 class="font-bold mb-2">One-Time ₹149</h4>
+            <p class="text-sm text-secondary">Use throughout entire counselling season</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

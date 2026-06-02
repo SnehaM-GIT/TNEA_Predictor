@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Choice Builder - PickMySeat.AI</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <div class="navbar-content">
+        <a href="dashboard-grade1.html" class="navbar-brand">PickMySeat.AI</a>
+        <ul class="navbar-nav">
+          <li><a href="dashboard-grade1.html" class="nav-link">Dashboard</a></li>
+          <li><a href="choice-builder.html" class="nav-link active">Choice Builder</a></li>
+          <li><button class="btn btn-sm btn-outline" id="logout-btn">Logout</button></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container py-8">
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold mb-2">AI-Powered Choice List Builder</h1>
+      <p class="text-secondary">Drag to reorder. Choices sorted by probability (highest first)</p>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-4 gap-6 mb-8">
+      <div class="card"><div class="card-body">
+        <p class="text-sm text-secondary">Your Marks</p>
+        <p class="text-2xl font-bold" id="user-marks">-</p>
+      </div></div>
+      <div class="card"><div class="card-body">
+        <p class="text-sm text-secondary">Predicted Rank</p>
+        <p class="text-2xl font-bold text-primary" id="user-rank">-</p>
+      </div></div>
+      <div class="card"><div class="card-body">
+        <p class="text-sm text-secondary">Total Choices</p>
+        <p class="text-2xl font-bold" id="total-choices">0</p>
+      </div></div>
+      <div class="card"><div class="card-body">
+        <p class="text-sm text-secondary">High Probability (>70%)</p>
+        <p class="text-2xl font-bold text-success" id="high-prob-count">0</p>
+      </div></div>
+    </div>
+
+    <!-- Social Proof -->
+    <div class="social-proof mb-6">
+      <p class="font-bold">💡 Students who used Choice Builder got 40% better seats on average</p>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <h3 class="text-xl font-bold mb-4">Your Ordered Choice List</h3>
+        <div id="choice-list"></div>
+      </div>
+    </div>
+
+    <div class="mt-8 card" style="background: #fef3c7; border-color: var(--warning-color);">
+      <div class="card-body">
+        <h3 class="font-bold mb-2">📌 Important Notes</h3>
+        <ul class="text-sm space-y-1">
+          <li>• Choices above 70% probability have high chance of allotment</li>
+          <li>• Choices below 40% have low chance - consider as backup only</li>
+          <li>• Choices below 30% are unlikely to be allotted (⚠️ marked in red)</li>
+          <li>• Drag and drop to reorder based on your personal preference</li>
+          <li>• Save this list before counselling starts</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="mt-6 flex gap-4">
+      <button class="btn btn-success btn-lg" onclick="window.location.href='counselling-simulator.html'">⚡ Run Simulation →</button>
+      <button class="btn btn-outline btn-lg" onclick="window.location.href='dashboard-grade1.html'">← Back to Dashboard</button>
+    </div>
+  </main>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

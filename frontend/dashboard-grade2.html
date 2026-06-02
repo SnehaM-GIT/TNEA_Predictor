@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Explorer | PickMySeat.AI</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <div class="navbar-content">
+        <a href="dashboard-grade2.html" class="navbar-brand">PickMySeat.AI <span class="badge badge-secondary">EXPLORER</span></a>
+        <ul class="navbar-nav">
+          <li><a href="dashboard-grade2.html" class="nav-link active">Dashboard</a></li>
+          <li><a href="profile.html" class="nav-link">Preferences</a></li>
+          <li><button class="btn btn-sm btn-outline" id="logout-btn">Logout</button></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container py-8">
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold mb-2">Explorer Dashboard</h1>
+      <p class="text-secondary" id="user-email"></p>
+    </div>
+
+    <div class="grid grid-cols-3 mb-8">
+      <div class="card"><div class="card-body">
+        <p class="text-sm text-secondary mb-1">Account Status</p>
+        <p class="text-2xl font-bold"><span class="badge badge-secondary">Free Account</span></p>
+      </div></div>
+      
+      <div class="card"><div class="card-body">
+        <p class="text-sm text-secondary mb-1">Preferred Courses</p>
+        <p class="text-2xl font-bold" id="preferred-courses">0 / 3</p>
+      </div></div>
+
+      <div class="card"><div class="card-body">
+        <p class="text-sm text-secondary mb-1">Preferred Colleges</p>
+        <p class="text-2xl font-bold" id="preferred-colleges">0 / 5</p>
+      </div></div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-6">
+      <div>
+        <h2 class="text-xl font-bold mb-4">Your Preferences</h2>
+        <div class="card">
+          <div class="card-body">
+            <p class="text-secondary mb-4">Set your preferred courses and colleges to see probability combinations (15 max)</p>
+            <a href="profile.html" class="btn btn-primary btn-block">Set Preferences</a>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <h2 class="text-xl font-bold mb-4">Probability Matrix</h2>
+        <div id="preference-matrix"></div>
+      </div>
+    </div>
+
+    <div class="mt-8">
+      <div class="card" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-color: var(--warning-color);">
+        <div class="card-body">
+          <h3 class="font-bold mb-2">🚀 Unlock Premium Features</h3>
+          <p class="mb-4">⚠️ Without Choice Builder, you might miss your dream college</p>
+          <p class="text-sm mb-4">Students with Premium made 3x better college choices</p>
+          <ul class="grid grid-cols-2 gap-2 mb-4 text-sm">
+            <li>✓ Rank Prediction (95% accuracy)</li>
+            <li>✓ Aggregate Calculator</li>
+            <li>✓ AI Choice List Builder</li>
+            <li>✓ Counselling Simulation</li>
+            <li>✓ Rank Verification</li>
+            <li>✓ Unlimited Combinations</li>
+          </ul>
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm">Early Bird Offer:</p>
+              <p class="font-bold text-2xl"><span style="color: var(--danger-color);">₹149</span> <span class="text-secondary" style="text-decoration: line-through;">₹500</span></p>
+            </div>
+            <a href="signup.html?type=1" class="btn btn-success btn-lg">Upgrade Now</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Sticky Upgrade Bar -->
+  <div class="sticky-upgrade" id="sticky-upgrade">
+    <div class="sticky-upgrade-content">
+      <div>
+        <p class="font-bold">⚡ Upgrade to Premium Today</p>
+        <p class="text-sm" style="opacity: 0.9;">Early Bird: ₹149 only (70% OFF)</p>
+      </div>
+      <button class="btn" style="background: white; color: var(--primary-color);" onclick="window.location.href='signup.html?type=1'">
+        Upgrade Now
+      </button>
+      <button class="btn btn-sm" style="background: transparent; border: 1px solid white;" onclick="document.getElementById('sticky-upgrade').classList.add('hidden')">
+        ✕
+      </button>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
