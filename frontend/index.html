@@ -119,6 +119,14 @@
         <button class="nav-link hidden" id="navProfile" onclick="navigateTo('profile')">Profile</button>
       </div>
       <div class="nav-actions">
+        <!-- Theme Toggle Button -->
+        <button id="themeToggle" onclick="toggleTheme()" 
+          style="background:var(--surface2);border:1px solid var(--border2);color:var(--text-muted);
+          width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:16px;
+          display:flex;align-items:center;justify-content:center;transition:all 0.3s ease;">
+          🌙
+        </button>
+        
         <div class="hidden" id="navUserBlock">
           <div class="nav-user" onclick="toggleUserMenu()">
             <div class="nav-avatar" id="navAvatar">S</div>
@@ -386,9 +394,8 @@
               <option value="">All Districts</option>
             </select>
           </div>
-          <select class="select-input full-width" id="freeCollege">
-            <option value="">Select a college...</option>
-          </select>
+          <!-- Replace old college select with search container -->
+          <div id="freeCollegeSearchContainer"></div>
         </div>
 
         <div class="form-section">
@@ -733,6 +740,9 @@
         </div>
         <div class="counselling-sim" id="counsellingSim"></div>
       </div>
+
+      <!-- Premium Search Container -->
+      <div id="premiumSearchWrap"></div>
 
     </div>
   </div>

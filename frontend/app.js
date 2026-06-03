@@ -2,7 +2,7 @@
    PICKMYSEAT.AI — app.js
    Grade 3: guest, 1 college, 1 course, 1 prediction (cookie)
    Grade 2: registered, 5 colleges, 3 courses, marks locked
-   Grade 1: premium, all features + ₹25 mark update
+   Grade 1: premium, ANY college search + all features + ₹25 mark update
    ============================================================ */
 
 'use strict';
@@ -18,6 +18,7 @@ const App = {
   slotsLeft:       23,
   rankPhase:       'pre',
   counsellingStep: 0,
+  theme:           'dark',
 
   profile: {
     name:              '',
@@ -37,27 +38,455 @@ const App = {
 };
 
 // ============================================================
-// DATA
+// FULL COLLEGE LIST — all 550 colleges with codes
+// ============================================================
+const COLLEGES = [
+  { code:'0001', name:'University Departments of Anna University - CEG Campus' },
+  { code:'0002', name:'University Departments of Anna University - ACT Campus' },
+  { code:'0003', name:'University Departments of Anna University - SAP Campus' },
+  { code:'0004', name:'University Departments of Anna University - MIT Campus' },
+  { code:'0005', name:'Annamalai University Faculty of Engineering' },
+  { code:'1516', name:'Thanthai Periyar Government Institute of Technology' },
+  { code:'2005', name:'Government College of Technology (Autonomous), Coimbatore' },
+  { code:'2369', name:'Government College of Engineering, Dharmapuri' },
+  { code:'2603', name:'Government College of Engineering (Autonomous), Bargur' },
+  { code:'2615', name:'Government College of Engineering (Autonomous), Salem' },
+  { code:'2709', name:'Government Engineering College, Erode' },
+  { code:'3464', name:'Government College of Engineering, Gandarvakottai Road' },
+  { code:'3465', name:'Government College of Engineering, Srirangam' },
+  { code:'4974', name:'Government College of Engineering, Tirunelveli' },
+  { code:'5009', name:'Government College of Engineering, Melachokkanathapuram' },
+  { code:'5901', name:'Alagappa Chettiar Government College of Engineering, Karaikudi' },
+  { code:'2006', name:'PSG College of Technology (Autonomous), Coimbatore' },
+  { code:'2007', name:'Coimbatore Institute of Technology (Autonomous)' },
+  { code:'5008', name:'Thiagarajar College of Engineering, Madurai' },
+  { code:'1321', name:'Central Institute of Plastics Engineering and Technology (CIPET)' },
+  { code:'2343', name:'Indian Institute of Handloom Technology' },
+  { code:'5012', name:'Central Electrochemical Research Institute (CECRI), Karaikudi' },
+  { code:'1013', name:'University College of Engineering, Villupuram' },
+  { code:'1014', name:'University College of Engineering, Tindivanam' },
+  { code:'1015', name:'University College of Engineering, Arni' },
+  { code:'1026', name:'University College of Engineering, Kancheepuram' },
+  { code:'2025', name:'Anna University Regional Campus - Coimbatore' },
+  { code:'3011', name:'University College of Engineering, Tiruchirappalli' },
+  { code:'3016', name:'University College of Engineering, Ariyalur' },
+  { code:'3018', name:'University College of Engineering, Thirukkuvalai' },
+  { code:'3019', name:'University College of Engineering, Panruti' },
+  { code:'3021', name:'University College of Engineering, Pattukkottai' },
+  { code:'4020', name:'Anna University Regional Campus - Tirunelveli' },
+  { code:'4023', name:'University College of Engineering, Nagercoil' },
+  { code:'4024', name:'University V.O.C. College of Engineering, Thoothukudi' },
+  { code:'5010', name:'Anna University Regional Campus - Madurai' },
+  { code:'5017', name:'University College of Engineering, Ramanathapuram' },
+  { code:'5022', name:'University College of Engineering, Dindigul' },
+  { code:'1101', name:'Aalim Muhammed Salegh College of Engineering' },
+  { code:'1106', name:'Jaya Engineering College, Thirunindravur' },
+  { code:'1107', name:'Jaya Institute of Technology, Thiruvallur' },
+  { code:'1110', name:'Prathyusha Engineering College, Thiruvallur' },
+  { code:'1112', name:'R M D Engineering College, Gummidipoondi' },
+  { code:'1113', name:'R M K Engineering College (Autonomous), Kavaraipettai' },
+  { code:'1114', name:'S A Engineering College (Autonomous), Chennai' },
+  { code:'1115', name:'Sri Ram Engineering College, Veppampattu' },
+  { code:'1116', name:'Sri Venkateswara College of Engineering and Technology' },
+  { code:'1118', name:'Vel Tech Multi Tech Dr. Rangarajan Dr. Sakunthala Engineering' },
+  { code:'1120', name:'Velammal Engineering College (Autonomous), Ambattur' },
+  { code:'1122', name:'Vel Tech High Tech Dr. Rangarajan Dr. Sakunthala Engineering' },
+  { code:'1123', name:'Gojan School of Business and Technology, Chennai' },
+  { code:'1124', name:'SAMS College of Engineering and Technology' },
+  { code:'1125', name:'P M R Engineering College, Maduravoyal' },
+  { code:'1126', name:'J N N Institute of Engineering, Kannigaipair Village' },
+  { code:'1127', name:'St. Peters College of Engineering and Technology' },
+  { code:'1128', name:'R M K College of Engineering and Technology, Puduvoyal' },
+  { code:'1133', name:'Annai Veilankannis College of Engineering' },
+  { code:'1137', name:'Annai Mira College of Engineering and Technology' },
+  { code:'1140', name:'Jeppiaar Institute of Technology, Sriperumpudur' },
+  { code:'1149', name:'St. Josephs Institute of Technology, Chennai' },
+  { code:'1150', name:'Sri Jayaram Institute of Engineering and Technology' },
+  { code:'1202', name:'D M I College of Engineering, Chennai' },
+  { code:'1205', name:'Lord Venkateshwara Engineering College, Walajabad' },
+  { code:'1207', name:'Kings Engineering College, Sriperumpudur' },
+  { code:'1209', name:'Pallavan College of Engineering, Kancheepuram' },
+  { code:'1210', name:'Panimalar Engineering College, Poonamallee' },
+  { code:'1211', name:'Rajalakshmi Engineering College (Autonomous), Thandalam' },
+  { code:'1212', name:'Rajiv Gandhi College of Engineering, Sriperumpudur' },
+  { code:'1216', name:'Saveetha Engineering College (Autonomous), Thandalam' },
+  { code:'1217', name:'Sree Sastha Institute of Engineering and Technology' },
+  { code:'1218', name:'Sri Muthukumaran Institute of Technology, Chennai' },
+  { code:'1219', name:'Sri Venkateswara College of Engineering (Autonomous)' },
+  { code:'1221', name:'Jaya College of Engineering and Technology, Parivakkam' },
+  { code:'1222', name:'P B College of Engineering, Sriperumpudur' },
+  { code:'1225', name:'Loyola Institute of Technology, Mevaloorkuppam' },
+  { code:'1226', name:'P T Lee Chengalvaraya Naicker College of Engineering' },
+  { code:'1228', name:'Alpha College of Engineering' },
+  { code:'1229', name:'Indira Institute of Engineering and Technology' },
+  { code:'1230', name:'Apollo Engineering College, Mevaloorkuppam' },
+  { code:'1231', name:'Panimalar Institute of Technology, Poonamallee' },
+  { code:'1233', name:'Adhi College of Engineering and Technology' },
+  { code:'1235', name:'JEI Mathaajee College of Engineering' },
+  { code:'1237', name:'Velammal Institute of Technology, Chennai' },
+  { code:'1238', name:'GRT Institute of Engineering and Technology' },
+  { code:'1241', name:'T J S Engineering College, Kavaraipettai' },
+  { code:'1243', name:'Madha Institute of Engineering and Technology' },
+  { code:'1301', name:'Mohamed Sathak A J College of Engineering' },
+  { code:'1303', name:'Anand Institute of Higher Technology, OMR' },
+  { code:'1304', name:'Easwari Engineering College (Autonomous), Ramapuram' },
+  { code:'1306', name:'Jeppiar Engineering College, OMR Chennai' },
+  { code:'1307', name:'Jerusalem College of Engineering (Autonomous)' },
+  { code:'1309', name:'Meenakshi Sundararajan Engineering College' },
+  { code:'1310', name:'Misrimal Navajee Munoth Jain Engineering College' },
+  { code:'1311', name:'K C G College of Technology, Chennai' },
+  { code:'1313', name:'Shree Motilal Kanhaiyalal Fomra Institute of Technology' },
+  { code:'1315', name:'Sri Sivasubramaniya Nadar College of Engineering (Autonomous)' },
+  { code:'1316', name:'Agni College of Technology, OMR Chennai' },
+  { code:'1317', name:'St. Josephs College of Engineering, OMR Chennai' },
+  { code:'1318', name:'T.J Institute of Technology, Karapakkam' },
+  { code:'1319', name:'Thangavelu Engineering College, Karappakkam' },
+  { code:'1322', name:'Dhanalakshmi Srinivasan College of Engineering and Technology' },
+  { code:'1324', name:'Sri Sai Ram Institute of Technology (Autonomous), Tambaram' },
+  { code:'1325', name:'St. Joseph College of Engineering, Nemili' },
+  { code:'1333', name:'Vi Institute of Technology, Sirunkundram Village' },
+  { code:'1335', name:'Sri Krishna Institute of Technology, Padappai' },
+  { code:'1399', name:'Chennai Institute of Technology, Nandambakkam' },
+  { code:'1401', name:'Adhiparasakthi Engineering College, Melmaruvathur' },
+  { code:'1402', name:'Annai Terasa College of Engineering, Kallakkurichi' },
+  { code:'1405', name:'Dhanalakshmi College of Engineering, Manimangalam' },
+  { code:'1407', name:'G K M College of Engineering and Technology' },
+  { code:'1408', name:'I F E T College of Engineering (Autonomous)' },
+  { code:'1409', name:'Karpagavinayaga College of Engineering and Technology' },
+  { code:'1411', name:'Madha Engineering College, Kundrathur' },
+  { code:'1412', name:'Mailam Engineering College, Villupuram' },
+  { code:'1413', name:'Sri Venkateswaraa College of Technology, Vadakkal' },
+  { code:'1414', name:'Prince Shri Venkateshwara Padmavathy Engineering College' },
+  { code:'1415', name:'T S M Jain College of Technology, Kallakurichi' },
+  { code:'1416', name:'Jaya Sakthi Engineering College, Thirunindravur' },
+  { code:'1419', name:'Sri Sairam Engineering College (Autonomous), Tambaram' },
+  { code:'1420', name:'Tagore Engineering College, Vandalur' },
+  { code:'1421', name:'V R S College of Engineering and Technology, Villupuram' },
+  { code:'1422', name:'SRM Valliammai Engineering College (Autonomous), Kattankulathur' },
+  { code:'1423', name:'Asan Memorial College of Engineering' },
+  { code:'1424', name:'Dhaanish Ahmed College of Engineering, Padappai' },
+  { code:'1426', name:'Sri Ramanujar Engineering College, Vandalur' },
+  { code:'1427', name:'Sri Krishna Engineering College, Padappai' },
+  { code:'1430', name:'Maha Bharathi Engineering College, Chinnasalem' },
+  { code:'1431', name:'New Prince Shri Bhavani College of Engineering and Technology' },
+  { code:'1432', name:'Rajalakshmi Institute of Technology, Kuthampakkam' },
+  { code:'1434', name:'Surya Group of Institutions, Villupuram' },
+  { code:'1435', name:'Jagannath Institute of Technology, Thiruporur' },
+  { code:'1436', name:'A R Engineering College, Kappiyampuliyur' },
+  { code:'1437', name:'Rrase College of Engineering, Padappai' },
+  { code:'1438', name:'Sree Krishna College of Engineering, Anaicut' },
+  { code:'1441', name:'A K T Memorial College of Engineering and Technology' },
+  { code:'1442', name:'Prince Dr. K Vasudevan College of Engineering and Technology' },
+  { code:'1444', name:'Chendu College of Engineering and Technology' },
+  { code:'1445', name:'Sri Rangapoopathi College of Engineering' },
+  { code:'1447', name:'Jawahar Engineering College, Saligramam' },
+  { code:'1449', name:'Saraswathy College of Engineering and Technology' },
+  { code:'1450', name:'Loyola-ICAM College of Engineering and Technology' },
+  { code:'1452', name:'PERI Institute of Technology, Tambaram' },
+  { code:'1501', name:'Adhiparasakthi College of Engineering, Kalavai' },
+  { code:'1503', name:'Arulmigu Meenakshi Amman College of Engineering' },
+  { code:'1504', name:'Arunai Engineering College, Thiruvannamalai' },
+  { code:'1505', name:'C Abdul Hakeem College of Engineering and Technology' },
+  { code:'1507', name:'Ganadipathy Tulsis Jain Engineering College, Vellore' },
+  { code:'1509', name:'Meenakshi College of Engineering, K K Nagar' },
+  { code:'1510', name:'Priyadarshini Engineering College, Vaniyambadi' },
+  { code:'1511', name:'Ranippettai Engineering College, Ranipet' },
+  { code:'1512', name:'S K P Engineering College, Thiruvannamalai' },
+  { code:'1513', name:'Sri Balaji Chockalingam Engineering College, Arni' },
+  { code:'1517', name:'Thirumalai Engineering College, Kancheepuram' },
+  { code:'1518', name:'Thiruvalluvar College of Engineering and Technology, Vandavasi' },
+  { code:'1519', name:'Bharathidasan Engineering College, Thiruppathur' },
+  { code:'1520', name:'Kingston Engineering College, Christianpet' },
+  { code:'1523', name:'Global Institute of Engineering and Technology' },
+  { code:'1524', name:'Annamalaiar College of Engineering, Polur' },
+  { code:'1525', name:'Podhigai College of Engineering and Technology' },
+  { code:'1526', name:'Sri Krishna College of Engineering, Arakkonam' },
+  { code:'1529', name:'Oxford College of Engineering, Karaipoondi' },
+  { code:'1605', name:'Idhaya Engineering College for Women, Kallakkurichi' },
+  { code:'2302', name:'Sri Shanmugha College of Engineering and Technology' },
+  { code:'2314', name:'Muthayammal College of Engineering, Namakkal' },
+  { code:'2327', name:'N S N College of Engineering and Technology, Karur' },
+  { code:'2328', name:'K S R Institute for Engineering and Technology' },
+  { code:'2329', name:'Rathinam Technical Campus, Coimbatore' },
+  { code:'2332', name:'Aishwarya College of Engineering and Technology' },
+  { code:'2338', name:'Asian College of Engineering and Technology, Coimbatore' },
+  { code:'2341', name:'Ganesh College of Engineering, Salem' },
+  { code:'2342', name:'Sri Ranganathar Institute of Engineering and Technology' },
+  { code:'2345', name:'Dhirajlal Gandhi College of Technology, Salem' },
+  { code:'2346', name:'Shree Sathyam College of Engineering and Technology' },
+  { code:'2347', name:'AVS College of Technology, Salem' },
+  { code:'2349', name:'Dhaanish Ahmed Institute of Technology, Coimbatore' },
+  { code:'2350', name:'Jairupaa College of Engineering' },
+  { code:'2354', name:'Pollachi Institute of Engineering and Technology' },
+  { code:'2355', name:'Cheran College of Engineering, Coimbatore' },
+  { code:'2356', name:'Arulmurugan College of Engineering' },
+  { code:'2357', name:'V S B College of Engineering Technical Campus' },
+  { code:'2360', name:'Suguna College of Engineering, Coimbatore' },
+  { code:'2367', name:'Arjun College of Technology, Coimbatore' },
+  { code:'2377', name:'PSG Institute of Technology and Applied Research, Coimbatore' },
+  { code:'2601', name:'Adhiyamaan College of Engineering (Autonomous), Hosur' },
+  { code:'2602', name:'Annai Mathammal Sheela Engineering College' },
+  { code:'2606', name:'Jayam College of Engineering and Technology, Namakkal' },
+  { code:'2607', name:'K S Rangasamy College of Technology (Autonomous), Tiruchengode' },
+  { code:'2608', name:'M Kumarasamy College of Engineering (Autonomous)' },
+  { code:'2609', name:'Mahendra Engineering College (Autonomous), Namakkal' },
+  { code:'2610', name:'Muthayammal Engineering College (Autonomous), Rasipuram' },
+  { code:'2611', name:'Paavai Engineering College (Autonomous), Namakkal' },
+  { code:'2612', name:'P G P College of Engineering and Technology, Namakkal' },
+  { code:'2613', name:'K S R College of Engineering (Autonomous), Tiruchengode' },
+  { code:'2614', name:'S S M College of Engineering, Namakkal' },
+  { code:'2617', name:'Sengunthar Engineering College (Autonomous), Tiruchengode' },
+  { code:'2618', name:'Sona College of Technology (Autonomous), Salem' },
+  { code:'2620', name:'Vivekanandha College of Engineering for Women (Autonomous)' },
+  { code:'2621', name:'Er. Perumal Manimekalai College of Engineering' },
+  { code:'2622', name:'V S B Engineering College, Karur' },
+  { code:'2623', name:'Mahendra College of Engineering, Namakkal' },
+  { code:'2624', name:'Gnanamani College of Technology, Namakkal' },
+  { code:'2625', name:'The Kavery Engineering College, Salem' },
+  { code:'2627', name:'Selvam College of Technology, Namakkal' },
+  { code:'2628', name:'Paavai College of Engineering, Namakkal' },
+  { code:'2629', name:'Sengunthar College of Engineering, Namakkal' },
+  { code:'2630', name:'Chettinad College of Engineering and Technology, Trichy' },
+  { code:'2632', name:'Mahendra Institute of Technology (Autonomous), Namakkal' },
+  { code:'2633', name:'Vidhya Vikkas College of Engineering and Technology' },
+  { code:'2634', name:'Excel Engineering College (Autonomous), Namakkal' },
+  { code:'2635', name:'C M S College of Engineering, Namakkal' },
+  { code:'2636', name:'A V S Engineering College, Salem' },
+  { code:'2638', name:'Mahendra Engineering College for Women, Namakkal' },
+  { code:'2639', name:'Narasus Sarathy Institute of Technology, Salem' },
+  { code:'2640', name:'Jayalakshmi Institute of Technology, Dharmapuri' },
+  { code:'2641', name:'Varuvan Vadivelan Institute of Technology, Dharmapuri' },
+  { code:'2642', name:'P S V College of Engineering and Technology' },
+  { code:'2643', name:'Bharathiyar Institute of Engineering for Women' },
+  { code:'2646', name:'Tagore Institute of Engineering and Technology, Salem' },
+  { code:'2647', name:'J K K Nataraja College of Engineering and Technology' },
+  { code:'2648', name:'Annapoorana Engineering College, Namakkal' },
+  { code:'2650', name:'Christ the King Engineering College' },
+  { code:'2651', name:'Jai Shriram Engineering College, Tiruppur' },
+  { code:'2652', name:'Al-Ameen Engineering College (Autonomous), Coimbatore' },
+  { code:'2653', name:'Knowledge Institute of Technology, Salem' },
+  { code:'2656', name:'Builders Engineering College, Erode' },
+  { code:'2657', name:'Paavai College of Technology, Namakkal' },
+  { code:'2658', name:'V S A Group of Institutions, Salem' },
+  { code:'2659', name:'Salem College of Engineering and Technology' },
+  { code:'2661', name:'Vivekanandha College of Technology for Women' },
+  { code:'2662', name:'Dr. Nagarathinams College of Engineering' },
+  { code:'2665', name:'Mahendra Institute of Engineering and Technology' },
+  { code:'2673', name:'Sree Sakthi Engineering College, Erode' },
+  { code:'2683', name:'Shreenivasa Engineering College, Dharmapuri' },
+  { code:'2702', name:'Bannari Amman Institute of Technology (Autonomous)' },
+  { code:'2704', name:'Coimbatore Institute of Engineering and Technology (Autonomous)' },
+  { code:'2705', name:'C S I College of Engineering, Nilgiris' },
+  { code:'2706', name:'Dr. Mahalingam College of Engineering and Technology' },
+  { code:'2707', name:'Erode Sengunthar Engineering College (Autonomous)' },
+  { code:'2708', name:'Hindusthan College of Engineering and Technology (Autonomous)' },
+  { code:'2710', name:'Karpagam College of Engineering (Autonomous), Coimbatore' },
+  { code:'2711', name:'Kongu Engineering College (Autonomous), Erode' },
+  { code:'2712', name:'Kumaraguru College of Technology (Autonomous), Coimbatore' },
+  { code:'2713', name:'M P Nachimuthu M Jagannathan Engineering College' },
+  { code:'2715', name:'Nandha Engineering College (Autonomous), Erode' },
+  { code:'2716', name:'Park College of Engineering and Technology, Coimbatore' },
+  { code:'2717', name:'Sasurie College of Engineering, Tiruppur' },
+  { code:'2718', name:'Sri Krishna College of Engineering and Technology (Autonomous), Coimbatore' },
+  { code:'2719', name:'Sri Ramakrishna Engineering College (Autonomous), Coimbatore' },
+  { code:'2721', name:'Tamilnadu College of Engineering, Coimbatore' },
+  { code:'2722', name:'Sri Krishna College of Technology (Autonomous), Coimbatore' },
+  { code:'2723', name:'Velalar College of Engineering and Technology (Autonomous)' },
+  { code:'2725', name:'Sri Ramakrishna Institute of Technology (Autonomous)' },
+  { code:'2726', name:'S N S College of Technology (Autonomous), Coimbatore' },
+  { code:'2727', name:'Sri Shakthi Institute of Engineering and Technology (Autonomous)' },
+  { code:'2729', name:'Nehru Institute of Engineering and Technology, Coimbatore' },
+  { code:'2731', name:'R V S College of Engineering and Technology, Coimbatore' },
+  { code:'2732', name:'INFO Institute of Engineering, Coimbatore' },
+  { code:'2733', name:'Angel College of Engineering and Technology, Coimbatore' },
+  { code:'2734', name:'S N S College of Engineering (Autonomous), Coimbatore' },
+  { code:'2735', name:'Karpagam Institute of Technology, Coimbatore' },
+  { code:'2736', name:'Dr. N G P Institute of Technology, Coimbatore' },
+  { code:'2737', name:'Sri Sai Ranganathan Engineering College, Coimbatore' },
+  { code:'2739', name:'Sri Eshwar College of Engineering (Autonomous), Coimbatore' },
+  { code:'2740', name:'Hindustan Institute of Technology (Autonomous), Coimbatore' },
+  { code:'2741', name:'P A College of Engineering and Technology (Autonomous), Palladam' },
+  { code:'2743', name:'Dhanalakshmi Srinivasan College of Engineering, Coimbatore' },
+  { code:'2744', name:'Adithya Institute of Technology, Coimbatore' },
+  { code:'2745', name:'Kathir College of Engineering, Coimbatore' },
+  { code:'2747', name:'Shree Venkateshwara Hi-Tech Engineering College' },
+  { code:'2748', name:'Surya Engineering College, Erode' },
+  { code:'2749', name:'EASA College of Engineering and Technology, Coimbatore' },
+  { code:'2750', name:'KIT-Kalaignar Karunanidhi Institute of Technology (Autonomous), Coimbatore' },
+  { code:'2751', name:'KGISL Institute of Technology, Coimbatore' },
+  { code:'2752', name:'Nandha College of Technology, Erode' },
+  { code:'2753', name:'P P G Institute of Technology, Coimbatore' },
+  { code:'2755', name:'Nehru Institute of Technology, Coimbatore' },
+  { code:'2758', name:'J K K Muniraja College of Technology, Erode' },
+  { code:'2761', name:'United Institute of Technology, Coimbatore' },
+  { code:'2762', name:'Jansons Institute of Technology, Coimbatore' },
+  { code:'2763', name:'Akshaya College of Engineering and Technology, Coimbatore' },
+  { code:'2764', name:'K P R Institute of Engineering and Technology (Autonomous), Coimbatore' },
+  { code:'2767', name:'SRG Engineering College, Namakkal' },
+  { code:'2768', name:'Park College of Technology, Coimbatore' },
+  { code:'2769', name:'J C T College of Engineering and Technology, Coimbatore' },
+  { code:'2770', name:'Study World College of Engineering, Coimbatore' },
+  { code:'2772', name:'C M S College of Engineering and Technology, Coimbatore' },
+  { code:'2776', name:'R V S Technical Campus, Coimbatore' },
+  { code:'3410', name:'Krishnaswamy College of Engineering and Technology' },
+  { code:'3425', name:'C K College of Engineering and Technology, Cuddalore' },
+  { code:'3451', name:'SMR East Coast College of Engineering and Technology' },
+  { code:'3454', name:'Sri Ramakrishna College of Engineering, Tiruchirappalli' },
+  { code:'3456', name:'K S K College of Engineering and Technology, Thanjavur' },
+  { code:'3460', name:'Surya College of Engineering, Tiruchirappalli' },
+  { code:'3461', name:'Arifa Institute of Technology, Tiruchirappalli' },
+  { code:'3462', name:'Ariyalur Engineering College' },
+  { code:'3466', name:'Nelliandavar Institute of Technology' },
+  { code:'3701', name:'K Ramakrishnan College of Technology (Autonomous), Trichy' },
+  { code:'3760', name:'Sir Issac Newton College of Engineering and Technology' },
+  { code:'3766', name:'Star Lion College of Engineering and Technology' },
+  { code:'3782', name:'OASYS Institute of Technology, Musiri' },
+  { code:'3786', name:'M.A.M. School of Engineering, Tiruchirappalli' },
+  { code:'3795', name:'SRM TRP Engineering College, Tiruchirappalli' },
+  { code:'3801', name:'A V C College of Engineering, Mayiladuthurai' },
+  { code:'3802', name:'Shri Angalamman College of Engineering and Technology' },
+  { code:'3803', name:'Anjalai Ammal-Mahalingam Engineering College, Thanjavur' },
+  { code:'3804', name:'Arasu Engineering College, Kumbakonam' },
+  { code:'3805', name:'Dhanalakshmi Srinivasan Engineering College (Autonomous)' },
+  { code:'3806', name:'E G S Pillay Engineering College (Autonomous), Nagapattinam' },
+  { code:'3807', name:'J J College of Engineering and Technology, Trichy' },
+  { code:'3808', name:'Jayaram College of Engineering and Technology, Trichy' },
+  { code:'3809', name:'Kurinji College of Engineering and Technology, Manapparai' },
+  { code:'3810', name:'M.A.M. College of Engineering, Tiruchirappalli' },
+  { code:'3811', name:'M I E T Engineering College, Tiruchirappalli' },
+  { code:'3812', name:'Mookambigai College of Engineering, Pudukkottai' },
+  { code:'3813', name:'Oxford Engineering College, Tiruchirappalli' },
+  { code:'3814', name:'P R Engineering College, Thanjavur' },
+  { code:'3815', name:'Pavendhar Bharathidasan College of Engineering and Technology' },
+  { code:'3817', name:'Roever Engineering College, Perambalur' },
+  { code:'3819', name:'Saranathan College of Engineering, Tiruchirappalli' },
+  { code:'3820', name:'Trichy Engineering College, Tiruchirappalli' },
+  { code:'3821', name:'A R J College of Engineering and Technology, Mannargudi' },
+  { code:'3822', name:'Dr. Navalar Nedunchezhian College of Engineering' },
+  { code:'3825', name:'St. Josephs College of Engineering and Technology, Salem' },
+  { code:'3826', name:'Kongunadu College of Engineering and Technology (Autonomous)' },
+  { code:'3829', name:'M.A.M. College of Engineering and Technology, Trichy' },
+  { code:'3830', name:'K Ramakrishnan College of Engineering (Autonomous), Trichy' },
+  { code:'3831', name:'Indra Ganesan College of Engineering, Trichy' },
+  { code:'3833', name:'Parisutham Institute of Technology and Science, Thanjavur' },
+  { code:'3841', name:'CARE College of Engineering, Tiruchirappalli' },
+  { code:'3843', name:'M R K Institute of Technology, Trichy' },
+  { code:'3844', name:'Shivani Engineering College, Tiruchirappalli' },
+  { code:'3846', name:'Mother Terasa College of Engineering and Technology' },
+  { code:'3848', name:'Vandayar Engineering College, Thanjavur' },
+  { code:'3849', name:'Annai College of Engineering and Technology, Thanjavur' },
+  { code:'3850', name:'Vetri Vinayaha College of Engineering and Technology, Namakkal' },
+  { code:'3852', name:'Sri Bharathi Engineering College for Women' },
+  { code:'3854', name:'Mahath Amma Institute of Engineering and Technology (MIET)' },
+  { code:'3855', name:'As-Salam College of Engineering and Technology, Thanjavur' },
+  { code:'3857', name:'Meenakshi Ramaswamy Engineering College, Trichy' },
+  { code:'3859', name:'Sembodai Rukmani Varatharajan Engineering College' },
+  { code:'3860', name:'St. Annes College of Engineering and Technology' },
+  { code:'3905', name:'Kings College of Engineering, Pudukkottai' },
+  { code:'3908', name:'Mount Zion College of Engineering and Technology, Pudukkottai' },
+  { code:'3918', name:'Shanmuganathan Engineering College, Pudukkottai' },
+  { code:'3920', name:'Sudharsan Engineering College, Pudukkottai' },
+  { code:'3926', name:'Chenduran College of Engineering and Technology' },
+  { code:'4669', name:'Thamirabharani Engineering College, Tirunelveli' },
+  { code:'4670', name:'Rohini College of Engineering and Technology, Kanyakumari' },
+  { code:'4672', name:'Stella Marys College of Engineering, Kanyakumari' },
+  { code:'4675', name:'Universal College of Engineering and Technology, Kanyakumari' },
+  { code:'4676', name:'Renganayagi Varatharaj College of Engineering, Sivakasi' },
+  { code:'4677', name:'Lourdes Mount College of Engineering and Technology' },
+  { code:'4678', name:'Ramco Institute of Technology, Virudhunagar' },
+  { code:'4680', name:'AAA College of Engineering and Technology, Virudhunagar' },
+  { code:'4686', name:'Good Shepherd College of Engineering and Technology' },
+  { code:'4864', name:'V V College of Engineering, Kanyakumari' },
+  { code:'4917', name:'Sethu Institute of Technology (Autonomous), Virudhunagar' },
+  { code:'4927', name:'Maria College of Engineering and Technology' },
+  { code:'4928', name:'MAR Ephraem College of Engineering and Technology' },
+  { code:'4929', name:'M E T Engineering College, Kanyakumari' },
+  { code:'4931', name:'Grace College of Engineering, Kanyakumari' },
+  { code:'4932', name:'Immanuel Arasar J J College of Engineering, Kanyakumari' },
+  { code:'4933', name:'St. Mother Theresa Engineering College, Thoothukudi' },
+  { code:'4934', name:'Holy Cross Engineering College, Thoothukudi' },
+  { code:'4937', name:'A R College of Engineering and Technology' },
+  { code:'4938', name:'Sivaji College of Engineering and Technology' },
+  { code:'4941', name:'Unnamalai Institute of Technology, Kovilpatti' },
+  { code:'4943', name:'Satyam College of Engineering and Technology' },
+  { code:'4944', name:'Arunachala College of Engineering for Women, Nagercoil' },
+  { code:'4945', name:'Vins Christian Womens College of Engineering, Nagercoil' },
+  { code:'4946', name:'D M I Engineering College, Kanyakumari' },
+  { code:'4948', name:'Rajas Institute of Technology, Nagercoil' },
+  { code:'4949', name:'P S N Institute of Technology and Science, Tirunelveli' },
+  { code:'4952', name:'C S I Institute of Technology, Kanyakumari' },
+  { code:'4953', name:'CAPE Institute of Technology, Tirunelveli' },
+  { code:'4954', name:'Dr. Sivanthi Aditanar College of Engineering, Tiruchendur' },
+  { code:'4955', name:'Francis Xavier Engineering College (Autonomous), Tirunelveli' },
+  { code:'4956', name:'Jayamatha Engineering College, Kanyakumari' },
+  { code:'4957', name:'Jayaraj Annapackiam CSI College of Engineering, Tirunelveli' },
+  { code:'4959', name:'Kamaraj College of Engineering and Technology (Autonomous)' },
+  { code:'4960', name:'Mepco Schlenk Engineering College (Autonomous), Sivakasi' },
+  { code:'4961', name:'Nellai College of Engineering, Tirunelveli' },
+  { code:'4962', name:'National Engineering College (Autonomous), Kovilpatti' },
+  { code:'4964', name:'P S N College of Engineering and Technology (Autonomous)' },
+  { code:'4965', name:'P S R Engineering College (Autonomous), Tirunelveli' },
+  { code:'4966', name:'PET Engineering College, Tirunelveli' },
+  { code:'4967', name:'S Veerasamy Chettiar College of Engineering and Technology' },
+  { code:'4968', name:'Sardar Raja College of Engineering, Tenkasi' },
+  { code:'4969', name:'SCAD College of Engineering and Technology, Tirunelveli' },
+  { code:'4970', name:'Sree Sowdambiga College of Engineering, Virudhunagar' },
+  { code:'4971', name:'St. Xavier Catholic College of Engineering, Nagercoil' },
+  { code:'4972', name:'AMRITA College of Engineering and Technology, Kanyakumari' },
+  { code:'4975', name:'Dr. G U Pope College of Engineering, Thoothukudi' },
+  { code:'4976', name:'Infant Jesus College of Engineering, Thoothukudi' },
+  { code:'4977', name:'Narayanaguru College of Engineering, Kanyakumari' },
+  { code:'4978', name:'Udaya School of Engineering, Kanyakumari' },
+  { code:'4980', name:'Einstein College of Engineering, Tirunelveli' },
+  { code:'4981', name:'Ponjesly College of Engineering, Nagercoil' },
+  { code:'4982', name:'Vins Christian College of Engineering, Nagercoil' },
+  { code:'4983', name:'Lord Jegannath College of Engineering and Technology' },
+  { code:'4984', name:'Marthandam College of Engineering and Technology' },
+  { code:'4989', name:'P S N Engineering College, Tirunelveli' },
+  { code:'4992', name:'Bethlahem Institute of Engineering, Kanyakumari' },
+  { code:'4993', name:'Loyola Institute of Technology and Science, Tenkasi' },
+  { code:'4994', name:'J P College of Engineering, Tenkasi' },
+  { code:'4995', name:'P.S.R.R College of Engineering, Tirunelveli' },
+  { code:'4996', name:'Sri Vidhya College of Engineering and Technology, Sivakasi' },
+  { code:'4998', name:'Mahakavi Bharathiyar College of Engineering and Technology' },
+  { code:'4999', name:'Annai Vailankanni College of Engineering, Kanyakumari' },
+  { code:'5502', name:'Sree Raaja Raajan College of Engineering and Technology' },
+  { code:'5530', name:'SSM Institute of Engineering and Technology, Dindigul' },
+  { code:'5532', name:'Vaigai College of Engineering, Madurai' },
+  { code:'5533', name:'Karaikudi Institute of Technology' },
+  { code:'5536', name:'Mangayarkarasi College of Engineering, Madurai' },
+  { code:'5537', name:'Jainee College of Engineering and Technology, Dindigul' },
+  { code:'5703', name:'Christian College of Engineering and Technology, Dindigul' },
+  { code:'5720', name:'Sri Subramanya College of Engineering and Technology' },
+  { code:'5832', name:'N P R College of Engineering and Technology, Dindigul' },
+  { code:'5842', name:'Madurai Institute of Engineering and Technology' },
+  { code:'5862', name:'R V S Educational Trusts Groups of Institutions, Dindigul' },
+  { code:'5865', name:'Nadar Saraswathi College of Engineering and Technology' },
+  { code:'5902', name:'Bharath Niketan Engineering College, Madurai' },
+  { code:'5904', name:'K L N College of Engineering (Autonomous), Madurai' },
+  { code:'5907', name:'Mohamed Sathak Engineering College, Ramanathapuram' },
+  { code:'5910', name:'P S N A College of Engineering and Technology, Dindigul' },
+  { code:'5911', name:'P T R College of Engineering and Technology, Madurai' },
+  { code:'5912', name:'Pandian Saraswathi Yadav Engineering College, Madurai' },
+  { code:'5913', name:'R V S College of Engineering, Dindigul' },
+  { code:'5914', name:'Solamalai College of Engineering, Madurai' },
+  { code:'5915', name:'SACS-M A V M M Engineering College, Madurai' },
+  { code:'5919', name:'St. Michael College of Engineering and Technology, Sivaganga' },
+  { code:'5921', name:'Syed Ammal Engineering College, Ramanathapuram' },
+  { code:'5924', name:'Ganapathy Chettiar College of Engineering and Technology' },
+  { code:'5930', name:'SBM College of Engineering and Technology, Dindigul' },
+  { code:'5935', name:'Fatima Michael College of Engineering and Technology' },
+  { code:'5942', name:'Ultra College of Engineering and Technology, Madurai' },
+  { code:'5986', name:'Velammal College of Engineering and Technology, Madurai' },
+  { code:'5988', name:'Theni Kammavar Sangam College of Technology, Theni' },
+  { code:'5990', name:'Latha Mathavan Engineering College, Madurai' },
+  { code:'2684', name:'Tips School of Architecture, Coimbatore' },
+];
+
+// ============================================================
+// COURSES DATA
 // ============================================================
 const DATA = {
-  colleges: [
-    { id:'ceg',         name:'College of Engineering Guindy',           type:'government', district:'Chennai'       },
-    { id:'mit',         name:'MIT Campus, Anna University',              type:'government', district:'Chennai'       },
-    { id:'actech',      name:'Alagappa Chettiar Tech, Karaikudi',       type:'government', district:'Sivaganga'     },
-    { id:'gce_salem',   name:'Govt. College of Engineering Salem',       type:'government', district:'Salem'         },
-    { id:'gce_tirun',   name:'Govt. College of Engineering Tirunelveli', type:'government', district:'Tirunelveli'  },
-    { id:'psg',         name:'PSG College of Technology',                type:'aided',      district:'Coimbatore'   },
-    { id:'thiagarajar', name:'Thiagarajar College of Engineering',       type:'aided',      district:'Madurai'      },
-    { id:'bsau',        name:'B.S. Abdur Rahman Crescent Inst.',         type:'aided',      district:'Chennai'      },
-    { id:'mepco',       name:'Mepco Schlenk Engineering College',        type:'aided',      district:'Virudhunagar' },
-    { id:'kct',         name:'Kumaraguru College of Technology',          type:'private',    district:'Coimbatore'   },
-    { id:'srmist',      name:'SRM Institute of Science & Tech.',         type:'private',    district:'Chennai'      },
-    { id:'vit',         name:'Vellore Institute of Technology',           type:'private',    district:'Vellore'      },
-    { id:'sastra',      name:'SASTRA Deemed University',                  type:'private',    district:'Thanjavur'    },
-    { id:'kongu',       name:'Kongu Engineering College',                 type:'private',    district:'Erode'        },
-    { id:'srm_rmp',     name:'SRM Ramapuram',                            type:'private',    district:'Chennai'      },
-  ],
-
   courses: [
     { id:'cse',   name:'Computer Science & Engineering',   dept:'CS', cutoffBase:195 },
     { id:'aids',  name:'AI & Data Science',                dept:'CS', cutoffBase:192 },
@@ -70,14 +499,6 @@ const DATA = {
     { id:'chem',  name:'Chemical Engineering',             dept:'CH', cutoffBase:165 },
     { id:'civil', name:'Civil Engineering',                dept:'CV', cutoffBase:160 },
   ],
-
-  districts: [
-    'Chennai','Coimbatore','Tiruchirappalli','Madurai',
-    'Salem','Erode','Vellore','Thanjavur','Tirunelveli',
-    'Kancheepuram','Sivaganga','Virudhunagar'
-  ],
-
-  collegeTypeAdjust: { government:0, aided:-5, private:-15 },
 
   testimonials: [
     { name:'Priya R.',   sub:'CSE · Anna University · 2024', text:'Got exactly the college PickMySeat predicted! Saved so many hours of confusion during counselling.', stars:5 },
@@ -99,6 +520,137 @@ const DATA = {
     '3 students joined PickMySeat in the last hour 🔥',
   ],
 };
+
+// ============================================================
+// THEME — Light / Dark toggle
+// ============================================================
+function initTheme() {
+  const saved = localStorage.getItem('pms_theme') || 'dark';
+  setTheme(saved);
+}
+
+function setTheme(theme) {
+  App.theme = theme;
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('pms_theme', theme);
+  const btn = document.getElementById('themeToggle');
+  if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+}
+
+function toggleTheme() {
+  setTheme(App.theme === 'dark' ? 'light' : 'dark');
+}
+
+// ============================================================
+// SEARCHABLE COLLEGE DROPDOWN
+// Renders a custom searchable dropdown for college selection
+// ============================================================
+function buildCollegeSearchDropdown(containerId, onSelect, placeholder = 'Search by name or code...') {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  let filtered = [...COLLEGES];
+  let selectedCollege = null;
+
+  container.innerHTML = `
+    <div class="college-search-wrap" id="csw_${containerId}">
+      <div class="college-search-input-row">
+        <input
+          type="text"
+          class="text-input college-search-input"
+          id="csi_${containerId}"
+          placeholder="${placeholder}"
+          autocomplete="off"
+        />
+        <button class="college-clear-btn hidden" id="ccb_${containerId}" onclick="clearCollegeSearch('${containerId}')">✕</button>
+      </div>
+      <div class="college-dropdown-list hidden" id="cdl_${containerId}"></div>
+      <div class="college-selected hidden" id="csel_${containerId}"></div>
+    </div>`;
+
+  const input    = document.getElementById(`csi_${containerId}`);
+  const list     = document.getElementById(`cdl_${containerId}`);
+  const clearBtn = document.getElementById(`ccb_${containerId}`);
+  const selEl    = document.getElementById(`csel_${containerId}`);
+
+  function renderList(colleges) {
+    if (!colleges.length) {
+      list.innerHTML = `<div class="college-no-result">No colleges found. Try a different search.</div>`;
+    } else {
+      list.innerHTML = colleges.slice(0, 50).map(c => `
+        <div class="college-option" onclick="selectCollegeOption('${containerId}', '${c.code}')">
+          <span class="college-code-tag">${c.code}</span>
+          <span class="college-option-name">${c.name}</span>
+        </div>`).join('');
+      if (colleges.length > 50) {
+        list.innerHTML += `<div class="college-more-note">Showing 50 of ${colleges.length}. Type more to narrow down.</div>`;
+      }
+    }
+    list.classList.remove('hidden');
+  }
+
+  input.addEventListener('focus', () => {
+    filtered = [...COLLEGES];
+    renderList(filtered);
+  });
+
+  input.addEventListener('input', () => {
+    const q = input.value.toLowerCase().trim();
+    clearBtn.classList.toggle('hidden', !q);
+    filtered = COLLEGES.filter(c =>
+      c.name.toLowerCase().includes(q) || c.code.includes(q)
+    );
+    renderList(filtered);
+  });
+
+  document.addEventListener('click', e => {
+    if (!container.contains(e.target)) {
+      list.classList.add('hidden');
+    }
+  });
+
+  // Store callback
+  container._onSelect = onSelect;
+}
+
+function selectCollegeOption(containerId, code) {
+  const college  = COLLEGES.find(c => c.code === code);
+  if (!college) return;
+
+  const input    = document.getElementById(`csi_${containerId}`);
+  const list     = document.getElementById(`cdl_${containerId}`);
+  const selEl    = document.getElementById(`csel_${containerId}`);
+  const clearBtn = document.getElementById(`ccb_${containerId}`);
+  const container = document.getElementById(containerId);
+
+  input.value = `[${college.code}] ${college.name}`;
+  list.classList.add('hidden');
+  clearBtn.classList.remove('hidden');
+
+  selEl.innerHTML = `
+    <div class="college-selected-chip">
+      <span class="college-code-tag">${college.code}</span>
+      <span>${college.name}</span>
+    </div>`;
+  selEl.classList.remove('hidden');
+
+  if (container._onSelect) container._onSelect(college);
+}
+
+function clearCollegeSearch(containerId) {
+  const input    = document.getElementById(`csi_${containerId}`);
+  const list     = document.getElementById(`cdl_${containerId}`);
+  const selEl    = document.getElementById(`csel_${containerId}`);
+  const clearBtn = document.getElementById(`ccb_${containerId}`);
+  const container = document.getElementById(containerId);
+
+  input.value = '';
+  list.classList.add('hidden');
+  selEl.classList.add('hidden');
+  clearBtn.classList.add('hidden');
+
+  if (container._onSelect) container._onSelect(null);
+}
 
 // ============================================================
 // ROUTING
@@ -237,8 +789,7 @@ function observeScrollAnimations() {
 
 // ============================================================
 // AGGREGATE FORMULA
-// Always: Maths + Physics + Chemistry
-// (M/2) + (P/4) + (C/4)  → max 100 → ×2 = max 200
+// (M/2) + (P/4) + (C/4) → max 100 → ×2 = max 200
 // ============================================================
 function calculateAggregate(maths, physics, chemistry) {
   const m = Math.min(100, Math.max(0, parseFloat(maths)     || 0));
@@ -249,7 +800,10 @@ function calculateAggregate(maths, physics, chemistry) {
 
 // ============================================================
 // PREDICTION ENGINE
-// Simulates XGBoost backend — replace with POST /predict/rank
+// Simulates XGBoost — replace with POST /predict/rank
+// cutoffBase is college-agnostic; college tier adjusts it
+// For 550 colleges: government top tier -0, aided -5, private -15
+// Individual college prestige further adjusts (+/- 10)
 // ============================================================
 function predictRankBand(aggregate) {
   const r = parseFloat(aggregate) / 200;
@@ -266,12 +820,30 @@ function predictRankBand(aggregate) {
   return                  { low:45000, high:80000 };
 }
 
-function predictProbability(aggregate, collegeName, courseName) {
-  const course  = DATA.courses.find(c  => c.name  === courseName);
-  const college = DATA.colleges.find(c => c.name  === collegeName);
-  if (!course || !college) return 50;
-  const adj  = DATA.collegeTypeAdjust[college.type] || 0;
-  const diff = parseFloat(aggregate) - (course.cutoffBase + adj);
+// College prestige tier based on code prefix — adjusts cutoff
+function getCollegeTierAdjust(code) {
+  const c = parseInt(code);
+  // Top government autonomous
+  if (['0001','0002','0003','0004','2006','2007','5008'].includes(code)) return 10;
+  // Government
+  if (c < 2000 && c >= 1000) return -5;  // Chennai region private
+  if (code.startsWith('2') && c < 2100) return 0;  // government/aided
+  if (code.startsWith('2') && c >= 2600) return -8; // Salem/Namakkal belt
+  if (code.startsWith('2') && c >= 2700) return -5; // Coimbatore private
+  if (code.startsWith('3')) return -10;  // Trichy/Thanjavur region
+  if (code.startsWith('4')) return -12;  // South TN
+  if (code.startsWith('5')) return -10;  // Madurai/Dindigul
+  return -5;
+}
+
+function predictProbability(aggregate, collegeCode, courseName) {
+  const course = DATA.courses.find(c => c.name === courseName);
+  if (!course) return 50;
+
+  const tierAdj = getCollegeTierAdjust(collegeCode);
+  const cutoff  = course.cutoffBase + tierAdj;
+  const diff    = parseFloat(aggregate) - cutoff;
+
   let prob;
   if      (diff >= 15)  prob = 90 + Math.min(9, diff - 15);
   else if (diff >= 8)   prob = 75 + (diff - 8) * 2;
@@ -279,14 +851,14 @@ function predictProbability(aggregate, collegeName, courseName) {
   else if (diff >= -8)  prob = 40 + (diff + 8) * 2;
   else if (diff >= -15) prob = 20 + (diff + 15) * 3;
   else                  prob = Math.max(3, 20 + diff);
+
   return Math.round(Math.min(99, Math.max(2, prob)));
 }
 
-function getLastYearCutoff(collegeName, courseName) {
-  const course  = DATA.courses.find(c  => c.name === courseName);
-  const college = DATA.colleges.find(c => c.name === collegeName);
-  if (!course || !college) return '—';
-  return (course.cutoffBase + (DATA.collegeTypeAdjust[college.type] || 0)).toFixed(1);
+function getLastYearCutoff(collegeCode, courseName) {
+  const course = DATA.courses.find(c => c.name === courseName);
+  if (!course) return '—';
+  return (course.cutoffBase + getCollegeTierAdjust(collegeCode)).toFixed(1);
 }
 
 function getProbClass(prob) {
@@ -298,70 +870,40 @@ function getProbClass(prob) {
 // ============================================================
 // FREE PREDICT — Grade 3
 // ============================================================
+let freeSelectedCollege = null;
+
 function initFreePredictPage() {
   const used = getCookie('pms_free_used');
   const bar  = document.getElementById('cookieUsageBar');
+
+  freeSelectedCollege = null;
 
   if (used === '1') {
     bar.textContent = '🔒 Free prediction used · Login to predict more';
     bar.style.display = 'inline-block';
     document.getElementById('freePredictForm')
-      ?.querySelectorAll('input,select')
-      .forEach(el => el.disabled = true);
-    const btn = document.querySelector('#freePredictForm .btn-primary');
+      ?.querySelectorAll('input,select').forEach(el => el.disabled = true);
+    const btn = document.querySelector('#freePredictForm .btn-primary.predict-btn');
     if (btn) btn.disabled = true;
   } else {
     bar.textContent = '✅ 1 free prediction available — no signup needed';
     bar.style.display = 'inline-block';
   }
 
-  populateDistricts('freeDistrict');
-  populateAllColleges();
-  populateAllCourses();
+  // Build searchable college dropdown for free predict
+  buildCollegeSearchDropdown('freeCollegeSearchContainer', (college) => {
+    freeSelectedCollege = college;
+  }, 'Search college by name or code...');
+
+  populateAllCourses('freeCourse');
   document.getElementById('freeResultCard').classList.add('hidden');
 }
 
-function populateDistricts(selectId) {
+function populateAllCourses(selectId) {
   const sel = document.getElementById(selectId);
-  if (!sel) return;
-  while (sel.options.length > 1) sel.remove(1);
-  DATA.districts.forEach(d => {
-    const opt = document.createElement('option');
-    opt.value = d; opt.textContent = d; sel.appendChild(opt);
-  });
-}
-
-function populateAllColleges() {
-  const sel = document.getElementById('freeCollege');
-  if (!sel) return;
-  sel.innerHTML = '<option value="">Select a college...</option>';
-  DATA.colleges.forEach(c => {
-    const opt = document.createElement('option');
-    opt.value = c.name; opt.textContent = c.name; sel.appendChild(opt);
-  });
-}
-
-function populateAllCourses() {
-  const sel = document.getElementById('freeCourse');
   if (!sel) return;
   sel.innerHTML = '<option value="">Select a course...</option>';
   DATA.courses.forEach(c => {
-    const opt = document.createElement('option');
-    opt.value = c.name; opt.textContent = c.name; sel.appendChild(opt);
-  });
-}
-
-function filterFreeColleges() {
-  const type     = document.getElementById('freeCollegeType')?.value || '';
-  const district = document.getElementById('freeDistrict')?.value   || '';
-  const sel      = document.getElementById('freeCollege');
-  if (!sel) return;
-  const filtered = DATA.colleges.filter(c =>
-    (!type     || c.type     === type) &&
-    (!district || c.district === district)
-  );
-  sel.innerHTML = '<option value="">Select a college...</option>';
-  filtered.forEach(c => {
     const opt = document.createElement('option');
     opt.value = c.name; opt.textContent = c.name; sel.appendChild(opt);
   });
@@ -388,11 +930,10 @@ function runFreePrediction() {
   if (getCookie('pms_free_used') === '1') {
     showToast('Free prediction already used. Please login to continue.', 'error'); return;
   }
-  const m       = document.getElementById('freeMath')?.value      || '';
-  const p       = document.getElementById('freePhysics')?.value   || '';
-  const c       = document.getElementById('freeChemistry')?.value || '';
-  const college = document.getElementById('freeCollege')?.value;
-  const course  = document.getElementById('freeCourse')?.value;
+  const m      = document.getElementById('freeMath')?.value      || '';
+  const p      = document.getElementById('freePhysics')?.value   || '';
+  const c      = document.getElementById('freeChemistry')?.value || '';
+  const course = document.getElementById('freeCourse')?.value;
 
   if (!m || !p || !c) {
     showToast('Please enter all three marks', 'error'); return;
@@ -400,23 +941,31 @@ function runFreePrediction() {
   if (parseFloat(m)>100 || parseFloat(p)>100 || parseFloat(c)>100) {
     showToast('Each mark must be between 0 and 100', 'error'); return;
   }
-  if (!college) { showToast('Please select a college', 'error'); return; }
-  if (!course)  { showToast('Please select a course',  'error'); return; }
+  if (!freeSelectedCollege) {
+    showToast('Please select a college', 'error'); return;
+  }
+  if (!course) {
+    showToast('Please select a course', 'error'); return;
+  }
 
   const agg      = calculateAggregate(m, p, c);
-  const prob     = predictProbability(agg, college, course);
+  const prob     = predictProbability(agg, freeSelectedCollege.code, course);
   const rankBand = predictRankBand(agg);
-  const cutoff   = getLastYearCutoff(college, course);
+  const cutoff   = getLastYearCutoff(freeSelectedCollege.code, course);
 
-  renderFreeResult({ agg, prob, rankBand, cutoff, college, course });
+  renderFreeResult({
+    agg, prob, rankBand, cutoff,
+    college: `[${freeSelectedCollege.code}] ${freeSelectedCollege.name}`,
+    course
+  });
+
   setCookie('pms_free_used', '1', 7);
 
-  // Disable form after use
+  // Disable form
   document.getElementById('freePredictForm')
     ?.querySelectorAll('input,select').forEach(el => el.disabled = true);
-  const btn = document.querySelector('#freePredictForm .btn-primary');
+  const btn = document.querySelector('#freePredictForm .predict-btn');
   if (btn) btn.disabled = true;
-
   const bar = document.getElementById('cookieUsageBar');
   if (bar) bar.textContent = '🔒 Free prediction used · Login to predict more';
 }
@@ -441,13 +990,13 @@ function renderFreeResult({ agg, prob, rankBand, cutoff, college, course }) {
 
   const msgEl = document.getElementById('resultMessage');
   if (prob >= 65) {
-    msgEl.textContent = `🎉 Strong chance! Your aggregate of ${agg} is above the typical cutoff for ${course} at ${college}.`;
+    msgEl.textContent = `🎉 Strong chance! Your aggregate of ${agg} is above the typical cutoff for this college-course combo.`;
     msgEl.className   = 'result-message success';
   } else if (prob >= 35) {
     msgEl.textContent = `⚡ Possible. You're in the competitive zone. Rank ${rankBand.low?.toLocaleString()}–${rankBand.high?.toLocaleString()} may get you in.`;
     msgEl.className   = 'result-message warning';
   } else {
-    msgEl.textContent = `⚠️ Very competitive. Your aggregate of ${agg} is below the typical cutoff of ${cutoff}. Consider safer alternatives.`;
+    msgEl.textContent = `⚠️ Very competitive. Your aggregate of ${agg} is below the typical cutoff of ${cutoff}. Consider safer options.`;
     msgEl.className   = 'result-message danger';
   }
 
@@ -505,7 +1054,6 @@ function simulateLogin(userData) {
 }
 
 function logout() {
-  // FIREBASE: firebase.auth().signOut()
   App.currentUser = null;
   App.userGrade   = 3;
   App.profile     = {
@@ -532,13 +1080,20 @@ function renderProfile() {
   const locked = App.profile.marksLocked;
   document.getElementById('marksLockedBanner')?.classList.toggle('hidden', !locked);
 
-  const mathEl = document.getElementById('profileMath');
-  const phyEl  = document.getElementById('profilePhysics');
-  const chemEl = document.getElementById('profileChemistry');
-
-  if (mathEl) { mathEl.value = App.profile.maths     ?? ''; mathEl.disabled = locked; }
-  if (phyEl)  { phyEl.value  = App.profile.physics   ?? ''; phyEl.disabled  = locked; }
-  if (chemEl) { chemEl.value = App.profile.chemistry ?? ''; chemEl.disabled = locked; }
+  ['profileMath','profilePhysics','profileChemistry'].forEach(id => {
+    const el  = document.getElementById(id);
+    const key = id.replace('profile','').toLowerCase();
+    if (el) {
+      el.value    = App.profile[key] ?? '';
+      el.disabled = locked;
+    }
+  });
+  if (document.getElementById('profileMath'))
+    document.getElementById('profileMath').value = App.profile.maths ?? '';
+  if (document.getElementById('profilePhysics'))
+    document.getElementById('profilePhysics').value = App.profile.physics ?? '';
+  if (document.getElementById('profileChemistry'))
+    document.getElementById('profileChemistry').value = App.profile.chemistry ?? '';
 
   updateProfileAggregate();
 
@@ -579,38 +1134,61 @@ function setRankPhase(phase) {
   }
 }
 
+// ============================================================
+// PREFERRED COLLEGES — Grade 2: max 5, Grade 1: unlimited search
+// ============================================================
 function renderPreferredColleges() {
   const grid = document.getElementById('preferredCollegesGrid');
   if (!grid) return;
   grid.innerHTML = '';
-  const max = 5;
-  for (let i = 0; i < max; i++) {
-    const college = App.profile.preferredColleges[i];
-    if (college) {
-      grid.innerHTML += `
-        <div class="preferred-slot filled">
-          <div class="slot-number">${i+1}</div>
-          <div class="slot-content">
-            <div class="slot-name">${college.name}</div>
-            <div class="slot-sub">${college.type} · ${college.district}</div>
+
+  const isPremium = App.userGrade === 1;
+  const max       = isPremium ? Infinity : 5;
+  const current   = App.profile.preferredColleges;
+
+  // Show added colleges
+  current.forEach((college, i) => {
+    grid.innerHTML += `
+      <div class="preferred-slot filled">
+        <div class="slot-number">${i+1}</div>
+        <div class="slot-content">
+          <div class="slot-name">
+            <span class="college-code-tag small">${college.code}</span>
+            ${college.name}
           </div>
-          <button class="slot-remove" onclick="removePreferredCollege(${i})">✕</button>
-        </div>`;
-    } else if (i === App.profile.preferredColleges.length) {
-      grid.innerHTML += `
-        <div class="preferred-slot add-slot">
-          <select class="select-input" onchange="addPreferredCollege(this.value);this.value=''">
-            <option value="">+ Add College ${i+1}</option>
-            ${DATA.colleges.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}
-          </select>
-        </div>`;
-    } else {
-      grid.innerHTML += `
-        <div class="preferred-slot" style="opacity:0.25;pointer-events:none">
-          <div class="slot-number">${i+1}</div>
-          <div class="slot-content"><div class="slot-name">Add College ${i+1}</div></div>
-        </div>`;
-    }
+        </div>
+        <button class="slot-remove" onclick="removePreferredCollege(${i})">✕</button>
+      </div>`;
+  });
+
+  // Add slot — Grade 2: max 5, Grade 1: always show add
+  const canAdd = isPremium ? true : current.length < 5;
+  if (canAdd) {
+    const addId = `addCollegeSearch_${Date.now()}`;
+    grid.innerHTML += `
+      <div class="preferred-slot add-slot" style="flex-direction:column;align-items:stretch;gap:8px;height:auto;padding:12px">
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">
+          ${isPremium ? '+ Add any college (Premium — unlimited)' : `+ Add College ${current.length+1} of 5`}
+        </div>
+        <div id="${addId}"></div>
+      </div>`;
+
+    // Init search after render
+    setTimeout(() => {
+      buildCollegeSearchDropdown(addId, (college) => {
+        if (college) addPreferredCollege(college);
+      }, 'Search by name or code...');
+    }, 0);
+  }
+
+  if (!isPremium && current.length >= 5) {
+    grid.innerHTML += `
+      <div style="grid-column:1/-1;font-size:13px;color:var(--text-muted);padding:8px 0">
+        Maximum 5 colleges for Student plan.
+        <button class="link-btn" onclick="showUpgradeModal('colleges')">
+          Upgrade to Premium for unlimited →
+        </button>
+      </div>`;
   }
 }
 
@@ -619,6 +1197,7 @@ function renderPreferredCourses() {
   if (!grid) return;
   grid.innerHTML = '';
   const max = 3;
+
   for (let i = 0; i < max; i++) {
     const course = App.profile.preferredCourses[i];
     if (course) {
@@ -649,18 +1228,17 @@ function renderPreferredCourses() {
   }
 }
 
-function addPreferredCollege(id) {
-  if (!id) return;
-  const college = DATA.colleges.find(c => c.id === id);
+function addPreferredCollege(college) {
   if (!college) return;
-  if (App.profile.preferredColleges.find(c => c.id === id)) {
+  if (App.profile.preferredColleges.find(c => c.code === college.code)) {
     showToast('College already added','error'); renderPreferredColleges(); return;
   }
-  if (App.profile.preferredColleges.length >= 5) {
-    showToast('Maximum 5 colleges','error'); return;
+  if (App.userGrade !== 1 && App.profile.preferredColleges.length >= 5) {
+    showToast('Maximum 5 colleges for Student plan','error'); return;
   }
   App.profile.preferredColleges.push(college);
   renderPreferredColleges();
+  showToast(`[${college.code}] ${college.name} added ✅`, 'success');
 }
 
 function removePreferredCollege(i) {
@@ -768,18 +1346,13 @@ function confirmMarksUpdate() {
   const m = parseFloat(document.getElementById('updateMath')?.value)     || null;
   const p = parseFloat(document.getElementById('updatePhysics')?.value)  || null;
   const c = parseFloat(document.getElementById('updateChemistry')?.value)|| null;
-
   if (!m || !p || !c) { showToast('Please enter all three marks','error'); return; }
   if (m>100 || p>100 || c>100) { showToast('Each mark must be 0–100','error'); return; }
-
-  // RAZORPAY: ₹25 payment placeholder
-  // new Razorpay({ key:'...', amount:2500, ... }).open()
-
+  // RAZORPAY ₹25: new Razorpay({ key:'...', amount:2500, ... }).open()
   App.profile.maths     = m;
   App.profile.physics   = p;
   App.profile.chemistry = c;
   App.profile.marksLocked = true;
-
   closeMarksUpdate();
   showToast('Marks updated successfully ✅','success');
   renderDashboard();
@@ -840,9 +1413,7 @@ function renderAggBanner() {
   const banner = document.getElementById('dashAggBanner');
   if (!banner) return;
   const agg = calculateAggregate(
-    App.profile.maths    || 0,
-    App.profile.physics  || 0,
-    App.profile.chemistry|| 0
+    App.profile.maths||0, App.profile.physics||0, App.profile.chemistry||0
   );
   const lockNote = App.profile.marksLocked
     ? `<div class="agg-lock-row">🔒 Marks locked ·
@@ -876,7 +1447,7 @@ function renderComboProbCards() {
         <div style="font-size:40px;margin-bottom:16px">🏛️</div>
         <p style="font-size:17px;font-weight:700;margin-bottom:8px;color:var(--text-dim)">No Preferences Added Yet</p>
         <p style="font-size:14px;margin-bottom:24px">
-          Add your preferred colleges and courses in your profile to see all probability predictions
+          Add your preferred colleges and courses in your profile to see probability predictions
         </p>
         <button class="btn-primary" onclick="navigateTo('profile')">Add Preferences →</button>
       </div>`;
@@ -884,24 +1455,25 @@ function renderComboProbCards() {
   }
 
   const agg = calculateAggregate(
-    App.profile.maths    || 0,
-    App.profile.physics  || 0,
-    App.profile.chemistry|| 0
+    App.profile.maths||0, App.profile.physics||0, App.profile.chemistry||0
   );
   const combos = [];
   colleges.forEach(college => {
     courses.forEach(course => {
-      combos.push({ college, course, prob: predictProbability(agg, college.name, course.name) });
+      combos.push({ college, course, prob: predictProbability(agg, college.code, course.name) });
     });
   });
   combos.sort((a,b) => b.prob - a.prob);
 
   grid.innerHTML = combos.map(combo => {
     const pc     = getProbClass(combo.prob);
-    const cutoff = getLastYearCutoff(combo.college.name, combo.course.name);
+    const cutoff = getLastYearCutoff(combo.college.code, combo.course.name);
     return `
       <div class="combo-card prob-${pc.cls}">
-        <div class="combo-college">${combo.college.name}</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+          <span class="college-code-tag small">${combo.college.code}</span>
+          <div class="combo-college">${combo.college.name}</div>
+        </div>
         <div class="combo-course">${combo.course.name}</div>
         <div class="combo-prob-bar-wrap">
           <div class="combo-prob-bar ${pc.barCls}" style="width:${combo.prob}%"></div>
@@ -919,6 +1491,83 @@ function renderComboProbCards() {
   }).join('');
 }
 
+// ============================================================
+// PREMIUM SEARCH — on Dashboard for Grade 1
+// Allows searching any college + any course for instant prediction
+// ============================================================
+function initPremiumSearch() {
+  const wrap = document.getElementById('premiumSearchWrap');
+  if (!wrap || App.userGrade !== 1) return;
+
+  let premiumSelectedCollege = null;
+
+  wrap.innerHTML = `
+    <div class="dash-section-title" style="margin-top:40px">
+      <h2>🔍 Quick Prediction — Any College</h2>
+      <p>Premium: search any of the 550+ colleges instantly</p>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column;gap:16px">
+      <div id="premiumCollegeSearch"></div>
+      <select class="select-input full-width" id="premiumCourseSelect">
+        <option value="">Select a course...</option>
+        ${DATA.courses.map(c=>`<option value="${c.name}">${c.name}</option>`).join('')}
+      </select>
+      <button class="btn-primary btn-glow" onclick="runPremiumQuickPredict()">
+        🔮 Get Probability
+      </button>
+      <div id="premiumQuickResult" class="hidden"></div>
+    </div>`;
+
+  buildCollegeSearchDropdown('premiumCollegeSearch', (college) => {
+    premiumSelectedCollege = college;
+    wrap._selectedCollege = college;
+  }, 'Search any college by name or code...');
+
+  populateAllCourses('premiumCourseSelect');
+}
+
+function runPremiumQuickPredict() {
+  const wrap   = document.getElementById('premiumSearchWrap');
+  const course = document.getElementById('premiumCourseSelect')?.value;
+  const college= wrap?._selectedCollege;
+
+  if (!college) { showToast('Please select a college', 'error'); return; }
+  if (!course)  { showToast('Please select a course',  'error'); return; }
+
+  const agg  = calculateAggregate(
+    App.profile.maths||0, App.profile.physics||0, App.profile.chemistry||0
+  );
+
+  if (agg === 0) {
+    showToast('Please add your marks in Profile first', 'error'); return;
+  }
+
+  const prob   = predictProbability(agg, college.code, course);
+  const cutoff = getLastYearCutoff(college.code, course);
+  const pc     = getProbClass(prob);
+
+  const result = document.getElementById('premiumQuickResult');
+  if (result) {
+    result.classList.remove('hidden');
+    result.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:16px;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border2)">
+        <div>
+          <div style="font-size:12px;color:var(--text-muted);margin-bottom:2px">
+            <span class="college-code-tag">${college.code}</span> ${college.name}
+          </div>
+          <div style="font-size:14px;font-weight:600;color:var(--text-dim)">${course}</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Cutoff: ${cutoff} · Agg: ${agg}/200</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:32px;font-weight:900;color:${prob>=65?'var(--success)':prob>=35?'var(--warning)':'var(--danger)'}">
+            ${prob}%
+          </div>
+          <span class="combo-status-tag ${pc.statusCls}">${pc.status}</span>
+        </div>
+      </div>`;
+  }
+}
+
 function renderLockedSections() {
   const isPremium = App.userGrade === 1;
   document.getElementById('rankLockOverlay')       ?.style.setProperty('display', isPremium?'none':'flex');
@@ -928,6 +1577,7 @@ function renderLockedSections() {
     renderRankCard();
     renderChoiceList();
     renderCounsellingSimulation();
+    setTimeout(initPremiumSearch, 100);
   }
 }
 
@@ -992,7 +1642,7 @@ function renderChoiceList() {
   const combos = [];
   colleges.forEach(college => {
     courses.forEach(course => {
-      combos.push({ college, course, prob: predictProbability(agg, college.name, course.name) });
+      combos.push({ college, course, prob: predictProbability(agg, college.code, course.name) });
     });
   });
   combos.sort((a,b) => b.prob - a.prob);
@@ -1011,7 +1661,10 @@ function renderChoiceList() {
         <div class="choice-item">
           <div class="choice-rank-num">${idx+1}</div>
           <div class="choice-info">
-            <div class="choice-college">${combo.college.name}</div>
+            <div class="choice-college">
+              <span class="college-code-tag small">${combo.college.code}</span>
+              ${combo.college.name}
+            </div>
             <div class="choice-course">${combo.course.name}</div>
           </div>
           <div style="text-align:right">
@@ -1027,7 +1680,7 @@ function renderChoiceList() {
         ⚠️ ${unlikely.length} combination${unlikely.length>1?'s':''} below 35% probability —
         you are unlikely to be allotted these with your current marks:<br/>
         <span style="font-size:12px;margin-top:6px;display:block">
-          ${unlikely.map(c=>`${c.college.name} · ${c.course.name} (${c.prob}%)`).join(' | ')}
+          ${unlikely.map(c=>`[${c.college.code}] ${c.college.name} · ${c.course.name} (${c.prob}%)`).join(' | ')}
         </span>
       </div>` : ''}`;
 }
@@ -1077,10 +1730,11 @@ function showUpgradeModal(source) {
     'rank':         '🏆 Rank Prediction & Verification requires Premium access.',
     'choice':       '📋 AI Choice List is a Premium-only feature.',
     'counselling':  '🎓 Full Counselling Simulation is available for Premium users only.',
-    'result':       '🚀 See all 15 college-course combinations with detailed probabilities.',
+    'result':       '🚀 See all college-course combinations with detailed probabilities.',
     'tier':         'Get complete TNEA counselling intelligence for just ₹149.',
     'cta':          'Students with Premium made 3x better college choices.',
     'marks-update': '📝 Marks update after board results requires Premium access.',
+    'colleges':     '🏛️ Add unlimited colleges with Premium. Search all 550+ colleges.',
   };
   const el = document.getElementById('upgradeReason');
   const sl = document.getElementById('slotsLeft');
@@ -1100,30 +1754,18 @@ function initiatePayment() {
   if (content) {
     content.innerHTML = `
       <table style="width:100%;border-collapse:collapse;font-size:14px">
-        <tr>
-          <td style="padding:10px 0;color:var(--text-muted);border-bottom:1px solid var(--border)">Name</td>
-          <td style="padding:10px 0;font-weight:600;text-align:right;border-bottom:1px solid var(--border)">${App.profile.name||'—'}</td>
-        </tr>
-        <tr>
-          <td style="padding:10px 0;color:var(--text-muted);border-bottom:1px solid var(--border)">Email</td>
-          <td style="padding:10px 0;font-weight:600;text-align:right;border-bottom:1px solid var(--border)">${App.profile.email||'—'}</td>
-        </tr>
-        <tr>
-          <td style="padding:10px 0;color:var(--text-muted);border-bottom:1px solid var(--border)">Mathematics</td>
-          <td style="padding:10px 0;font-weight:600;text-align:right;border-bottom:1px solid var(--border)">${App.profile.maths??'—'} / 100</td>
-        </tr>
-        <tr>
-          <td style="padding:10px 0;color:var(--text-muted);border-bottom:1px solid var(--border)">Physics</td>
-          <td style="padding:10px 0;font-weight:600;text-align:right;border-bottom:1px solid var(--border)">${App.profile.physics??'—'} / 100</td>
-        </tr>
-        <tr>
-          <td style="padding:10px 0;color:var(--text-muted);border-bottom:1px solid var(--border)">Chemistry</td>
-          <td style="padding:10px 0;font-weight:600;text-align:right;border-bottom:1px solid var(--border)">${App.profile.chemistry??'—'} / 100</td>
-        </tr>
-        <tr>
-          <td style="padding:14px 0;font-weight:700;font-size:15px">TNEA Aggregate</td>
-          <td style="padding:14px 0;font-weight:900;color:var(--accent);font-size:24px;text-align:right">${agg>0?agg:'—'} / 200</td>
-        </tr>
+        <tr><td style="padding:10px 0;color:var(--text-muted);border-bottom:1px solid var(--border)">Name</td>
+            <td style="padding:10px 0;font-weight:600;text-align:right;border-bottom:1px solid var(--border)">${App.profile.name||'—'}</td></tr>
+        <tr><td style="padding:10px 0;color:var(--text-muted);border-bottom:1px solid var(--border)">Email</td>
+            <td style="padding:10px 0;font-weight:600;text-align:right;border-bottom:1px solid var(--border)">${App.profile.email||'—'}</td></tr>
+        <tr><td style="padding:10px 0;color:var(--text-muted);border-bottom:1px solid var(--border)">Mathematics</td>
+            <td style="padding:10px 0;font-weight:600;text-align:right;border-bottom:1px solid var(--border)">${App.profile.maths??'—'} / 100</td></tr>
+        <tr><td style="padding:10px 0;color:var(--text-muted);border-bottom:1px solid var(--border)">Physics</td>
+            <td style="padding:10px 0;font-weight:600;text-align:right;border-bottom:1px solid var(--border)">${App.profile.physics??'—'} / 100</td></tr>
+        <tr><td style="padding:10px 0;color:var(--text-muted);border-bottom:1px solid var(--border)">Chemistry</td>
+            <td style="padding:10px 0;font-weight:600;text-align:right;border-bottom:1px solid var(--border)">${App.profile.chemistry??'—'} / 100</td></tr>
+        <tr><td style="padding:14px 0;font-weight:700;font-size:15px">TNEA Aggregate</td>
+            <td style="padding:14px 0;font-weight:900;color:var(--accent);font-size:24px;text-align:right">${agg>0?agg:'—'} / 200</td></tr>
       </table>
       <div style="font-size:12px;color:var(--text-muted);margin-top:8px;text-align:center">
         Marks are locked after payment · Update costs ₹25
@@ -1139,15 +1781,10 @@ function closePayConfirm() {
 function confirmPayment() {
   closePayConfirm();
   // RAZORPAY PLACEHOLDER:
-  // const options = {
-  //   key: 'YOUR_RAZORPAY_KEY_ID',
-  //   amount: 14900,
-  //   currency: 'INR',
-  //   name: 'PickMySeat.AI',
-  //   description: 'Premium Access — One Time',
-  //   handler: (response) => handlePaymentSuccess(response.razorpay_payment_id)
-  // };
-  // new Razorpay(options).open();
+  // new Razorpay({ key:'YOUR_KEY', amount:14900, currency:'INR',
+  //   name:'PickMySeat.AI', description:'Premium Access',
+  //   handler:(r) => handlePaymentSuccess(r.razorpay_payment_id)
+  // }).open();
   handlePaymentSuccess('pay_demo_' + Date.now());
 }
 
@@ -1156,7 +1793,7 @@ function handlePaymentSuccess(paymentId) {
   App.profile.marksLocked = true;
   App.userGrade           = 1;
   App.slotsLeft           = Math.max(0, App.slotsLeft - 1);
-  // FIRESTORE: db.collection('users').doc(uid).update({ has_paid:true, paid_at:new Date(), razorpay_payment_id:paymentId })
+  // FIRESTORE: db.collection('users').doc(uid).update({ has_paid:true, razorpay_payment_id:paymentId })
   showToast('🎉 Premium unlocked! Welcome to full access.', 'success', 5000);
   setTimeout(() => navigateTo('dashboard'), 1000);
 }
@@ -1182,6 +1819,7 @@ function getCookie(name) {
 // INIT
 // ============================================================
 document.addEventListener('DOMContentLoaded', () => {
+  initTheme();
   navigateTo('landing');
   // FIREBASE: firebase.auth().onAuthStateChanged(user => { ... })
 });
