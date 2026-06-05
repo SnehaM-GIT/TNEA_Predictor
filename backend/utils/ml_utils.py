@@ -1,196 +1,169 @@
 """
-ml_utils_hybrid.py
+Rank prediction with two-tier approach:
 
-Hybrid TNEA rank prediction utility.
+PRIMARY (MAE ~589): 2025 mark CDF lookup
+  HSC marks published before TNEA ranks => marks are known input features.
+  pred_rank = count(students with higher mark) + 1
+  Remaining error ~589 is purely from mark-tie aliasing.
 
-Load the trained hybrid model and make predictions:
-    pred = predict_rank_hybrid(aggregate_mark=195, community="OC")
-    
-Returns:
-    {
-        "rank": 850,
-        "rank_min": 800,
-        "rank_max": 900,
-        "confidence": 95,
-        "components": {...}
-    }
+FALLBACK (MAE ~3096): historical norm_rank + hybrid shift correction
+  Used when current-year mark CDF is unavailable (future-year prediction).
+  Hybrid delta = max(community-specific delta, overall delta) to handle
+  communities like OC where own marks barely shift but the pool inflates.
 """
 
 import pickle
+import numpy as np
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data" / "cleaned"
 
-# ── Load model ───────────────────────────────────────────────────────────────
 MODEL_DATA = None
+
 
 def load_model():
     global MODEL_DATA
     if MODEL_DATA is None:
-        with open(DATA_DIR / "rank_model_hybrid.pkl", "rb") as f:
+        with open(DATA_DIR / "rank_model_final.pkl", "rb") as f:
             MODEL_DATA = pickle.load(f)
     return MODEL_DATA
 
-def predict_rank_hybrid(aggregate_mark, community):
+
+def predict_rank(marks, community, use_cdf=True):
     """
-    Predict TNEA rank using hybrid statistical model.
-    
+    Production rank prediction with ±range band (Task 1 format).
+
     Args:
-        aggregate_mark : float (0-200)
-        community      : str (OC, BC, SC, ST, MBC, SCA, BCM)
-    
+        marks: aggregate mark 0-200
+        community: OC, BC, SC, ST, MBC, SCA, BCM
+
     Returns:
         {
-            "rank": int,           # Most likely rank
-            "rank_min": int,       # Lower bound of confidence range
-            "rank_max": int,       # Upper bound of confidence range  
-            "confidence": int,     # Confidence score (0-100)
-            "components": {        # Breakdown of prediction
-                "mark_pred": float,
-                "community_multiplier": float,
-                "trend": str,
-                ...
-            }
+          "predicted_rank": int,
+          "range_min": int,   # rank - 100 (clamped >= 1)
+          "range_max": int,   # rank + 100
+          "confidence": int,  # %
+          "basis": str,
         }
+        or {"error": ...}
     """
-    
+    base = predict_rank_adjusted(marks, community, use_cdf=use_cdf)
+    if "error" in base:
+        return base
+
     model = load_model()
-    
-    mark_analysis = model["mark_analysis"]
-    community_analysis = model["community_analysis"]
-    interpolators = model["interpolators"]
-    trend_model = model["trend_model"]
-    
-    # Normalize community
+    half = model.get("range_halfwidth", 100)
+    rank = int(base["rank"])
+    return {
+        "predicted_rank": rank,
+        "range_min": int(max(1, rank - half)),
+        "range_max": int(rank + half),
+        "confidence": int(base["confidence"]),
+        "basis": model.get("basis_label", "percentile-based from 2022-2025 data"),
+    }
+
+
+def predict_rank_adjusted(aggregate_mark, community, use_cdf=True):
+    """
+    Predict overall TNEA rank for a given mark and community.
+
+    Args:
+        aggregate_mark: 0-200
+        community: OC, BC, SC, ST, MBC, SCA, BCM
+        use_cdf: True = use 2025 mark CDF (MAE ~589, default)
+                 False = use historical model with hybrid delta (MAE ~3096)
+
+    Returns:
+        dict with rank, confidence, basis  OR  dict with 'error' key
+    """
+    model = load_model()
+
     if community == "BCM":
         community = "BC"
-    
-    components = {}
-    
-    # ── Component 1: Mark-based prediction ─────────────────────────────────
+
+    if community not in model["communities"]:
+        return {"error": f"Community {community} not in model"}
+
+    total_students = model.get("total_students_2025", 239299)
     mark_rounded = round(aggregate_mark * 2) / 2
-    
-    if mark_rounded in mark_analysis:
-        mark_pred = mark_analysis[mark_rounded]["avg_rank"]
-        mark_std = mark_analysis[mark_rounded]["std_rank"]
-        mark_samples = mark_analysis[mark_rounded]["total"]
-        mark_confidence = min(mark_samples / 50, 1.0)
-        components["mark_pred"] = f"{mark_pred:.0f}"
-        components["mark_samples"] = mark_samples
-    else:
-        # Try interpolation
-        if community in interpolators:
-            try:
-                mark_pred = float(interpolators[community](aggregate_mark))
-                mark_std = 500
-                mark_confidence = 0.5
-                components["method"] = "interpolated"
-                components["mark_pred"] = f"{mark_pred:.0f}"
-            except:
-                return {
-                    "error": f"No data available for mark={aggregate_mark}, community={community}"
-                }
-        else:
+
+    # ── PRIMARY: 2025 CDF ─────────────────────────────────────────────────────
+    if use_cdf and "mark_count_above_2025" in model:
+        cdf = model["mark_count_above_2025"]
+        if mark_rounded in cdf:
+            pred_rank = max(1, cdf[mark_rounded] + 1)
+            norm_rank = pred_rank / total_students
+            confidence = min(90, max(30, int((1 - abs(norm_rank - 0.5)) * 100)))
             return {
-                "error": f"Community {community} not in training data"
+                "mark": aggregate_mark,
+                "community": community,
+                "rank": pred_rank,
+                "confidence": confidence,
+                "norm_rank": round(norm_rank, 4),
+                "delta_applied": 0.0,
+                "delta_source": "cdf_2025",
+                "basis": "cdf_exact",
             }
-    
-    # ── Component 2: Community adjustment ──────────────────────────────────
-    if community in community_analysis:
-        comm_multiplier = community_analysis[community]["multiplier"]
-        comm_avg = community_analysis[community]["avg_rank"]
-        components["community_avg_rank"] = f"{comm_avg:.0f}"
-        components["community_multiplier"] = f"{comm_multiplier:.3f}"
-        community_adjusted = mark_pred * comm_multiplier
+        # Mark outside CDF range — fall through to historical model
+
+    # ── FALLBACK: historical norm_rank + hybrid shift correction ──────────────
+    overall_norm_rank = model["overall_norm_rank"]
+    overall_interp = model["overall_interp"]
+
+    delta = model.get("hybrid_actual_delta", {}).get(
+        community,
+        model.get("comm_actual_delta_2025", {}).get(community, 0.0)
+    )
+    delta_source = "hybrid_actual"
+
+    adj_mark = aggregate_mark - delta
+    adj_rounded = round(adj_mark * 2) / 2
+
+    if adj_rounded in overall_norm_rank:
+        norm_rank = overall_norm_rank[adj_rounded]
+        basis = "hist_exact"
     else:
-        community_adjusted = mark_pred
-        components["community"] = "not_in_training"
-    
-    # ── Component 3: Trend adjustment ──────────────────────────────────────
-    trend_adjustment = 1.0
-    if community in trend_model:
-        trend_info = trend_model[community]
-        components["trend"] = trend_info["trend"]
-        
-        if trend_info["trend"] == "improving":
-            trend_adjustment = 0.98
-        elif trend_info["trend"] == "worsening":
-            trend_adjustment = 1.02
-        
-        components["trend_adjustment"] = f"{trend_adjustment:.3f}"
-    
-    # ── Final prediction ───────────────────────────────────────────────────
-    final_pred = community_adjusted * trend_adjustment
-    final_pred = max(1, int(final_pred))
-    
-    # ── Confidence interval ────────────────────────────────────────────────
-    # Use historical std dev
-    confidence_interval = max(50, min(200, mark_std * (1 - mark_confidence)))
-    
-    rank_min = max(1, int(final_pred - confidence_interval / 2))
-    rank_max = int(final_pred + confidence_interval / 2)
-    
-    confidence_pct = int(mark_confidence * 100)
-    
-    # ── Historical cases ───────────────────────────────────────────────────
-    historical_cases = []
-    
-    # Find similar marks in training data
-    if mark_rounded in mark_analysis:
-        year_dist = mark_analysis[mark_rounded]["year_dist"]
-        for year, stats in year_dist.items():
-            if isinstance(stats, dict) and "count" in stats:
-                historical_cases.append(
-                    f"{year}: {stats['count']} students with marks≈{mark_rounded}"
-                )
-    
+        norm_rank = float(overall_interp(adj_mark))
+        norm_rank = float(np.clip(norm_rank, 0.0001, 1.0))
+        basis = "hist_interp"
+
+    pred_rank = max(1, int(norm_rank * total_students))
+    confidence = min(85, max(15, int((1 - abs(norm_rank - 0.5)) * 100)))
+
     return {
         "mark": aggregate_mark,
         "community": community,
-        "rank": final_pred,
-        "rank_min": rank_min,
-        "rank_max": rank_max,
-        "confidence": confidence_pct,
-        "components": components,
-        "historical_cases": historical_cases,
+        "rank": pred_rank,
+        "confidence": confidence,
+        "norm_rank": round(norm_rank, 4),
+        "delta_applied": round(delta, 2),
+        "delta_source": delta_source,
+        "basis": basis,
     }
 
-def predict_batch(students_list):
-    """
-    Predict ranks for multiple students.
-    
-    Args:
-        students_list: [{"mark": X, "community": Y}, ...]
-    
-    Returns:
-        List of predictions
-    """
-    return [
-        predict_rank_hybrid(s["mark"], s["community"])
-        for s in students_list
-    ]
 
-# ── Self-test ────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    print("Loading model …")
-    load_model()
-    print("✅ Model loaded")
-    
-    print("\nTest predictions:")
+    print("Loading model ...")
+    m = load_model()
+    print(f"Model type: {m.get('type')}")
+    print(f"Val MAE (CDF): {m.get('val_mae_cdf', 'N/A')}")
+    print(f"Val MAE (hybrid fallback): {m.get('val_mae_hybrid_actual', 'N/A')}\n")
+
     test_cases = [
         {"mark": 200, "community": "OC"},
         {"mark": 198, "community": "MBC"},
-        {"mark": 150, "community": "BC"},
-        {"mark": 100, "community": "SC"},
+        {"mark": 180, "community": "BC"},
+        {"mark": 150, "community": "SC"},
+        {"mark": 120, "community": "ST"},
     ]
-    
+
     for case in test_cases:
-        pred = predict_rank_hybrid(case["mark"], case["community"])
+        pred = predict_rank_adjusted(case["mark"], case["community"])
         if "error" not in pred:
-            print(f"\nMark={case['mark']}, Community={case['community']}")
-            print(f"  Predicted Rank: {pred['rank']:,}")
-            print(f"  Range: {pred['rank_min']:,} – {pred['rank_max']:,}")
-            print(f"  Confidence: {pred['confidence']}%")
+            print(f"Mark {case['mark']}, {case['community']}: "
+                  f"rank {pred['rank']:,}  "
+                  f"(norm={pred['norm_rank']}, basis={pred['basis']}, "
+                  f"confidence={pred['confidence']}%)")
         else:
-            print(f"\n❌ {case}: {pred['error']}")
+            print(f"ERROR {case}: {pred['error']}")

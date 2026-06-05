@@ -1,110 +1,189 @@
 """
-test_predict_interactive.py
+test_interactive.py
 
-Interactive test — enter marks + community, get predicted rank + top 5 colleges.
+INTERACTIVE TNEA RANK & COLLEGE PREDICTOR
 
-Run from project root:
+Test the rank model and college prediction system end-to-end.
+
+Run from: C:/Users/CHARANJAGAN/TNEA/TNEA_Predictor/
     python backend/scripts/test_predict_interactive.py
 """
 
 import sys
+import io
+import pandas as pd
 from pathlib import Path
+
+if sys.platform == "win32":
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
-from utils.ml_utils import predict_rank, predict_colleges, load_models
+from utils.ml_utils import predict_rank
+from utils.predict_colleges import predict_colleges
 
 COMMUNITIES = ["OC", "BC", "SC", "ST", "MBC", "SCA"]
 
+def print_header(text):
+    print("\n" + "=" * 80)
+    print(text.center(80))
+    print("=" * 80)
 
-def get_input():
-    while True:
-        try:
-            marks = float(input("\nEnter aggregate marks (0-200): ").strip())
-            if 0 <= marks <= 200:
-                break
-            print("❌ Must be between 0 and 200.")
-        except ValueError:
-            print("❌ Enter a number.")
-
-    while True:
-        community = input(f"Enter community ({'/'.join(COMMUNITIES)}): ").strip().upper()
-        if community == "BCM":
-            community = "BC"
-        if community in COMMUNITIES:
-            break
-        print(f"❌ Choose from: {', '.join(COMMUNITIES)}")
-
-    return marks, community
-
-
-def show_results(marks, community, rank, colleges):
-    print("\n" + "=" * 70)
-    print("RESULTS")
-    print("=" * 70)
-
-    print(f"\n📊 PREDICTED RANK")
-    print(f"   Marks      : {marks:.1f}/200")
-    print(f"   Community  : {community}")
-    print(f"   Rank       : {rank:,}")
-
-    print(f"\n🎓 TOP 5 COLLEGES")
-    print("─" * 70)
-
-    if not colleges:
-        print("\n❌ No colleges found — rank may be too low.")
-        return
-
-    for i, c in enumerate(colleges, 1):
-        prob = c["probability"]
-        pct  = int(prob * 100)
-        bar  = "█" * int(20 * prob) + "░" * (20 - int(20 * prob))
-
-        if prob == 0.85:
-            status = "✅ Likely"
-        elif prob == 0.30:
-            status = "⚠️  Risky"
-        else:
-            status = "❌ Unlikely"
-
-        print(f"\n{i}. {c['college_name']}")
-        print(f"   Branch       : {c['course_name']}")
-        print(f"   Cutoff range : {c['opening_rank']:,} – {c['closing_rank']:,}")
-        print(f"   Probability  : {bar} {pct}%  {status}")
-        print(f"   Seats filled : {c['seats_filled']}")
-
+def print_section(text):
+    print(f"\n{text}")
+    print("─" * 80)
 
 def main():
-    print("=" * 70)
-    print("PICKMYSEAT.AI — PREDICTION TEST")
-    print("=" * 70)
-
-    print("\nLoading models …")
-    load_models()
-    print("✅ Models loaded")
+    print_header("TNEA RANK & COLLEGE PREDICTOR (Interactive Test)")
+    
+    print("""
+This tool predicts your expected TNEA rank and top 5 colleges based on:
+  • Aggregate marks (0-200)
+  • Community category (OC, BC, SC, ST, MBC, SCA)
+  • Historical data from 2022-2025
+  
+Predictions are based on Method 3 (Rank Distribution + Cutoff Patterns)
+    """)
 
     while True:
         try:
-            marks, community = get_input()
+            print_section("STEP 1: ENTER YOUR DETAILS")
+            
+            # Get marks
+            while True:
+                try:
+                    mark_input = input("\n📍 Aggregate marks (0-200): ").strip()
+                    mark = float(mark_input)
+                    if 0 <= mark <= 200:
+                        break
+                    print("   ❌ Must be between 0 and 200")
+                except ValueError:
+                    print("   ❌ Enter a valid number")
 
-            print("\n⏳ Predicting …")
-            rank     = predict_rank(marks, community)
-            colleges = predict_colleges(rank, community, limit=5)
+            # Get community
+            print(f"\n📍 Community options: {', '.join(COMMUNITIES)}")
+            while True:
+                comm = input("   Enter community: ").strip().upper()
+                if comm == "BCM":
+                    comm = "BC"
+                if comm in COMMUNITIES:
+                    break
+                print(f"   ❌ Choose from: {', '.join(COMMUNITIES)}")
 
-            show_results(marks, community, rank, colleges)
+            print("\n⏳ Calculating rank prediction...")
+            print_section("STEP 2: YOUR PREDICTED RANK")
+            
+            # Get rank prediction
+            rank_result = predict_rank(mark, comm)
+            
+            if "error" in rank_result:
+                print(f"❌ Error: {rank_result['error']}")
+                continue
+            
+            predicted_rank = rank_result["predicted_rank"]
+            range_min = rank_result["range_min"]
+            range_max = rank_result["range_max"]
+            confidence = rank_result["confidence"]
+            
+            print(f"""
+📊 YOUR PREDICTION DETAILS:
+   Marks         : {mark}/200
+   Community     : {comm}
+   
+🎯 PREDICTED RANK
+   Most Likely   : {predicted_rank:,}
+   Confidence Range : {range_min:,} – {range_max:,} (±100)
+   Confidence    : {confidence}%
+   
+ℹ️  This means you're likely to get rank between {range_min:,} and {range_max:,}
+            """)
+            
+            print("\n⏳ Finding top 5 colleges...")
+            print_section("STEP 3: TOP 5 COLLEGES YOU'LL GET")
+            
+            # Get college predictions
+            college_result = predict_colleges(mark, comm, top_n=5)
+            
+            if "error" in college_result:
+                print(f"❌ Error: {college_result['error']}")
+                continue
+            
+            recommendations = college_result["recommendations"]
+            
+            if not recommendations:
+                print("""
+❌ NO COLLEGES FOUND
+
+Your predicted rank is too high (worse) for available options.
+Try retaking the exam or look for more colleges in your range.
+                """)
+                continue
+            
+            # Display results
+            print(f"\n✅ Found {len(recommendations)} colleges for you:\n")
+            
+            for idx, college in enumerate(recommendations, 1):
+                college_name = college["college_name"]
+                college_type = college["college_type"]
+                district = college["college_district"]
+                branch_name = college["branch_name"]
+                closing_rank = college["closing_rank"]
+                safety_margin = college["safety_margin"]
+                status = college["status"]
+                confidence = college["match_confidence"]
+                
+                # Status emoji
+                if status == "SAFE":
+                    status_emoji = "✅ SAFE"
+                elif status == "MARGINAL":
+                    status_emoji = "⚠️  MARGINAL"
+                else:
+                    status_emoji = "❌ WON'T GET"
+                
+                print(f"""
+{idx}. {college_name}
+   Type         : {college_type}
+   Location     : {district}
+   Branch       : {branch_name}
+   Closing Rank : {closing_rank:,}
+   Your Rank    : {predicted_rank:,}
+   Margin       : {safety_margin:+,} ranks ({status_emoji})
+   Match Confidence : {confidence}%
+""")
+            
+            print_section("SUMMARY")
+            safe_count = sum(1 for c in recommendations if c["status"] == "SAFE")
+            marginal_count = sum(1 for c in recommendations if c["status"] == "MARGINAL")
+            
+            print(f"""
+📈 ANALYSIS:
+   Safe Colleges    : {safe_count} (Closing rank >> Your rank)
+   Marginal Colleges: {marginal_count} (Closing rank ≈ Your rank)
+   
+💡 RECOMMENDATION:
+   • SAFE colleges: Apply confidently
+   • MARGINAL colleges: Apply with caution (risky)
+   • Also apply to more colleges below this list as backup
+   
+⚠️  Note: These predictions are based on 2022-2025 patterns.
+   Actual 2026 closing ranks may vary based on competition level.
+            """)
 
         except KeyboardInterrupt:
-            print("\n\nGoodbye!")
+            print("\n\n👋 Goodbye!")
             break
         except Exception as e:
             print(f"\n❌ Error: {e}")
+            import traceback
+            traceback.print_exc()
 
-        print("\n" + "─" * 70)
-        if input("Test another? (y/n): ").strip().lower() != "y":
-            print("Goodbye!")
+        # Ask to continue
+        print("\n")
+        again = input("🔄 Make another prediction? (y/n): ").strip().lower()
+        if again != "y":
+            print("\n👋 Thank you for using TNEA Predictor!")
             break
-
 
 if __name__ == "__main__":
     main()
