@@ -46,7 +46,9 @@ BUCKETS = [
     ("rank_10000_plus",   10000,  10**9),
 ]
 YEAR_WEIGHT_BASE = 2019  # weight = year - base (recent years weigh more)
-DAMP = 0.3               # damping toward last-value baseline (tuned on val)
+DAMP = 0.3               # damping toward last-value baseline (tail only)
+SEG_THRESHOLD = 10000    # last_value < this -> persistence (beats trend on
+                         # competitive seats, validated); else damped trend
 MIN_YEAR = 2022          # 2021 excluded: incompatible rank metric
 
 
@@ -76,6 +78,10 @@ def fit_predict(years, values, target_year):
     lo_clamp, hi_clamp = max(1.0, 0.3 * vmin), 3.0 * vmax
 
     if n == 1 or len(np.unique(years)) < 2:
+        return int(round(last)), "persistence"
+
+    # competitive seats: persistence empirically beats trend extrapolation
+    if last < SEG_THRESHOLD:
         return int(round(last)), "persistence"
 
     w = years - YEAR_WEIGHT_BASE

@@ -81,8 +81,10 @@ def predict_colleges(marks, community, top_n=5):
     rank_conf = int(rk["confidence"])
 
     df = lookup[lookup["community"] == community].copy()
-    # attainable: student's (range_min) rank clears the predicted closing rank
-    df = df[df["predicted_closing_rank_2026"] >= rmin]
+    # attainable: predicted closing rank is at/after the student's rank
+    # (margin >= 0). Uses predicted_rank, not range_min, so WONT_GET combos
+    # are excluded from recommendations.
+    df = df[df["predicted_closing_rank_2026"] >= pred_rank]
     df["safety_margin"] = df["predicted_closing_rank_2026"] - pred_rank
     df["status"] = df["safety_margin"].apply(_status)
 
