@@ -6,7 +6,7 @@
    ============================================================ */
 
 'use strict';
-
+const API_BASE = 'https://tneapredictor-production.up.railway.app';
 // ============================================================
 // STATE
 // ============================================================
@@ -926,7 +926,7 @@ function updateBar(id, value, max) {
   if (bar) bar.style.width = `${Math.min(100,(parseFloat(value)/max)*100)}%`;
 }
 
-function runFreePrediction() {
+async function runFreePrediction() {
   if (getCookie('pms_free_used') === '1') {
     showToast('Free prediction already used. Please login to continue.', 'error'); return;
   }
@@ -948,10 +948,7 @@ function runFreePrediction() {
     showToast('Please select a course', 'error'); return;
   }
 
-  const agg      = calculateAggregate(m, p, c);
-  const prob     = predictProbability(agg, freeSelectedCollege.code, course);
-  const rankBand = predictRankBand(agg);
-  const cutoff   = getLastYearCutoff(freeSelectedCollege.code, course);
+
 
   renderFreeResult({
     agg, prob, rankBand, cutoff,
@@ -1014,27 +1011,50 @@ function switchAuth(mode) {
   document.getElementById('signupTab') ?.classList.toggle('active', mode === 'signup');
 }
 
-function loginUser() {
+async function loginUser() {
   const email    = document.getElementById('loginEmail')?.value?.trim();
   const password = document.getElementById('loginPassword')?.value;
   if (!email || !password) { showToast('Please enter email and password', 'error'); return; }
-  // FIREBASE: firebase.auth().signInWithEmailAndPassword(email, password)
-  simulateLogin({ email, name: email.split('@')[0], hasPaid: false });
+  try {
+    const res  = await fetch(`${API_BASE}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (!res.ok) { showToast(data.detail || 'Login failed', 'error'); return; }
+    localStorage.setItem('token', data.token);
+    simulateLogin({ email, name: data.name, hasPaid: data.grade === '1' });
+  } catch(e) {
+    showToast('Server error. Try again.', 'error');
+  }
 }
 
-function signupUser() {
+async function signupUser() {
   const name     = document.getElementById('signupName')?.value?.trim();
   const email    = document.getElementById('signupEmail')?.value?.trim();
   const mobile   = document.getElementById('signupMobile')?.value?.trim();
   const password = document.getElementById('signupPassword')?.value;
+  const category = document.getElementById('signupCategory')?.value || 'OC';
   if (!name || !email || !mobile || !password) {
     showToast('Please fill all fields', 'error'); return;
   }
   if (password.length < 8) {
     showToast('Password must be at least 8 characters', 'error'); return;
   }
-  // FIREBASE: firebase.auth().createUserWithEmailAndPassword(email, password)
-  simulateLogin({ email, name, mobile, hasPaid: false });
+  try {
+    const res  = await fetch(`${API_BASE}/auth/signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, name, mobile, community: category })
+    });
+    const data = await res.json();
+    if (!res.ok) { showToast(data.detail || 'Signup failed', 'error'); return; }
+    localStorage.setItem('token', data.token);
+    simulateLogin({ email, name: data.name, hasPaid: false });
+  } catch(e) {
+    showToast('Server error. Try again.', 'error');
+  }
 }
 
 function loginGoogle() {
