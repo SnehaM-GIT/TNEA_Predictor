@@ -595,6 +595,21 @@ button {
   font-size: 40px;
 }
 
+.brand-icon-img {
+  height: 36px;
+  width: 36px;
+  object-fit: contain;
+}
+
+.brand-icon-img.large {
+  height: 64px;
+  width: 64px;
+}
+
+[data-theme="dark"] .brand-icon-img {
+  content: url(logo-dark.png);
+}
+
 .brand-name {
   font-size: 20px;
   font-weight: 800;
