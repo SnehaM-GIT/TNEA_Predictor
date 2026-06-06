@@ -1,6 +1,28 @@
+# Python
 __pycache__/
 *.pyc
 *.pyo
+*.pyd
+*.pkl
+
+# Virtual environment
 .venv/
 venv/
+env/
+
+# Environment variables
 .env
+
+# Alembic (keep versions, ignore cache)
+alembic/__pycache__/
+
+# VS Code
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data files (large)
+backend/data/raw/
+backend/data/cleaned/
