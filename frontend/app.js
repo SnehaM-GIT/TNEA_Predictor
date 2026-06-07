@@ -1466,7 +1466,7 @@ function renderAggBanner() {
     </div>`;
 }
 
-function renderComboProbCards() {
+async function renderComboProbCards() {
   const grid = document.getElementById('comboProbGrid');
   if (!grid) return;
   const colleges = App.profile.preferredColleges;
@@ -1485,15 +1485,47 @@ function renderComboProbCards() {
     return;
   }
 
-  const agg = calculateAggregate(
+const agg = calculateAggregate(
     App.profile.maths||0, App.profile.physics||0, App.profile.chemistry||0
   );
   const combos = [];
-  colleges.forEach(college => {
-    courses.forEach(course => {
-      combos.push({ college, course, prob: predictProbability(agg, college.code, course.name) });
+
+  try {
+    const collegeCodes  = colleges.map(c => parseInt(c.code));
+    const branchCodes   = courses.map(c => c.code || c.name);
+    const res = await fetch(`${API_BASE}/predict/colleges`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        maths: App.profile.maths || 0,
+        physics: App.profile.physics || 0,
+        chemistry: App.profile.chemistry || 0,
+        community: App.profile.category || 'OC',
+        top_n: 50,
+        preferred_colleges: collegeCodes,
+        preferred_branches: branchCodes
+      })
     });
-  });
+    const data = await res.json();
+    const recs = data.recommendations || [];
+
+    colleges.forEach(college => {
+      courses.forEach(course => {
+        const match = recs.find(r =>
+          r.college_code === parseInt(college.code) &&
+          (r.branch_code === (course.code || course.name) || r.branch_name === course.name)
+        );
+        combos.push({ college, course, prob: match ? match.match_confidence : 0 });
+      });
+    });
+  } catch(e) {
+    colleges.forEach(college => {
+      courses.forEach(course => {
+        combos.push({ college, course, prob: predictProbability(agg, college.code, course.name) });
+      });
+    });
+  }
+
   combos.sort((a,b) => b.prob - a.prob);
 
   grid.innerHTML = combos.map(combo => {
@@ -1612,11 +1644,27 @@ function renderLockedSections() {
   }
 }
 
-function renderRankCard() {
+async function renderRankCard() {
   const card = document.getElementById('dashRankCard');
   if (!card) return;
   const agg      = calculateAggregate(App.profile.maths||0, App.profile.physics||0, App.profile.chemistry||0);
-  const rankBand = predictRankBand(agg);
+let rankBand = { low: 0, high: 0 };
+try {
+  const res = await fetch(`${API_BASE}/predict/rank`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      maths: App.profile.maths || 0,
+      physics: App.profile.physics || 0,
+      chemistry: App.profile.chemistry || 0,
+      community: App.profile.category || 'OC'
+    })
+  });
+  const data = await res.json();
+  rankBand = { low: data.range_min, high: data.range_max };
+} catch(e) {
+  rankBand = predictRankBand(agg);
+}
   const phase    = App.profile.rankPhase || 'pre';
   let verifyHtml = '';
   if (phase === 'post' && App.profile.rank) {
@@ -1669,13 +1717,45 @@ function renderChoiceList() {
     return;
   }
 
-  const agg = calculateAggregate(App.profile.maths||0, App.profile.physics||0, App.profile.chemistry||0);
+const agg = calculateAggregate(App.profile.maths||0, App.profile.physics||0, App.profile.chemistry||0);
   const combos = [];
-  colleges.forEach(college => {
-    courses.forEach(course => {
-      combos.push({ college, course, prob: predictProbability(agg, college.code, course.name) });
+
+  try {
+    const collegeCodes = colleges.map(c => parseInt(c.code));
+    const branchCodes  = courses.map(c => c.code || c.name);
+    const res = await fetch(`${API_BASE}/predict/colleges`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        maths: App.profile.maths || 0,
+        physics: App.profile.physics || 0,
+        chemistry: App.profile.chemistry || 0,
+        community: App.profile.category || 'OC',
+        top_n: 50,
+        preferred_colleges: collegeCodes,
+        preferred_branches: branchCodes
+      })
     });
-  });
+    const data = await res.json();
+    const recs = data.recommendations || [];
+
+    colleges.forEach(college => {
+      courses.forEach(course => {
+        const match = recs.find(r =>
+          r.college_code === parseInt(college.code) &&
+          (r.branch_code === (course.code || course.name) || r.branch_name === course.name)
+        );
+        combos.push({ college, course, prob: match ? match.match_confidence : 0 });
+      });
+    });
+  } catch(e) {
+    colleges.forEach(college => {
+      courses.forEach(course => {
+        combos.push({ college, course, prob: predictProbability(agg, college.code, course.name) });
+      });
+    });
+  }
+
   combos.sort((a,b) => b.prob - a.prob);
 
   const viable   = combos.filter(c => c.prob >= 35);
