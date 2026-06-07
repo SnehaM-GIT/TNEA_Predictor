@@ -1704,7 +1704,7 @@ try {
     </div>`;
 }
 
-function renderChoiceList() {
+async function renderChoiceList() {
   const wrap = document.getElementById('choiceListWrap');
   if (!wrap) return;
   const colleges = App.profile.preferredColleges;
