@@ -726,6 +726,63 @@ function showToast(msg, type = 'info', duration = 3000) {
 }
 
 // ============================================================
+// LOADER
+// ============================================================
+function showLoader() {
+  document.body.classList.add('loading');
+}
+
+function hideLoader() {
+  document.body.classList.remove('loading');
+}
+
+// ============================================================
+// ERROR HANDLING
+// ============================================================
+let errorTimeout = null;
+
+function showError(message, statusCode = null) {
+  clearError();
+  let msg = message;
+
+  if (statusCode === 401) {
+    msg = 'Session expired. Please log in again.';
+    localStorage.removeItem('token');
+    App.currentUser = null;
+    App.userGrade = 3;
+    errorTimeout = setTimeout(() => {
+      updateNav();
+      navigateTo('landing');
+    }, 2000);
+  } else if (statusCode === 422) {
+    msg = 'Please check your inputs and try again.';
+  } else if (statusCode === 500) {
+    msg = 'Server error. Please try again in a moment.';
+  }
+
+  const toast = document.getElementById('error-toast');
+  if (toast) {
+    toast.textContent = msg;
+    toast.classList.add('visible');
+    if (!errorTimeout) {
+      errorTimeout = setTimeout(() => {
+        toast.classList.remove('visible');
+        errorTimeout = null;
+      }, 4000);
+    }
+  }
+}
+
+function clearError() {
+  if (errorTimeout) {
+    clearTimeout(errorTimeout);
+    errorTimeout = null;
+  }
+  const toast = document.getElementById('error-toast');
+  if (toast) toast.classList.remove('visible');
+}
+
+// ============================================================
 // LANDING
 // ============================================================
 function initLanding() {
@@ -1015,6 +1072,7 @@ async function loginUser() {
   const email    = document.getElementById('loginEmail')?.value?.trim();
   const password = document.getElementById('loginPassword')?.value;
   if (!email || !password) { showToast('Please enter email and password', 'error'); return; }
+  showLoader();
   try {
     const res  = await fetch(`${API_BASE}/auth/login`, {
       method: 'POST',
@@ -1022,11 +1080,13 @@ async function loginUser() {
       body: JSON.stringify({ email, password })
     });
     const data = await res.json();
-    if (!res.ok) { showToast(data.detail || 'Login failed', 'error'); return; }
+    if (!res.ok) { showError(data.detail || 'Login failed', res.status); return; }
     localStorage.setItem('token', data.token);
     simulateLogin({ email, name: data.name, hasPaid: data.grade === '1' });
   } catch(e) {
-    showToast('Server error. Try again.', 'error');
+    showError('No connection. Check your internet and retry.');
+  } finally {
+    hideLoader();
   }
 }
 
@@ -1036,12 +1096,18 @@ async function signupUser() {
   const mobile   = document.getElementById('signupMobile')?.value?.trim();
   const password = document.getElementById('signupPassword')?.value;
   const category = document.getElementById('signupCategory')?.value || 'OC';
+  const termsAccepted = document.getElementById('signupTermsCheckbox')?.checked;
+  if (!termsAccepted) {
+    showError('Please accept the Terms of Service and Privacy Policy to continue.');
+    return;
+  }
   if (!name || !email || !mobile || !password) {
     showToast('Please fill all fields', 'error'); return;
   }
   if (password.length < 8) {
     showToast('Password must be at least 8 characters', 'error'); return;
   }
+  showLoader();
   try {
     const res  = await fetch(`${API_BASE}/auth/signup`, {
       method: 'POST',
@@ -1049,11 +1115,13 @@ async function signupUser() {
       body: JSON.stringify({ email, password, name, mobile, community: category })
     });
     const data = await res.json();
-    if (!res.ok) { showToast(data.detail || 'Signup failed', 'error'); return; }
+    if (!res.ok) { showError(data.detail || 'Signup failed', res.status); return; }
     localStorage.setItem('token', data.token);
     simulateLogin({ email, name: data.name, hasPaid: false });
   } catch(e) {
-    showToast('Server error. Try again.', 'error');
+    showError('No connection. Check your internet and retry.');
+  } finally {
+    hideLoader();
   }
 }
 
@@ -1408,6 +1476,7 @@ function renderDashboard() {
 
   renderDashProfileCard();
   renderAggBanner();
+  renderGrade1RankInput();
   renderComboProbCards();
   renderLockedSections();
 }
@@ -1466,6 +1535,39 @@ function renderAggBanner() {
     </div>`;
 }
 
+function renderGrade1RankInput() {
+  const section = document.getElementById('grade1RankInput');
+  if (!section) return;
+  const isGrade1 = App.profile && App.profile.grade === '1';
+  section.classList.toggle('hidden', !isGrade1);
+  if (isGrade1) {
+    document.getElementById('submitRankInput').value = '';
+  }
+}
+
+async function submitGrade1Rank() {
+  const rankInput = document.getElementById('submitRankInput');
+  if (!rankInput) return;
+  const rank = rankInput.value.trim();
+  if (!rank) return;
+
+  showLoader();
+  try {
+    const res = await authenticatedFetch(`${API_BASE}/predict/submit-rank`, {
+      method: 'POST',
+      body: JSON.stringify({ rank: parseInt(rank) })
+    });
+    const data = await res.json();
+    if (!res.ok) { showError(data.detail || 'Failed to save rank', res.status); return; }
+    rankInput.value = '';
+    showToast('Rank saved. Thank you!', 'success');
+  } catch(e) {
+    showError('No connection. Check your internet and retry.');
+  } finally {
+    hideLoader();
+  }
+}
+
 async function renderComboProbCards() {
   const grid = document.getElementById('comboProbGrid');
   if (!grid) return;
@@ -1490,12 +1592,12 @@ const agg = calculateAggregate(
   );
   const combos = [];
 
+  showLoader();
   try {
     const collegeCodes  = colleges.map(c => parseInt(c.code));
     const branchCodes   = courses.map(c => c.code || c.name);
-    const res = await fetch(`${API_BASE}/predict/colleges`, {
+    const res = await authenticatedFetch(`${API_BASE}/predict/colleges`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         maths: App.profile.maths || 0,
         physics: App.profile.physics || 0,
@@ -1524,6 +1626,8 @@ const agg = calculateAggregate(
         combos.push({ college, course, prob: predictProbability(agg, college.code, course.name) });
       });
     });
+  } finally {
+    hideLoader();
   }
 
   combos.sort((a,b) => b.prob - a.prob);
@@ -1649,10 +1753,10 @@ async function renderRankCard() {
   if (!card) return;
   const agg      = calculateAggregate(App.profile.maths||0, App.profile.physics||0, App.profile.chemistry||0);
 let rankBand = { low: 0, high: 0 };
+showLoader();
 try {
-  const res = await fetch(`${API_BASE}/predict/rank`, {
+  const res = await authenticatedFetch(`${API_BASE}/predict/rank`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       maths: App.profile.maths || 0,
       physics: App.profile.physics || 0,
@@ -1664,6 +1768,8 @@ try {
   rankBand = { low: data.range_min, high: data.range_max };
 } catch(e) {
   rankBand = predictRankBand(agg);
+} finally {
+  hideLoader();
 }
   const phase    = App.profile.rankPhase || 'pre';
   let verifyHtml = '';
@@ -1723,9 +1829,8 @@ const agg = calculateAggregate(App.profile.maths||0, App.profile.physics||0, App
   try {
     const collegeCodes = colleges.map(c => parseInt(c.code));
     const branchCodes  = courses.map(c => c.code || c.name);
-    const res = await fetch(`${API_BASE}/predict/colleges`, {
+    const res = await authenticatedFetch(`${API_BASE}/predict/colleges`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         maths: App.profile.maths || 0,
         physics: App.profile.physics || 0,
@@ -1893,7 +1998,7 @@ function confirmPayment() {
   closePayConfirm();
   // RAZORPAY PLACEHOLDER:
   // new Razorpay({ key:'YOUR_KEY', amount:14900, currency:'INR',
-  //   name:'PickMySeat.AI', description:'Premium Access',
+  //   name:'PickMySeat', description:'Premium Access',
   //   handler:(r) => handlePaymentSuccess(r.razorpay_payment_id)
   // }).open();
   handlePaymentSuccess('pay_demo_' + Date.now());

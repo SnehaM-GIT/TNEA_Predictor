@@ -3,12 +3,30 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PickMySeat.AI — Know Your Seat Before Counselling</title>
+  <meta name="description" content="PickMySeat predicts your TNEA college seat. Enter your marks and get your top 5 college recommendations with admission probability." />
+  <meta name="keywords" content="TNEA, engineering admission, Tamil Nadu, college predictor, seat allotment, TNEA 2026" />
+  <meta property="og:title" content="PickMySeat — Know Your College Before Results" />
+  <meta property="og:description" content="Predict your TNEA college seat with AI. Top 5 recommendations with admission probability." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://pickmyseat.vercel.app" />
+  <meta property="og:image" content="/og-image.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="PickMySeat — Know Your College Before Results" />
+  <meta name="twitter:description" content="Predict your TNEA college seat. Top 5 recommendations with admission probability." />
+  <meta name="twitter:image" content="/og-image.png" />
+  <link rel="canonical" href="https://pickmyseat.vercel.app" />
+  <title>PickMySeat — TNEA College Seat Predictor</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+
+  <div id="loader-overlay">
+    <div id="loader-spinner"></div>
+  </div>
+
+  <div id="error-toast"></div>
 
   <div id="toast" class="toast hidden"></div>
 
@@ -111,7 +129,7 @@
     <div class="nav-container">
       <div class="nav-brand" onclick="navigateTo('landing')">
         <img class="brand-icon-img" src="logo-light.png" alt="PickMySeat"/>
-        <span class="brand-name">PickMySeat<span class="brand-ai">.AI</span></span>
+        <span class="brand-name">PickMySeat</span>
       </div>
       <div class="nav-links">
         <button class="nav-link" onclick="navigateTo('landing')">Home</button>
@@ -136,8 +154,11 @@
           <div class="user-dropdown hidden" id="userDropdown">
             <div class="dropdown-info" id="dropdownInfo"></div>
             <hr class="dropdown-divider"/>
-            <button class="dropdown-item" onclick="navigateTo('profile')">👤 My Profile</button>
+            <button class="dropdown-item" onclick="navigateTo('profile')">👤 Profile</button>
             <button class="dropdown-item" onclick="navigateTo('dashboard')">📊 Dashboard</button>
+            <div class="dropdown-divider"></div>
+            <a href="privacy.html" target="_blank" rel="noopener noreferrer" class="dropdown-item" style="display:flex;align-items:center;text-decoration:none;color:var(--text-primary)">📋 Privacy Policy</a>
+            <a href="terms.html" target="_blank" rel="noopener noreferrer" class="dropdown-item" style="display:flex;align-items:center;text-decoration:none;color:var(--text-primary)">📜 Terms of Service</a>
             <hr class="dropdown-divider"/>
             <button class="dropdown-item danger" onclick="logout()">🚪 Logout</button>
           </div>
@@ -320,7 +341,7 @@
       <div class="footer-container">
         <div class="footer-brand">
           <img class="brand-icon-img" src="logo-light.png" alt="PickMySeat"/>
-          <span class="brand-name">PickMySeat<span class="brand-ai">.AI</span></span>
+          <span class="brand-name">PickMySeat</span>
           <p>AI-powered TNEA seat predictor</p>
         </div>
         <div class="footer-links">
@@ -329,6 +350,10 @@
           <span>Powered by XGBoost</span>
           <span>·</span>
           <span>Secured by Firebase</span>
+          <span>·</span>
+          <a href="privacy.html" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none;font-weight:500">Privacy Policy</a>
+          <span>·</span>
+          <a href="terms.html" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none;font-weight:500">Terms of Service</a>
         </div>
       </div>
     </footer>
@@ -492,7 +517,7 @@
       <div class="auth-box">
         <div class="auth-brand">
           <img class="brand-icon-img large" src="logo-light.png" alt="PickMySeat"/>
-          <h2>PickMySeat<span class="brand-ai">.AI</span></h2>
+          <h2>PickMySeat</h2>
         </div>
         <div class="auth-tabs">
           <button class="auth-tab active" id="loginTab" onclick="switchAuth('login')">Login</button>
@@ -537,6 +562,12 @@
           <div class="form-group">
             <label>Password</label>
             <input type="password" id="signupPassword" class="text-input" placeholder="Min 8 characters"/>
+          </div>
+          <div class="form-group" style="display:flex;align-items:flex-start;gap:8px;margin:20px 0">
+            <input type="checkbox" id="signupTermsCheckbox" style="margin-top:4px;cursor:pointer"/>
+            <label style="margin:0;font-size:13px;font-weight:400;line-height:1.5;cursor:pointer">
+              I agree to the <a href="terms.html" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none;font-weight:600">Terms of Service</a> and <a href="privacy.html" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none;font-weight:600">Privacy Policy</a>
+            </label>
           </div>
           <button class="btn-primary btn-glow btn-full" onclick="signupUser()">Create Account</button>
           <div class="auth-divider"><span>or</span></div>
@@ -695,6 +726,20 @@
 
       <div class="dash-profile-card" id="dashProfileCard"></div>
       <div class="agg-banner" id="dashAggBanner"></div>
+
+      <!-- Grade 1: Rank Input Section -->
+      <div class="rank-input-section hidden" id="grade1RankInput">
+        <div class="rank-input-card">
+          <h3 class="rank-input-title">🏆 Submit Your Actual Rank</h3>
+          <p class="rank-input-desc">Share your counselling rank to help improve predictions for future students</p>
+          <div class="form-group">
+            <label>Enter your actual rank</label>
+            <input type="number" id="submitRankInput" class="text-input" placeholder="Optional — enter after results are out" min="1"/>
+          </div>
+          <p class="rank-input-helper">Submitting your rank improves prediction accuracy for future students.</p>
+          <button class="btn-primary" onclick="submitGrade1Rank()">Save Rank</button>
+        </div>
+      </div>
 
       <div id="dashPredictionArea">
         <div class="dash-section-title">
