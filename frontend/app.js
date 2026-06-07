@@ -1106,6 +1106,7 @@ function renderProfile() {
     if (el) {
       el.value    = App.profile[key] ?? '';
       el.disabled = locked;
+      el.classList.toggle('locked', locked);
     }
   });
   if (document.getElementById('profileMath'))
@@ -1114,6 +1115,16 @@ function renderProfile() {
     document.getElementById('profilePhysics').value = App.profile.physics ?? '';
   if (document.getElementById('profileChemistry'))
     document.getElementById('profileChemistry').value = App.profile.chemistry ?? '';
+
+  const marksLockNote = document.getElementById('marksLockNote');
+  if (marksLockNote) {
+    if (locked) {
+      marksLockNote.classList.remove('hidden');
+      marksLockNote.textContent = '🔒 Marks locked — contact support to update';
+    } else {
+      marksLockNote.classList.add('hidden');
+    }
+  }
 
   updateProfileAggregate();
 
@@ -1836,10 +1847,63 @@ function getCookie(name) {
 }
 
 // ============================================================
+// AUTHENTICATED FETCH HELPER
+// ============================================================
+async function authenticatedFetch(url, options = {}) {
+  const token = localStorage.getItem('token');
+  const headers = {
+    'Content-Type': 'application/json',
+    ...options.headers,
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return fetch(url, { ...options, headers });
+}
+
+// ============================================================
+// SESSION PERSISTENCE — /auth/me on page load
+// ============================================================
+async function restoreSessionFromToken() {
+  const token = localStorage.getItem('token');
+  if (!token) return;
+  try {
+    const res = await authenticatedFetch(`${API_BASE}/auth/me`);
+    if (res.status === 401) {
+      localStorage.removeItem('token');
+      return;
+    }
+    if (!res.ok) return;
+    const data = await res.json();
+    App.currentUser = {
+      email: data.email,
+      name: data.name,
+      hasPaid: data.grade === '1',
+    };
+    App.profile.email        = data.email || '';
+    App.profile.name         = data.name  || '';
+    App.profile.mobile       = data.mobile || '';
+    App.profile.category     = data.community || '';
+    App.profile.maths        = data.maths;
+    App.profile.physics      = data.physics;
+    App.profile.chemistry    = data.chemistry;
+    App.profile.marksLocked  = data.marks_locked || false;
+    App.profile.rank         = data.rank;
+    App.profile.rankPhase    = data.rank_phase || 'pre';
+    App.profile.hasPaid      = data.grade === '1';
+    App.userGrade            = data.grade === '1' ? 1 : 2;
+    updateNav();
+  } catch (e) {
+    // silently fail if session restore errors
+  }
+}
+
+// ============================================================
 // INIT
 // ============================================================
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   initTheme();
+  await restoreSessionFromToken();
   navigateTo('landing');
   // FIREBASE: firebase.auth().onAuthStateChanged(user => { ... })
 });

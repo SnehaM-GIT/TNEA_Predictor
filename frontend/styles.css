@@ -1504,6 +1504,30 @@ button {
   color: var(--text-muted);
 }
 
+.text-input.locked,
+.select-input.locked {
+  opacity: 0.6;
+  background: var(--surface3);
+  cursor: not-allowed;
+}
+
+.text-input.locked:focus,
+.select-input.locked:focus {
+  border-color: var(--border2);
+  box-shadow: none;
+}
+
+.marks-lock-note {
+  padding: 12px 14px;
+  margin: 12px 0;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 8px;
+  color: var(--warning);
+  font-size: 13px;
+  font-weight: 500;
+}
+
 .full-width {
   width: 100%;
 }
