@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Header
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from database import get_db
@@ -7,6 +7,7 @@ import bcrypt
 import jwt
 import os
 from datetime import datetime, timedelta
+from typing import Optional
 
 router = APIRouter()
 SECRET_KEY = os.getenv("SECRET_KEY", "pickmyseat_secret")
@@ -34,7 +35,6 @@ def signup(data: SignupInput, db: Session = Depends(get_db)):
     existing = db.query(User).filter(User.email == data.email).first()
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
-    
     hashed = bcrypt.hashpw(data.password.encode(), bcrypt.gensalt()).decode()
     user = User(
         email=data.email,
@@ -47,7 +47,6 @@ def signup(data: SignupInput, db: Session = Depends(get_db)):
     db.add(user)
     db.commit()
     db.refresh(user)
-    
     token = create_token(user.id)
     return {"token": token, "grade": user.grade, "name": user.name}
 
@@ -56,9 +55,40 @@ def login(data: LoginInput, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == data.email).first()
     if not user:
         raise HTTPException(status_code=400, detail="Invalid email or password")
-    
     if not bcrypt.checkpw(data.password.encode(), user.password_hash.encode()):
         raise HTTPException(status_code=400, detail="Invalid email or password")
-    
     token = create_token(user.id)
     return {"token": token, "grade": user.grade, "name": user.name}
+
+@router.get("/me")
+def get_me(
+    authorization: Optional[str] = Header(None),
+    db: Session = Depends(get_db)
+):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    try:
+        token = authorization.split(" ")[1]
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        user = db.query(User).filter(User.id == payload.get("user_id")).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        return {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "mobile": user.mobile,
+            "community": user.community,
+            "grade": user.grade,
+            "has_paid": user.has_paid,
+            "marks_locked": user.marks_locked,
+            "maths": user.maths,
+            "physics": user.physics,
+            "chemistry": user.chemistry,
+            "aggregate": user.aggregate,
+            "rank": user.rank,
+        }
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
