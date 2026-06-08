@@ -1398,7 +1398,7 @@ function removePreferredCourse(i) {
   renderPreferredCourses();
 }
 
-function saveProfile() {
+async function saveProfile() {
   const name  = document.getElementById('profileName')?.value?.trim();
   const email = document.getElementById('profileEmail')?.value?.trim();
 
@@ -1452,7 +1452,32 @@ function saveProfile() {
     }
   }
 
-  // FIRESTORE: db.collection('users').doc(uid).set({...App.profile},{merge:true})
+if (App.currentUser) {
+    showLoader();
+    try {
+      const res = await authenticatedFetch(`${API_BASE}/auth/update-profile`, {
+        method: 'POST',
+        body: JSON.stringify({
+          name: App.profile.name,
+          mobile: App.profile.mobile,
+          community: App.profile.category,
+          maths: App.profile.maths,
+          physics: App.profile.physics,
+          chemistry: App.profile.chemistry
+        })
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        showToast(err.detail || 'Could not save profile to server', 'error');
+        hideLoader();
+        return;
+      }
+    } catch(e) {
+      showToast('No connection — profile saved locally only', 'error');
+    } finally {
+      hideLoader();
+    }
+  }
   showToast('Profile saved ✅', 'success');
   setTimeout(() => navigateTo('dashboard'), 800);
 }
@@ -2030,10 +2055,24 @@ function closePayConfirm() {
 
 async function confirmPayment() {
   closePayConfirm();
+  if (!App.currentUser) {
+    showError('Please log in before making a payment.');
+    navigateTo('auth');
+    return;
+  }
+  showLoader();
   try {
     const res  = await authenticatedFetch(`${API_BASE}/payment/create-order`, { method: 'POST' });
-    const data = await res.json();
-    if (!res.ok) { showError(data.detail || 'Could not start payment', res.status); return; }
+    let data;
+    try { data = await res.json(); } catch(e) { data = {}; }
+    if (!res.ok) {
+      showError(data.detail || 'Could not start payment. Please try again.');
+      return;
+    }
+    if (!data.order_id || !data.key_id) {
+      showError('Payment setup failed — missing order info. Please try again.');
+      return;
+    }
 
     const rzp = new Razorpay({
       key:         data.key_id,
@@ -2042,13 +2081,25 @@ async function confirmPayment() {
       order_id:    data.order_id,
       name:        'PickMySeat',
       description: 'Premium Access — One Time',
+      prefill: {
+        name:  data.user_name  || '',
+        email: data.user_email || ''
+      },
+      theme: { color: '#6C63FF' },
       handler: async function (response) {
         await verifyPayment(response);
+      },
+      modal: {
+        ondismiss: function() {
+          showToast('Payment cancelled', 'error');
+        }
       }
     });
     rzp.open();
   } catch (e) {
-    showError('No connection. Check your internet and retry.');
+    showError('Network error. Please check your internet connection and retry.');
+  } finally {
+    hideLoader();
   }
 }
 
