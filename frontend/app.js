@@ -1364,7 +1364,7 @@ function removePreferredCourse(i) {
   renderPreferredCourses();
 }
 
-function saveProfile() {
+async function saveProfile() {
   const name  = document.getElementById('profileName')?.value?.trim();
   const email = document.getElementById('profileEmail')?.value?.trim();
 
@@ -1418,7 +1418,19 @@ function saveProfile() {
     }
   }
 
-  // FIRESTORE: db.collection('users').doc(uid).set({...App.profile},{merge:true})
+try {
+    await authenticatedFetch(`${API_BASE}/auth/update-profile`, {
+      method: 'POST',
+      body: JSON.stringify({
+        name: App.profile.name,
+        mobile: App.profile.mobile,
+        community: App.profile.category,
+        maths: App.profile.maths,
+        physics: App.profile.physics,
+        chemistry: App.profile.chemistry
+      })
+    });
+  } catch(e) { console.error('Profile save failed', e); }
   showToast('Profile saved ✅', 'success');
   setTimeout(() => navigateTo('dashboard'), 800);
 }

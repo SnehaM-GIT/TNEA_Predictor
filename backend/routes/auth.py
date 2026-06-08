@@ -23,6 +23,14 @@ class LoginInput(BaseModel):
     email: str
     password: str
 
+class UpdateProfileInput(BaseModel):
+    name: Optional[str] = None
+    mobile: Optional[str] = None
+    community: Optional[str] = None
+    maths: Optional[float] = None
+    physics: Optional[float] = None
+    chemistry: Optional[float] = None
+
 def create_token(user_id: int):
     payload = {
         "user_id": user_id,
@@ -88,6 +96,37 @@ def get_me(
             "aggregate": user.aggregate,
             "rank": user.rank,
         }
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+@router.post("/update-profile")
+def update_profile(
+    data: UpdateProfileInput,
+    authorization: Optional[str] = Header(None),
+    db: Session = Depends(get_db)
+):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    try:
+        token = authorization.split(" ")[1]
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        user = db.query(User).filter(User.id == payload.get("user_id")).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        if user.marks_locked and (data.maths is not None or data.physics is not None or data.chemistry is not None):
+            raise HTTPException(status_code=403, detail="Marks are locked after payment")
+        if data.name is not None: user.name = data.name
+        if data.mobile is not None: user.mobile = data.mobile
+        if data.community is not None: user.community = data.community
+        if data.maths is not None: user.maths = data.maths
+        if data.physics is not None: user.physics = data.physics
+        if data.chemistry is not None: user.chemistry = data.chemistry
+        if data.maths and data.physics and data.chemistry:
+            user.aggregate = data.maths + data.physics/2 + data.chemistry/2
+        db.commit()
+        return {"status": "profile updated", "marks_locked": user.marks_locked}
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired")
     except jwt.InvalidTokenError:
