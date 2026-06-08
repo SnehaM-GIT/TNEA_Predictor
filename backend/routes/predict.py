@@ -9,12 +9,15 @@ from models import User, Prediction, RankInput
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from datetime import datetime
+import pandas as pd
+from pathlib import Path
 import jwt, os
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
 
 VALID_COMMUNITIES = {"OC", "BC", "BCM", "MBC", "SC", "ST", "SCA"}
+DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "cleaned"
 
 class MarksInput(BaseModel):
     maths: float
@@ -157,7 +160,6 @@ def submit_rank(
         year=datetime.utcnow().year
     )
     db.add(rank_input)
-
     user.rank = data.actual_rank
     db.commit()
 
@@ -166,17 +168,13 @@ def submit_rank(
 
 @router.get("/colleges-list")
 def get_colleges_list():
-    import pandas as pd
-    from pathlib import Path
-    DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "cleaned"
     df = pd.read_csv(DATA_DIR / "college_codes.csv")
+    df = df.fillna("")
     return df[["college_code", "college_name_full", "college_type", "district"]].to_dict(orient="records")
 
 
 @router.get("/branches-list")
 def get_branches_list():
-    import pandas as pd
-    from pathlib import Path
-    DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "cleaned"
     df = pd.read_csv(DATA_DIR / "course_codes.csv")
+    df = df.fillna("")
     return df[["branch_code", "branch_name"]].to_dict(orient="records")
