@@ -1008,23 +1008,55 @@ function initFreePredictPage() {
   }
 
   // Build searchable college dropdown for free predict
-  buildCollegeSearchDropdown('freeCollegeSearchContainer', (college) => {
+buildCollegeSearchDropdown('freeCollegeSearchContainer', async (college) => {
     freeSelectedCollege = college;
-  }, 'Search college by name or code...');
+    if (college) {
+        const branches = await getBranchesForColleges([college.code]);
+        populateCourseDropdown('freeCourse', branches);
+    } else {
+        populateCourseDropdown('freeCourse', BRANCHES);
+    }
+}, 'Search college by name or code...');
 
   populateAllCourses('freeCourse');
   document.getElementById('freeResultCard').classList.add('hidden');
 }
 
-function populateAllCourses(selectId) {
-  const sel = document.getElementById(selectId);
-  if (!sel) return;
-  sel.innerHTML = '<option value="">Select a course...</option>';
-  const list = BRANCHES.length ? BRANCHES : DATA.courses;
-  list.forEach(c => {
-    const opt = document.createElement('option');
-    opt.value = c.name; opt.textContent = c.name; sel.appendChild(opt);
-  });
+function populateCourseDropdown(selectId, branches) {
+    const sel = document.getElementById(selectId);
+    if (!sel) return;
+    const current = sel.value;
+    sel.innerHTML = '<option value="">Select a course...</option>';
+    branches.forEach(b => {
+        const opt = document.createElement('option');
+        opt.value = b.name;
+        opt.textContent = b.name;
+        sel.appendChild(opt);
+    });
+    if (current) sel.value = current;
+}
+
+async function getBranchesForColleges(collegeCodes) {
+    if (!collegeCodes || collegeCodes.length === 0) return BRANCHES;
+    try {
+        const results = await Promise.all(
+            collegeCodes.map(code =>
+                fetch(`${API_BASE}/predict/college-branches/${parseInt(code)}`)
+                    .then(r => r.json())
+            )
+        );
+        const seen = new Set();
+        const merged = [];
+        results.flat().forEach(b => {
+            if (!seen.has(b.code)) {
+                seen.add(b.code);
+                merged.push(b);
+            }
+        });
+        return merged.length > 0 ? merged : BRANCHES;
+    } catch(e) {
+        return BRANCHES;
+    }
 }
 
 function updateFreeAggregate() {
@@ -1429,6 +1461,8 @@ async function renderPreferredColleges() {
 
 async function renderPreferredCourses() {
   if (BRANCHES.length === 0) await loadCollegesAndBranches();
+  const collegeCodes = App.profile.preferredColleges.map(c => c.code);
+  const availableBranches = await getBranchesForColleges(collegeCodes);
   const grid = document.getElementById('preferredCoursesGrid');
   if (!grid) return;
   grid.innerHTML = '';
@@ -1451,7 +1485,7 @@ async function renderPreferredCourses() {
         <div class="preferred-slot add-slot">
           <select class="select-input" onchange="addPreferredCourse(this.value);this.value=''">
             <option value="">+ Add Course ${i+1}</option>
-            ${(BRANCHES.length ? BRANCHES : []).map(b=>`<option value="${b.code}">${b.name}</option>`).join('')}
+            ${availableBranches.map(b=>`<option value="${b.code}">${b.name}</option>`).join('')}
           </select>
         </div>`;
     } else {
@@ -1812,7 +1846,7 @@ const agg = calculateAggregate(
             <div class="combo-prob-pct" style="color:${pc.cls==='high'?'var(--success)':pc.cls==='mid'?'var(--warning)':'var(--danger)'}">
               ${combo.prob}%
             </div>
-            <div class="combo-prob-label">Probability · Cutoff: ${cutoff}</div>
+           <div class="combo-prob-label">Closing Rank: ${cutoff !== '—' ? cutoff : '—'}</div>
           </div>
           <span class="combo-status-tag ${pc.statusCls}">${pc.status}</span>
         </div>
@@ -1885,7 +1919,7 @@ function runPremiumQuickPredict() {
             <span class="college-code-tag">${college.code}</span> ${college.name}
           </div>
           <div style="font-size:14px;font-weight:600;color:var(--text-dim)">${course}</div>
-          <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Cutoff: ${cutoff} · Agg: ${agg}/200</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Closing Rank: ${cutoff} · Agg: ${agg}/200</div>
         </div>
         <div style="text-align:right">
           <div style="font-size:32px;font-weight:900;color:${prob>=65?'var(--success)':prob>=35?'var(--warning)':'var(--danger)'}">

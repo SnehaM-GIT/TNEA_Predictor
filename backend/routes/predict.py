@@ -178,3 +178,20 @@ def get_branches_list():
     df = pd.read_csv(DATA_DIR / "course_codes.csv")
     df = df.fillna("")
     return df[["branch_code", "branch_name"]].to_dict(orient="records")
+
+
+@router.get("/college-branches/{college_code}")
+def get_college_branches(college_code: int):
+    cutoff_df = pd.read_csv(DATA_DIR / "cutoff_lookup_2026.csv").fillna("")
+    branches_df = pd.read_csv(DATA_DIR / "course_codes.csv").fillna("")
+    branch_map = dict(zip(branches_df["branch_code"], branches_df["branch_name"]))
+
+    college_branches = cutoff_df[
+        cutoff_df["college_code"] == college_code
+    ]["branch_code"].unique().tolist()
+
+    return [
+        {"code": str(b), "name": branch_map.get(str(b), f"Branch {b}")}
+        for b in college_branches
+        if b != ""
+    ]
