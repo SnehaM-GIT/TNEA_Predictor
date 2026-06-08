@@ -431,6 +431,21 @@
           </select>
         </div>
 
+        <div class="form-section">
+          <div class="form-group">
+            <label>Community</label>
+            <select id="freeCategory" class="select-input full-width">
+              <option value="OC">OC (Open Category)</option>
+              <option value="BC">BC</option>
+              <option value="BCM">BCM</option>
+              <option value="MBC">MBC</option>
+              <option value="SC">SC</option>
+              <option value="SCA">SCA</option>
+              <option value="ST">ST</option>
+            </select>
+          </div>
+        </div>
+
         <button class="btn-primary btn-glow btn-full" onclick="runFreePrediction()">
           🔮 Predict My Seat
         </button>
@@ -473,7 +488,7 @@
               <span class="prob-stat-value" id="resultRankBand">—</span>
             </div>
             <div class="prob-stat">
-              <span class="prob-stat-label">Last Year Cutoff</span>
+              <span class="prob-stat-label">Closing Rank</span>
               <span class="prob-stat-value" id="resultCutoff">—</span>
             </div>
             <div class="prob-stat">

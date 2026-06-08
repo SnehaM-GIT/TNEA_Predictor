@@ -40,448 +40,42 @@ const App = {
 // ============================================================
 // FULL COLLEGE LIST — all 550 colleges with codes
 // ============================================================
-const COLLEGES = [
-  { code:'0001', name:'University Departments of Anna University - CEG Campus' },
-  { code:'0002', name:'University Departments of Anna University - ACT Campus' },
-  { code:'0003', name:'University Departments of Anna University - SAP Campus' },
-  { code:'0004', name:'University Departments of Anna University - MIT Campus' },
-  { code:'0005', name:'Annamalai University Faculty of Engineering' },
-  { code:'1516', name:'Thanthai Periyar Government Institute of Technology' },
-  { code:'2005', name:'Government College of Technology (Autonomous), Coimbatore' },
-  { code:'2369', name:'Government College of Engineering, Dharmapuri' },
-  { code:'2603', name:'Government College of Engineering (Autonomous), Bargur' },
-  { code:'2615', name:'Government College of Engineering (Autonomous), Salem' },
-  { code:'2709', name:'Government Engineering College, Erode' },
-  { code:'3464', name:'Government College of Engineering, Gandarvakottai Road' },
-  { code:'3465', name:'Government College of Engineering, Srirangam' },
-  { code:'4974', name:'Government College of Engineering, Tirunelveli' },
-  { code:'5009', name:'Government College of Engineering, Melachokkanathapuram' },
-  { code:'5901', name:'Alagappa Chettiar Government College of Engineering, Karaikudi' },
-  { code:'2006', name:'PSG College of Technology (Autonomous), Coimbatore' },
-  { code:'2007', name:'Coimbatore Institute of Technology (Autonomous)' },
-  { code:'5008', name:'Thiagarajar College of Engineering, Madurai' },
-  { code:'1321', name:'Central Institute of Plastics Engineering and Technology (CIPET)' },
-  { code:'2343', name:'Indian Institute of Handloom Technology' },
-  { code:'5012', name:'Central Electrochemical Research Institute (CECRI), Karaikudi' },
-  { code:'1013', name:'University College of Engineering, Villupuram' },
-  { code:'1014', name:'University College of Engineering, Tindivanam' },
-  { code:'1015', name:'University College of Engineering, Arni' },
-  { code:'1026', name:'University College of Engineering, Kancheepuram' },
-  { code:'2025', name:'Anna University Regional Campus - Coimbatore' },
-  { code:'3011', name:'University College of Engineering, Tiruchirappalli' },
-  { code:'3016', name:'University College of Engineering, Ariyalur' },
-  { code:'3018', name:'University College of Engineering, Thirukkuvalai' },
-  { code:'3019', name:'University College of Engineering, Panruti' },
-  { code:'3021', name:'University College of Engineering, Pattukkottai' },
-  { code:'4020', name:'Anna University Regional Campus - Tirunelveli' },
-  { code:'4023', name:'University College of Engineering, Nagercoil' },
-  { code:'4024', name:'University V.O.C. College of Engineering, Thoothukudi' },
-  { code:'5010', name:'Anna University Regional Campus - Madurai' },
-  { code:'5017', name:'University College of Engineering, Ramanathapuram' },
-  { code:'5022', name:'University College of Engineering, Dindigul' },
-  { code:'1101', name:'Aalim Muhammed Salegh College of Engineering' },
-  { code:'1106', name:'Jaya Engineering College, Thirunindravur' },
-  { code:'1107', name:'Jaya Institute of Technology, Thiruvallur' },
-  { code:'1110', name:'Prathyusha Engineering College, Thiruvallur' },
-  { code:'1112', name:'R M D Engineering College, Gummidipoondi' },
-  { code:'1113', name:'R M K Engineering College (Autonomous), Kavaraipettai' },
-  { code:'1114', name:'S A Engineering College (Autonomous), Chennai' },
-  { code:'1115', name:'Sri Ram Engineering College, Veppampattu' },
-  { code:'1116', name:'Sri Venkateswara College of Engineering and Technology' },
-  { code:'1118', name:'Vel Tech Multi Tech Dr. Rangarajan Dr. Sakunthala Engineering' },
-  { code:'1120', name:'Velammal Engineering College (Autonomous), Ambattur' },
-  { code:'1122', name:'Vel Tech High Tech Dr. Rangarajan Dr. Sakunthala Engineering' },
-  { code:'1123', name:'Gojan School of Business and Technology, Chennai' },
-  { code:'1124', name:'SAMS College of Engineering and Technology' },
-  { code:'1125', name:'P M R Engineering College, Maduravoyal' },
-  { code:'1126', name:'J N N Institute of Engineering, Kannigaipair Village' },
-  { code:'1127', name:'St. Peters College of Engineering and Technology' },
-  { code:'1128', name:'R M K College of Engineering and Technology, Puduvoyal' },
-  { code:'1133', name:'Annai Veilankannis College of Engineering' },
-  { code:'1137', name:'Annai Mira College of Engineering and Technology' },
-  { code:'1140', name:'Jeppiaar Institute of Technology, Sriperumpudur' },
-  { code:'1149', name:'St. Josephs Institute of Technology, Chennai' },
-  { code:'1150', name:'Sri Jayaram Institute of Engineering and Technology' },
-  { code:'1202', name:'D M I College of Engineering, Chennai' },
-  { code:'1205', name:'Lord Venkateshwara Engineering College, Walajabad' },
-  { code:'1207', name:'Kings Engineering College, Sriperumpudur' },
-  { code:'1209', name:'Pallavan College of Engineering, Kancheepuram' },
-  { code:'1210', name:'Panimalar Engineering College, Poonamallee' },
-  { code:'1211', name:'Rajalakshmi Engineering College (Autonomous), Thandalam' },
-  { code:'1212', name:'Rajiv Gandhi College of Engineering, Sriperumpudur' },
-  { code:'1216', name:'Saveetha Engineering College (Autonomous), Thandalam' },
-  { code:'1217', name:'Sree Sastha Institute of Engineering and Technology' },
-  { code:'1218', name:'Sri Muthukumaran Institute of Technology, Chennai' },
-  { code:'1219', name:'Sri Venkateswara College of Engineering (Autonomous)' },
-  { code:'1221', name:'Jaya College of Engineering and Technology, Parivakkam' },
-  { code:'1222', name:'P B College of Engineering, Sriperumpudur' },
-  { code:'1225', name:'Loyola Institute of Technology, Mevaloorkuppam' },
-  { code:'1226', name:'P T Lee Chengalvaraya Naicker College of Engineering' },
-  { code:'1228', name:'Alpha College of Engineering' },
-  { code:'1229', name:'Indira Institute of Engineering and Technology' },
-  { code:'1230', name:'Apollo Engineering College, Mevaloorkuppam' },
-  { code:'1231', name:'Panimalar Institute of Technology, Poonamallee' },
-  { code:'1233', name:'Adhi College of Engineering and Technology' },
-  { code:'1235', name:'JEI Mathaajee College of Engineering' },
-  { code:'1237', name:'Velammal Institute of Technology, Chennai' },
-  { code:'1238', name:'GRT Institute of Engineering and Technology' },
-  { code:'1241', name:'T J S Engineering College, Kavaraipettai' },
-  { code:'1243', name:'Madha Institute of Engineering and Technology' },
-  { code:'1301', name:'Mohamed Sathak A J College of Engineering' },
-  { code:'1303', name:'Anand Institute of Higher Technology, OMR' },
-  { code:'1304', name:'Easwari Engineering College (Autonomous), Ramapuram' },
-  { code:'1306', name:'Jeppiar Engineering College, OMR Chennai' },
-  { code:'1307', name:'Jerusalem College of Engineering (Autonomous)' },
-  { code:'1309', name:'Meenakshi Sundararajan Engineering College' },
-  { code:'1310', name:'Misrimal Navajee Munoth Jain Engineering College' },
-  { code:'1311', name:'K C G College of Technology, Chennai' },
-  { code:'1313', name:'Shree Motilal Kanhaiyalal Fomra Institute of Technology' },
-  { code:'1315', name:'Sri Sivasubramaniya Nadar College of Engineering (Autonomous)' },
-  { code:'1316', name:'Agni College of Technology, OMR Chennai' },
-  { code:'1317', name:'St. Josephs College of Engineering, OMR Chennai' },
-  { code:'1318', name:'T.J Institute of Technology, Karapakkam' },
-  { code:'1319', name:'Thangavelu Engineering College, Karappakkam' },
-  { code:'1322', name:'Dhanalakshmi Srinivasan College of Engineering and Technology' },
-  { code:'1324', name:'Sri Sai Ram Institute of Technology (Autonomous), Tambaram' },
-  { code:'1325', name:'St. Joseph College of Engineering, Nemili' },
-  { code:'1333', name:'Vi Institute of Technology, Sirunkundram Village' },
-  { code:'1335', name:'Sri Krishna Institute of Technology, Padappai' },
-  { code:'1399', name:'Chennai Institute of Technology, Nandambakkam' },
-  { code:'1401', name:'Adhiparasakthi Engineering College, Melmaruvathur' },
-  { code:'1402', name:'Annai Terasa College of Engineering, Kallakkurichi' },
-  { code:'1405', name:'Dhanalakshmi College of Engineering, Manimangalam' },
-  { code:'1407', name:'G K M College of Engineering and Technology' },
-  { code:'1408', name:'I F E T College of Engineering (Autonomous)' },
-  { code:'1409', name:'Karpagavinayaga College of Engineering and Technology' },
-  { code:'1411', name:'Madha Engineering College, Kundrathur' },
-  { code:'1412', name:'Mailam Engineering College, Villupuram' },
-  { code:'1413', name:'Sri Venkateswaraa College of Technology, Vadakkal' },
-  { code:'1414', name:'Prince Shri Venkateshwara Padmavathy Engineering College' },
-  { code:'1415', name:'T S M Jain College of Technology, Kallakurichi' },
-  { code:'1416', name:'Jaya Sakthi Engineering College, Thirunindravur' },
-  { code:'1419', name:'Sri Sairam Engineering College (Autonomous), Tambaram' },
-  { code:'1420', name:'Tagore Engineering College, Vandalur' },
-  { code:'1421', name:'V R S College of Engineering and Technology, Villupuram' },
-  { code:'1422', name:'SRM Valliammai Engineering College (Autonomous), Kattankulathur' },
-  { code:'1423', name:'Asan Memorial College of Engineering' },
-  { code:'1424', name:'Dhaanish Ahmed College of Engineering, Padappai' },
-  { code:'1426', name:'Sri Ramanujar Engineering College, Vandalur' },
-  { code:'1427', name:'Sri Krishna Engineering College, Padappai' },
-  { code:'1430', name:'Maha Bharathi Engineering College, Chinnasalem' },
-  { code:'1431', name:'New Prince Shri Bhavani College of Engineering and Technology' },
-  { code:'1432', name:'Rajalakshmi Institute of Technology, Kuthampakkam' },
-  { code:'1434', name:'Surya Group of Institutions, Villupuram' },
-  { code:'1435', name:'Jagannath Institute of Technology, Thiruporur' },
-  { code:'1436', name:'A R Engineering College, Kappiyampuliyur' },
-  { code:'1437', name:'Rrase College of Engineering, Padappai' },
-  { code:'1438', name:'Sree Krishna College of Engineering, Anaicut' },
-  { code:'1441', name:'A K T Memorial College of Engineering and Technology' },
-  { code:'1442', name:'Prince Dr. K Vasudevan College of Engineering and Technology' },
-  { code:'1444', name:'Chendu College of Engineering and Technology' },
-  { code:'1445', name:'Sri Rangapoopathi College of Engineering' },
-  { code:'1447', name:'Jawahar Engineering College, Saligramam' },
-  { code:'1449', name:'Saraswathy College of Engineering and Technology' },
-  { code:'1450', name:'Loyola-ICAM College of Engineering and Technology' },
-  { code:'1452', name:'PERI Institute of Technology, Tambaram' },
-  { code:'1501', name:'Adhiparasakthi College of Engineering, Kalavai' },
-  { code:'1503', name:'Arulmigu Meenakshi Amman College of Engineering' },
-  { code:'1504', name:'Arunai Engineering College, Thiruvannamalai' },
-  { code:'1505', name:'C Abdul Hakeem College of Engineering and Technology' },
-  { code:'1507', name:'Ganadipathy Tulsis Jain Engineering College, Vellore' },
-  { code:'1509', name:'Meenakshi College of Engineering, K K Nagar' },
-  { code:'1510', name:'Priyadarshini Engineering College, Vaniyambadi' },
-  { code:'1511', name:'Ranippettai Engineering College, Ranipet' },
-  { code:'1512', name:'S K P Engineering College, Thiruvannamalai' },
-  { code:'1513', name:'Sri Balaji Chockalingam Engineering College, Arni' },
-  { code:'1517', name:'Thirumalai Engineering College, Kancheepuram' },
-  { code:'1518', name:'Thiruvalluvar College of Engineering and Technology, Vandavasi' },
-  { code:'1519', name:'Bharathidasan Engineering College, Thiruppathur' },
-  { code:'1520', name:'Kingston Engineering College, Christianpet' },
-  { code:'1523', name:'Global Institute of Engineering and Technology' },
-  { code:'1524', name:'Annamalaiar College of Engineering, Polur' },
-  { code:'1525', name:'Podhigai College of Engineering and Technology' },
-  { code:'1526', name:'Sri Krishna College of Engineering, Arakkonam' },
-  { code:'1529', name:'Oxford College of Engineering, Karaipoondi' },
-  { code:'1605', name:'Idhaya Engineering College for Women, Kallakkurichi' },
-  { code:'2302', name:'Sri Shanmugha College of Engineering and Technology' },
-  { code:'2314', name:'Muthayammal College of Engineering, Namakkal' },
-  { code:'2327', name:'N S N College of Engineering and Technology, Karur' },
-  { code:'2328', name:'K S R Institute for Engineering and Technology' },
-  { code:'2329', name:'Rathinam Technical Campus, Coimbatore' },
-  { code:'2332', name:'Aishwarya College of Engineering and Technology' },
-  { code:'2338', name:'Asian College of Engineering and Technology, Coimbatore' },
-  { code:'2341', name:'Ganesh College of Engineering, Salem' },
-  { code:'2342', name:'Sri Ranganathar Institute of Engineering and Technology' },
-  { code:'2345', name:'Dhirajlal Gandhi College of Technology, Salem' },
-  { code:'2346', name:'Shree Sathyam College of Engineering and Technology' },
-  { code:'2347', name:'AVS College of Technology, Salem' },
-  { code:'2349', name:'Dhaanish Ahmed Institute of Technology, Coimbatore' },
-  { code:'2350', name:'Jairupaa College of Engineering' },
-  { code:'2354', name:'Pollachi Institute of Engineering and Technology' },
-  { code:'2355', name:'Cheran College of Engineering, Coimbatore' },
-  { code:'2356', name:'Arulmurugan College of Engineering' },
-  { code:'2357', name:'V S B College of Engineering Technical Campus' },
-  { code:'2360', name:'Suguna College of Engineering, Coimbatore' },
-  { code:'2367', name:'Arjun College of Technology, Coimbatore' },
-  { code:'2377', name:'PSG Institute of Technology and Applied Research, Coimbatore' },
-  { code:'2601', name:'Adhiyamaan College of Engineering (Autonomous), Hosur' },
-  { code:'2602', name:'Annai Mathammal Sheela Engineering College' },
-  { code:'2606', name:'Jayam College of Engineering and Technology, Namakkal' },
-  { code:'2607', name:'K S Rangasamy College of Technology (Autonomous), Tiruchengode' },
-  { code:'2608', name:'M Kumarasamy College of Engineering (Autonomous)' },
-  { code:'2609', name:'Mahendra Engineering College (Autonomous), Namakkal' },
-  { code:'2610', name:'Muthayammal Engineering College (Autonomous), Rasipuram' },
-  { code:'2611', name:'Paavai Engineering College (Autonomous), Namakkal' },
-  { code:'2612', name:'P G P College of Engineering and Technology, Namakkal' },
-  { code:'2613', name:'K S R College of Engineering (Autonomous), Tiruchengode' },
-  { code:'2614', name:'S S M College of Engineering, Namakkal' },
-  { code:'2617', name:'Sengunthar Engineering College (Autonomous), Tiruchengode' },
-  { code:'2618', name:'Sona College of Technology (Autonomous), Salem' },
-  { code:'2620', name:'Vivekanandha College of Engineering for Women (Autonomous)' },
-  { code:'2621', name:'Er. Perumal Manimekalai College of Engineering' },
-  { code:'2622', name:'V S B Engineering College, Karur' },
-  { code:'2623', name:'Mahendra College of Engineering, Namakkal' },
-  { code:'2624', name:'Gnanamani College of Technology, Namakkal' },
-  { code:'2625', name:'The Kavery Engineering College, Salem' },
-  { code:'2627', name:'Selvam College of Technology, Namakkal' },
-  { code:'2628', name:'Paavai College of Engineering, Namakkal' },
-  { code:'2629', name:'Sengunthar College of Engineering, Namakkal' },
-  { code:'2630', name:'Chettinad College of Engineering and Technology, Trichy' },
-  { code:'2632', name:'Mahendra Institute of Technology (Autonomous), Namakkal' },
-  { code:'2633', name:'Vidhya Vikkas College of Engineering and Technology' },
-  { code:'2634', name:'Excel Engineering College (Autonomous), Namakkal' },
-  { code:'2635', name:'C M S College of Engineering, Namakkal' },
-  { code:'2636', name:'A V S Engineering College, Salem' },
-  { code:'2638', name:'Mahendra Engineering College for Women, Namakkal' },
-  { code:'2639', name:'Narasus Sarathy Institute of Technology, Salem' },
-  { code:'2640', name:'Jayalakshmi Institute of Technology, Dharmapuri' },
-  { code:'2641', name:'Varuvan Vadivelan Institute of Technology, Dharmapuri' },
-  { code:'2642', name:'P S V College of Engineering and Technology' },
-  { code:'2643', name:'Bharathiyar Institute of Engineering for Women' },
-  { code:'2646', name:'Tagore Institute of Engineering and Technology, Salem' },
-  { code:'2647', name:'J K K Nataraja College of Engineering and Technology' },
-  { code:'2648', name:'Annapoorana Engineering College, Namakkal' },
-  { code:'2650', name:'Christ the King Engineering College' },
-  { code:'2651', name:'Jai Shriram Engineering College, Tiruppur' },
-  { code:'2652', name:'Al-Ameen Engineering College (Autonomous), Coimbatore' },
-  { code:'2653', name:'Knowledge Institute of Technology, Salem' },
-  { code:'2656', name:'Builders Engineering College, Erode' },
-  { code:'2657', name:'Paavai College of Technology, Namakkal' },
-  { code:'2658', name:'V S A Group of Institutions, Salem' },
-  { code:'2659', name:'Salem College of Engineering and Technology' },
-  { code:'2661', name:'Vivekanandha College of Technology for Women' },
-  { code:'2662', name:'Dr. Nagarathinams College of Engineering' },
-  { code:'2665', name:'Mahendra Institute of Engineering and Technology' },
-  { code:'2673', name:'Sree Sakthi Engineering College, Erode' },
-  { code:'2683', name:'Shreenivasa Engineering College, Dharmapuri' },
-  { code:'2702', name:'Bannari Amman Institute of Technology (Autonomous)' },
-  { code:'2704', name:'Coimbatore Institute of Engineering and Technology (Autonomous)' },
-  { code:'2705', name:'C S I College of Engineering, Nilgiris' },
-  { code:'2706', name:'Dr. Mahalingam College of Engineering and Technology' },
-  { code:'2707', name:'Erode Sengunthar Engineering College (Autonomous)' },
-  { code:'2708', name:'Hindusthan College of Engineering and Technology (Autonomous)' },
-  { code:'2710', name:'Karpagam College of Engineering (Autonomous), Coimbatore' },
-  { code:'2711', name:'Kongu Engineering College (Autonomous), Erode' },
-  { code:'2712', name:'Kumaraguru College of Technology (Autonomous), Coimbatore' },
-  { code:'2713', name:'M P Nachimuthu M Jagannathan Engineering College' },
-  { code:'2715', name:'Nandha Engineering College (Autonomous), Erode' },
-  { code:'2716', name:'Park College of Engineering and Technology, Coimbatore' },
-  { code:'2717', name:'Sasurie College of Engineering, Tiruppur' },
-  { code:'2718', name:'Sri Krishna College of Engineering and Technology (Autonomous), Coimbatore' },
-  { code:'2719', name:'Sri Ramakrishna Engineering College (Autonomous), Coimbatore' },
-  { code:'2721', name:'Tamilnadu College of Engineering, Coimbatore' },
-  { code:'2722', name:'Sri Krishna College of Technology (Autonomous), Coimbatore' },
-  { code:'2723', name:'Velalar College of Engineering and Technology (Autonomous)' },
-  { code:'2725', name:'Sri Ramakrishna Institute of Technology (Autonomous)' },
-  { code:'2726', name:'S N S College of Technology (Autonomous), Coimbatore' },
-  { code:'2727', name:'Sri Shakthi Institute of Engineering and Technology (Autonomous)' },
-  { code:'2729', name:'Nehru Institute of Engineering and Technology, Coimbatore' },
-  { code:'2731', name:'R V S College of Engineering and Technology, Coimbatore' },
-  { code:'2732', name:'INFO Institute of Engineering, Coimbatore' },
-  { code:'2733', name:'Angel College of Engineering and Technology, Coimbatore' },
-  { code:'2734', name:'S N S College of Engineering (Autonomous), Coimbatore' },
-  { code:'2735', name:'Karpagam Institute of Technology, Coimbatore' },
-  { code:'2736', name:'Dr. N G P Institute of Technology, Coimbatore' },
-  { code:'2737', name:'Sri Sai Ranganathan Engineering College, Coimbatore' },
-  { code:'2739', name:'Sri Eshwar College of Engineering (Autonomous), Coimbatore' },
-  { code:'2740', name:'Hindustan Institute of Technology (Autonomous), Coimbatore' },
-  { code:'2741', name:'P A College of Engineering and Technology (Autonomous), Palladam' },
-  { code:'2743', name:'Dhanalakshmi Srinivasan College of Engineering, Coimbatore' },
-  { code:'2744', name:'Adithya Institute of Technology, Coimbatore' },
-  { code:'2745', name:'Kathir College of Engineering, Coimbatore' },
-  { code:'2747', name:'Shree Venkateshwara Hi-Tech Engineering College' },
-  { code:'2748', name:'Surya Engineering College, Erode' },
-  { code:'2749', name:'EASA College of Engineering and Technology, Coimbatore' },
-  { code:'2750', name:'KIT-Kalaignar Karunanidhi Institute of Technology (Autonomous), Coimbatore' },
-  { code:'2751', name:'KGISL Institute of Technology, Coimbatore' },
-  { code:'2752', name:'Nandha College of Technology, Erode' },
-  { code:'2753', name:'P P G Institute of Technology, Coimbatore' },
-  { code:'2755', name:'Nehru Institute of Technology, Coimbatore' },
-  { code:'2758', name:'J K K Muniraja College of Technology, Erode' },
-  { code:'2761', name:'United Institute of Technology, Coimbatore' },
-  { code:'2762', name:'Jansons Institute of Technology, Coimbatore' },
-  { code:'2763', name:'Akshaya College of Engineering and Technology, Coimbatore' },
-  { code:'2764', name:'K P R Institute of Engineering and Technology (Autonomous), Coimbatore' },
-  { code:'2767', name:'SRG Engineering College, Namakkal' },
-  { code:'2768', name:'Park College of Technology, Coimbatore' },
-  { code:'2769', name:'J C T College of Engineering and Technology, Coimbatore' },
-  { code:'2770', name:'Study World College of Engineering, Coimbatore' },
-  { code:'2772', name:'C M S College of Engineering and Technology, Coimbatore' },
-  { code:'2776', name:'R V S Technical Campus, Coimbatore' },
-  { code:'3410', name:'Krishnaswamy College of Engineering and Technology' },
-  { code:'3425', name:'C K College of Engineering and Technology, Cuddalore' },
-  { code:'3451', name:'SMR East Coast College of Engineering and Technology' },
-  { code:'3454', name:'Sri Ramakrishna College of Engineering, Tiruchirappalli' },
-  { code:'3456', name:'K S K College of Engineering and Technology, Thanjavur' },
-  { code:'3460', name:'Surya College of Engineering, Tiruchirappalli' },
-  { code:'3461', name:'Arifa Institute of Technology, Tiruchirappalli' },
-  { code:'3462', name:'Ariyalur Engineering College' },
-  { code:'3466', name:'Nelliandavar Institute of Technology' },
-  { code:'3701', name:'K Ramakrishnan College of Technology (Autonomous), Trichy' },
-  { code:'3760', name:'Sir Issac Newton College of Engineering and Technology' },
-  { code:'3766', name:'Star Lion College of Engineering and Technology' },
-  { code:'3782', name:'OASYS Institute of Technology, Musiri' },
-  { code:'3786', name:'M.A.M. School of Engineering, Tiruchirappalli' },
-  { code:'3795', name:'SRM TRP Engineering College, Tiruchirappalli' },
-  { code:'3801', name:'A V C College of Engineering, Mayiladuthurai' },
-  { code:'3802', name:'Shri Angalamman College of Engineering and Technology' },
-  { code:'3803', name:'Anjalai Ammal-Mahalingam Engineering College, Thanjavur' },
-  { code:'3804', name:'Arasu Engineering College, Kumbakonam' },
-  { code:'3805', name:'Dhanalakshmi Srinivasan Engineering College (Autonomous)' },
-  { code:'3806', name:'E G S Pillay Engineering College (Autonomous), Nagapattinam' },
-  { code:'3807', name:'J J College of Engineering and Technology, Trichy' },
-  { code:'3808', name:'Jayaram College of Engineering and Technology, Trichy' },
-  { code:'3809', name:'Kurinji College of Engineering and Technology, Manapparai' },
-  { code:'3810', name:'M.A.M. College of Engineering, Tiruchirappalli' },
-  { code:'3811', name:'M I E T Engineering College, Tiruchirappalli' },
-  { code:'3812', name:'Mookambigai College of Engineering, Pudukkottai' },
-  { code:'3813', name:'Oxford Engineering College, Tiruchirappalli' },
-  { code:'3814', name:'P R Engineering College, Thanjavur' },
-  { code:'3815', name:'Pavendhar Bharathidasan College of Engineering and Technology' },
-  { code:'3817', name:'Roever Engineering College, Perambalur' },
-  { code:'3819', name:'Saranathan College of Engineering, Tiruchirappalli' },
-  { code:'3820', name:'Trichy Engineering College, Tiruchirappalli' },
-  { code:'3821', name:'A R J College of Engineering and Technology, Mannargudi' },
-  { code:'3822', name:'Dr. Navalar Nedunchezhian College of Engineering' },
-  { code:'3825', name:'St. Josephs College of Engineering and Technology, Salem' },
-  { code:'3826', name:'Kongunadu College of Engineering and Technology (Autonomous)' },
-  { code:'3829', name:'M.A.M. College of Engineering and Technology, Trichy' },
-  { code:'3830', name:'K Ramakrishnan College of Engineering (Autonomous), Trichy' },
-  { code:'3831', name:'Indra Ganesan College of Engineering, Trichy' },
-  { code:'3833', name:'Parisutham Institute of Technology and Science, Thanjavur' },
-  { code:'3841', name:'CARE College of Engineering, Tiruchirappalli' },
-  { code:'3843', name:'M R K Institute of Technology, Trichy' },
-  { code:'3844', name:'Shivani Engineering College, Tiruchirappalli' },
-  { code:'3846', name:'Mother Terasa College of Engineering and Technology' },
-  { code:'3848', name:'Vandayar Engineering College, Thanjavur' },
-  { code:'3849', name:'Annai College of Engineering and Technology, Thanjavur' },
-  { code:'3850', name:'Vetri Vinayaha College of Engineering and Technology, Namakkal' },
-  { code:'3852', name:'Sri Bharathi Engineering College for Women' },
-  { code:'3854', name:'Mahath Amma Institute of Engineering and Technology (MIET)' },
-  { code:'3855', name:'As-Salam College of Engineering and Technology, Thanjavur' },
-  { code:'3857', name:'Meenakshi Ramaswamy Engineering College, Trichy' },
-  { code:'3859', name:'Sembodai Rukmani Varatharajan Engineering College' },
-  { code:'3860', name:'St. Annes College of Engineering and Technology' },
-  { code:'3905', name:'Kings College of Engineering, Pudukkottai' },
-  { code:'3908', name:'Mount Zion College of Engineering and Technology, Pudukkottai' },
-  { code:'3918', name:'Shanmuganathan Engineering College, Pudukkottai' },
-  { code:'3920', name:'Sudharsan Engineering College, Pudukkottai' },
-  { code:'3926', name:'Chenduran College of Engineering and Technology' },
-  { code:'4669', name:'Thamirabharani Engineering College, Tirunelveli' },
-  { code:'4670', name:'Rohini College of Engineering and Technology, Kanyakumari' },
-  { code:'4672', name:'Stella Marys College of Engineering, Kanyakumari' },
-  { code:'4675', name:'Universal College of Engineering and Technology, Kanyakumari' },
-  { code:'4676', name:'Renganayagi Varatharaj College of Engineering, Sivakasi' },
-  { code:'4677', name:'Lourdes Mount College of Engineering and Technology' },
-  { code:'4678', name:'Ramco Institute of Technology, Virudhunagar' },
-  { code:'4680', name:'AAA College of Engineering and Technology, Virudhunagar' },
-  { code:'4686', name:'Good Shepherd College of Engineering and Technology' },
-  { code:'4864', name:'V V College of Engineering, Kanyakumari' },
-  { code:'4917', name:'Sethu Institute of Technology (Autonomous), Virudhunagar' },
-  { code:'4927', name:'Maria College of Engineering and Technology' },
-  { code:'4928', name:'MAR Ephraem College of Engineering and Technology' },
-  { code:'4929', name:'M E T Engineering College, Kanyakumari' },
-  { code:'4931', name:'Grace College of Engineering, Kanyakumari' },
-  { code:'4932', name:'Immanuel Arasar J J College of Engineering, Kanyakumari' },
-  { code:'4933', name:'St. Mother Theresa Engineering College, Thoothukudi' },
-  { code:'4934', name:'Holy Cross Engineering College, Thoothukudi' },
-  { code:'4937', name:'A R College of Engineering and Technology' },
-  { code:'4938', name:'Sivaji College of Engineering and Technology' },
-  { code:'4941', name:'Unnamalai Institute of Technology, Kovilpatti' },
-  { code:'4943', name:'Satyam College of Engineering and Technology' },
-  { code:'4944', name:'Arunachala College of Engineering for Women, Nagercoil' },
-  { code:'4945', name:'Vins Christian Womens College of Engineering, Nagercoil' },
-  { code:'4946', name:'D M I Engineering College, Kanyakumari' },
-  { code:'4948', name:'Rajas Institute of Technology, Nagercoil' },
-  { code:'4949', name:'P S N Institute of Technology and Science, Tirunelveli' },
-  { code:'4952', name:'C S I Institute of Technology, Kanyakumari' },
-  { code:'4953', name:'CAPE Institute of Technology, Tirunelveli' },
-  { code:'4954', name:'Dr. Sivanthi Aditanar College of Engineering, Tiruchendur' },
-  { code:'4955', name:'Francis Xavier Engineering College (Autonomous), Tirunelveli' },
-  { code:'4956', name:'Jayamatha Engineering College, Kanyakumari' },
-  { code:'4957', name:'Jayaraj Annapackiam CSI College of Engineering, Tirunelveli' },
-  { code:'4959', name:'Kamaraj College of Engineering and Technology (Autonomous)' },
-  { code:'4960', name:'Mepco Schlenk Engineering College (Autonomous), Sivakasi' },
-  { code:'4961', name:'Nellai College of Engineering, Tirunelveli' },
-  { code:'4962', name:'National Engineering College (Autonomous), Kovilpatti' },
-  { code:'4964', name:'P S N College of Engineering and Technology (Autonomous)' },
-  { code:'4965', name:'P S R Engineering College (Autonomous), Tirunelveli' },
-  { code:'4966', name:'PET Engineering College, Tirunelveli' },
-  { code:'4967', name:'S Veerasamy Chettiar College of Engineering and Technology' },
-  { code:'4968', name:'Sardar Raja College of Engineering, Tenkasi' },
-  { code:'4969', name:'SCAD College of Engineering and Technology, Tirunelveli' },
-  { code:'4970', name:'Sree Sowdambiga College of Engineering, Virudhunagar' },
-  { code:'4971', name:'St. Xavier Catholic College of Engineering, Nagercoil' },
-  { code:'4972', name:'AMRITA College of Engineering and Technology, Kanyakumari' },
-  { code:'4975', name:'Dr. G U Pope College of Engineering, Thoothukudi' },
-  { code:'4976', name:'Infant Jesus College of Engineering, Thoothukudi' },
-  { code:'4977', name:'Narayanaguru College of Engineering, Kanyakumari' },
-  { code:'4978', name:'Udaya School of Engineering, Kanyakumari' },
-  { code:'4980', name:'Einstein College of Engineering, Tirunelveli' },
-  { code:'4981', name:'Ponjesly College of Engineering, Nagercoil' },
-  { code:'4982', name:'Vins Christian College of Engineering, Nagercoil' },
-  { code:'4983', name:'Lord Jegannath College of Engineering and Technology' },
-  { code:'4984', name:'Marthandam College of Engineering and Technology' },
-  { code:'4989', name:'P S N Engineering College, Tirunelveli' },
-  { code:'4992', name:'Bethlahem Institute of Engineering, Kanyakumari' },
-  { code:'4993', name:'Loyola Institute of Technology and Science, Tenkasi' },
-  { code:'4994', name:'J P College of Engineering, Tenkasi' },
-  { code:'4995', name:'P.S.R.R College of Engineering, Tirunelveli' },
-  { code:'4996', name:'Sri Vidhya College of Engineering and Technology, Sivakasi' },
-  { code:'4998', name:'Mahakavi Bharathiyar College of Engineering and Technology' },
-  { code:'4999', name:'Annai Vailankanni College of Engineering, Kanyakumari' },
-  { code:'5502', name:'Sree Raaja Raajan College of Engineering and Technology' },
-  { code:'5530', name:'SSM Institute of Engineering and Technology, Dindigul' },
-  { code:'5532', name:'Vaigai College of Engineering, Madurai' },
-  { code:'5533', name:'Karaikudi Institute of Technology' },
-  { code:'5536', name:'Mangayarkarasi College of Engineering, Madurai' },
-  { code:'5537', name:'Jainee College of Engineering and Technology, Dindigul' },
-  { code:'5703', name:'Christian College of Engineering and Technology, Dindigul' },
-  { code:'5720', name:'Sri Subramanya College of Engineering and Technology' },
-  { code:'5832', name:'N P R College of Engineering and Technology, Dindigul' },
-  { code:'5842', name:'Madurai Institute of Engineering and Technology' },
-  { code:'5862', name:'R V S Educational Trusts Groups of Institutions, Dindigul' },
-  { code:'5865', name:'Nadar Saraswathi College of Engineering and Technology' },
-  { code:'5902', name:'Bharath Niketan Engineering College, Madurai' },
-  { code:'5904', name:'K L N College of Engineering (Autonomous), Madurai' },
-  { code:'5907', name:'Mohamed Sathak Engineering College, Ramanathapuram' },
-  { code:'5910', name:'P S N A College of Engineering and Technology, Dindigul' },
-  { code:'5911', name:'P T R College of Engineering and Technology, Madurai' },
-  { code:'5912', name:'Pandian Saraswathi Yadav Engineering College, Madurai' },
-  { code:'5913', name:'R V S College of Engineering, Dindigul' },
-  { code:'5914', name:'Solamalai College of Engineering, Madurai' },
-  { code:'5915', name:'SACS-M A V M M Engineering College, Madurai' },
-  { code:'5919', name:'St. Michael College of Engineering and Technology, Sivaganga' },
-  { code:'5921', name:'Syed Ammal Engineering College, Ramanathapuram' },
-  { code:'5924', name:'Ganapathy Chettiar College of Engineering and Technology' },
-  { code:'5930', name:'SBM College of Engineering and Technology, Dindigul' },
-  { code:'5935', name:'Fatima Michael College of Engineering and Technology' },
-  { code:'5942', name:'Ultra College of Engineering and Technology, Madurai' },
-  { code:'5986', name:'Velammal College of Engineering and Technology, Madurai' },
-  { code:'5988', name:'Theni Kammavar Sangam College of Technology, Theni' },
-  { code:'5990', name:'Latha Mathavan Engineering College, Madurai' },
-  { code:'2684', name:'Tips School of Architecture, Coimbatore' },
-];
+let COLLEGES = [];
+let BRANCHES = [];
+
+let _dataLoaded = false;
+let _dataLoadingPromise = null;
+
+async function loadCollegesAndBranches() {
+    if (_dataLoaded) return;
+    if (_dataLoadingPromise) return _dataLoadingPromise;
+
+    _dataLoadingPromise = (async () => {
+        try {
+            const [colRes, brRes] = await Promise.all([
+                fetch(`${API_BASE}/predict/colleges-list`),
+                fetch(`${API_BASE}/predict/branches-list`)
+            ]);
+            const colData = await colRes.json();
+            const brData  = await brRes.json();
+            COLLEGES = colData.map(c => ({
+                code: String(c.college_code).padStart(4, '0'),
+                name: c.college_name_full,
+                type: c.college_type,
+                district: c.district
+            }));
+            BRANCHES = brData.map(b => ({
+                code: b.branch_code,
+                name: b.branch_name
+            }));
+            _dataLoaded = true;
+        } catch(e) {
+            console.error('Failed to load colleges/branches', e);
+        }
+    })();
+
+    return _dataLoadingPromise;
+}
 
 // ============================================================
 // COURSES DATA
@@ -545,7 +139,8 @@ function toggleTheme() {
 // SEARCHABLE COLLEGE DROPDOWN
 // Renders a custom searchable dropdown for college selection
 // ============================================================
-function buildCollegeSearchDropdown(containerId, onSelect, placeholder = 'Search by name or code...') {
+async function buildCollegeSearchDropdown(containerId, onSelect, placeholder = 'Search by name or code...') {
+  if (COLLEGES.length === 0) await loadCollegesAndBranches();
   const container = document.getElementById(containerId);
   if (!container) return;
 
@@ -655,7 +250,7 @@ function clearCollegeSearch(containerId) {
 // ============================================================
 // ROUTING
 // ============================================================
-function navigateTo(page) {
+async function navigateTo(page) {
   document.querySelectorAll('.page').forEach(p => {
     p.classList.remove('active');
     p.classList.add('hidden');
@@ -669,7 +264,7 @@ function navigateTo(page) {
   window.scrollTo({ top:0, behavior:'smooth' });
   updateNav();
   if (page === 'dashboard')    renderDashboard();
-  if (page === 'profile')      renderProfile();
+  if (page === 'profile')    { await loadCollegesAndBranches(); renderProfile(); }
   if (page === 'free-predict') initFreePredictPage();
   if (page === 'landing')      initLanding();
 }
@@ -960,7 +555,8 @@ function populateAllCourses(selectId) {
   const sel = document.getElementById(selectId);
   if (!sel) return;
   sel.innerHTML = '<option value="">Select a course...</option>';
-  DATA.courses.forEach(c => {
+  const list = BRANCHES.length ? BRANCHES : DATA.courses;
+  list.forEach(c => {
     const opt = document.createElement('option');
     opt.value = c.name; opt.textContent = c.name; sel.appendChild(opt);
   });
@@ -1005,7 +601,40 @@ async function runFreePrediction() {
     showToast('Please select a course', 'error'); return;
   }
 
+  const btn = document.querySelector('#freePredictForm .predict-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Predicting...'; }
 
+  const agg = calculateAggregate(m, p, c);
+
+  const branchObj  = BRANCHES.find(b => b.name === course || b.code === course);
+  const branchCode = branchObj ? branchObj.code : course;
+
+  let prob = 0, rankBand = { low: 0, high: 0 }, cutoff = '—';
+
+  try {
+    const res = await fetch(`${API_BASE}/predict/colleges`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        maths:              parseFloat(m),
+        physics:            parseFloat(p),
+        chemistry:          parseFloat(c),
+        community:          document.getElementById('freeCategory')?.value || 'OC',
+        top_n:              1,
+        preferred_colleges: [parseInt(freeSelectedCollege.code)],
+        preferred_branches: [branchCode]
+      })
+    });
+    const data = await res.json();
+    const rec  = data.recommendations?.[0];
+    prob       = rec ? rec.match_confidence : 0;
+    rankBand   = { low: data.student_rank_range?.[0], high: data.student_rank_range?.[1] };
+    cutoff     = rec ? rec.closing_rank : '—';
+  } catch(e) {
+    showToast('Prediction failed. Try again.', 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Predict My Seat'; }
+  }
 
   renderFreeResult({
     agg, prob, rankBand, cutoff,
@@ -1015,10 +644,8 @@ async function runFreePrediction() {
 
   setCookie('pms_free_used', '1', 7);
 
-  // Disable form
   document.getElementById('freePredictForm')
     ?.querySelectorAll('input,select').forEach(el => el.disabled = true);
-  const btn = document.querySelector('#freePredictForm .predict-btn');
   if (btn) btn.disabled = true;
   const bar = document.getElementById('cookieUsageBar');
   if (bar) bar.textContent = '🔒 Free prediction used · Login to predict more';
@@ -1028,7 +655,7 @@ function renderFreeResult({ agg, prob, rankBand, cutoff, college, course }) {
   document.getElementById('resultCollegeName').textContent = college;
   document.getElementById('resultCourseName').textContent  = course;
   document.getElementById('resultAggregate').textContent   = `${agg} / 200`;
-  document.getElementById('resultCutoff').textContent      = cutoff;
+  document.getElementById('resultCutoff').textContent      = cutoff !== '—' ? `Rank ${cutoff}` : '—';
   document.getElementById('resultRankBand').textContent    =
     rankBand.low ? `${rankBand.low.toLocaleString()} – ${rankBand.high.toLocaleString()}` : '—';
 
@@ -1270,7 +897,8 @@ function setRankPhase(phase) {
 // ============================================================
 // PREFERRED COLLEGES — Grade 2: max 5, Grade 1: unlimited search
 // ============================================================
-function renderPreferredColleges() {
+async function renderPreferredColleges() {
+  if (COLLEGES.length === 0) await loadCollegesAndBranches();
   const grid = document.getElementById('preferredCollegesGrid');
   if (!grid) return;
   grid.innerHTML = '';
@@ -1325,7 +953,8 @@ function renderPreferredColleges() {
   }
 }
 
-function renderPreferredCourses() {
+async function renderPreferredCourses() {
+  if (BRANCHES.length === 0) await loadCollegesAndBranches();
   const grid = document.getElementById('preferredCoursesGrid');
   if (!grid) return;
   grid.innerHTML = '';
@@ -1339,7 +968,7 @@ function renderPreferredCourses() {
           <div class="slot-number">${i+1}</div>
           <div class="slot-content">
             <div class="slot-name">${course.name}</div>
-            <div class="slot-sub">${course.dept}</div>
+            <div class="slot-sub">${course.code || course.dept || ''}</div>
           </div>
           <button class="slot-remove" onclick="removePreferredCourse(${i})">✕</button>
         </div>`;
@@ -1348,7 +977,7 @@ function renderPreferredCourses() {
         <div class="preferred-slot add-slot">
           <select class="select-input" onchange="addPreferredCourse(this.value);this.value=''">
             <option value="">+ Add Course ${i+1}</option>
-            ${DATA.courses.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}
+            ${(BRANCHES.length ? BRANCHES : []).map(b=>`<option value="${b.code}">${b.name}</option>`).join('')}
           </select>
         </div>`;
     } else {
@@ -1379,11 +1008,11 @@ function removePreferredCollege(i) {
   renderPreferredColleges();
 }
 
-function addPreferredCourse(id) {
-  if (!id) return;
-  const course = DATA.courses.find(c => c.id === id);
+function addPreferredCourse(code) {
+  if (!code) return;
+  const course = BRANCHES.find(c => c.code === code);
   if (!course) return;
-  if (App.profile.preferredCourses.find(c => c.id === id)) {
+  if (App.profile.preferredCourses.find(c => c.code === code)) {
     showToast('Course already added','error'); renderPreferredCourses(); return;
   }
   if (App.profile.preferredCourses.length >= 3) {
@@ -1654,7 +1283,7 @@ const agg = calculateAggregate(
   showLoader();
   try {
     const collegeCodes  = colleges.map(c => parseInt(c.code));
-    const branchCodes   = courses.map(c => c.code || c.name);
+    const branchCodes   = courses.map(c => c.code);
     const res = await authenticatedFetch(`${API_BASE}/predict/colleges`, {
       method: 'POST',
       body: JSON.stringify({
@@ -1736,7 +1365,7 @@ function initPremiumSearch() {
       <div id="premiumCollegeSearch"></div>
       <select class="select-input full-width" id="premiumCourseSelect">
         <option value="">Select a course...</option>
-        ${DATA.courses.map(c=>`<option value="${c.name}">${c.name}</option>`).join('')}
+        ${(BRANCHES.length ? BRANCHES : DATA.courses).map(c=>`<option value="${c.name}">${c.name}</option>`).join('')}
       </select>
       <button class="btn-primary btn-glow" onclick="runPremiumQuickPredict()">
         🔮 Get Probability
@@ -1887,7 +1516,7 @@ const agg = calculateAggregate(App.profile.maths||0, App.profile.physics||0, App
 
   try {
     const collegeCodes = colleges.map(c => parseInt(c.code));
-    const branchCodes  = courses.map(c => c.code || c.name);
+    const branchCodes  = courses.map(c => c.code);
     const res = await authenticatedFetch(`${API_BASE}/predict/colleges`, {
       method: 'POST',
       body: JSON.stringify({
@@ -2217,6 +1846,7 @@ async function restoreSessionFromToken() {
 // INIT
 // ============================================================
 document.addEventListener('DOMContentLoaded', async () => {
+  await loadCollegesAndBranches();
   initTheme();
   await restoreSessionFromToken();
   navigateTo('landing');

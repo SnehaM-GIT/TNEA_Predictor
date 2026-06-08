@@ -162,3 +162,21 @@ def submit_rank(
     db.commit()
 
     return {"status": "rank saved", "rank": data.actual_rank}
+
+
+@router.get("/colleges-list")
+def get_colleges_list():
+    import pandas as pd
+    from pathlib import Path
+    DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "cleaned"
+    df = pd.read_csv(DATA_DIR / "college_codes.csv")
+    return df[["college_code", "college_name_full", "college_type", "district"]].to_dict(orient="records")
+
+
+@router.get("/branches-list")
+def get_branches_list():
+    import pandas as pd
+    from pathlib import Path
+    DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "cleaned"
+    df = pd.read_csv(DATA_DIR / "course_codes.csv")
+    return df[["branch_code", "branch_name"]].to_dict(orient="records")
