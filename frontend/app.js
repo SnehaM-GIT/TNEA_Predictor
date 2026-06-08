@@ -1994,14 +1994,47 @@ function closePayConfirm() {
   document.getElementById('payConfirmModal')?.classList.add('hidden');
 }
 
-function confirmPayment() {
+async function confirmPayment() {
   closePayConfirm();
-  // RAZORPAY PLACEHOLDER:
-  // new Razorpay({ key:'YOUR_KEY', amount:14900, currency:'INR',
-  //   name:'PickMySeat', description:'Premium Access',
-  //   handler:(r) => handlePaymentSuccess(r.razorpay_payment_id)
-  // }).open();
-  handlePaymentSuccess('pay_demo_' + Date.now());
+  try {
+    const res  = await authenticatedFetch(`${API_BASE}/payment/create-order`, { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) { showError(data.detail || 'Could not start payment', res.status); return; }
+
+    const rzp = new Razorpay({
+      key:         data.key_id,
+      amount:      data.amount,
+      currency:    data.currency,
+      order_id:    data.order_id,
+      name:        'PickMySeat',
+      description: 'Premium Access — One Time',
+      handler: async function (response) {
+        await verifyPayment(response);
+      }
+    });
+    rzp.open();
+  } catch (e) {
+    showError('No connection. Check your internet and retry.');
+  }
+}
+
+async function verifyPayment(response) {
+  try {
+    const res = await authenticatedFetch(`${API_BASE}/payment/verify`, {
+      method: 'POST',
+      body: JSON.stringify({
+        razorpay_payment_id: response.razorpay_payment_id,
+        razorpay_order_id:   response.razorpay_order_id,
+        razorpay_signature:  response.razorpay_signature
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) { showError('Payment verification failed. Contact support@pickmyseat.in'); return; }
+    App.profile.grade = '1';
+    handlePaymentSuccess(response.razorpay_payment_id);
+  } catch (e) {
+    showError('Payment verification failed. Contact support@pickmyseat.in');
+  }
 }
 
 function handlePaymentSuccess(paymentId) {
