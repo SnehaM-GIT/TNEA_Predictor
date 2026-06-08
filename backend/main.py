@@ -4,6 +4,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from routes import predict, auth
+from routes import predict, auth, payment
 
 limiter = Limiter(key_func=get_remote_address)
 
@@ -22,6 +23,7 @@ app.add_middleware(
         "http://localhost",
         "http://127.0.0.1",
         "null",
+        "https://pickymyseat.vercel.app",
     ],
     allow_methods=["GET", "POST"],
     allow_headers=["Authorization", "Content-Type"],
@@ -29,6 +31,7 @@ app.add_middleware(
 
 app.include_router(auth.router, prefix="/auth")
 app.include_router(predict.router, prefix="/predict")
+app.include_router(payment.router, prefix="/payment")
 
 @app.get("/")
 def root():

@@ -11,3 +11,4 @@ numpy
 xgboost
 scikit-learn
 slowapi
+razorpay
