@@ -1082,7 +1082,9 @@ async function loginUser() {
     const data = await res.json();
     if (!res.ok) { showError(data.detail || 'Login failed', res.status); return; }
     localStorage.setItem('token', data.token);
+    await restoreSessionFromToken();   // load stored marks/community into App.profile
     simulateLogin({ email, name: data.name, hasPaid: data.grade === '1' });
+    prefillAndLockMarks();
   } catch(e) {
     showError('No connection. Check your internet and retry.');
   } finally {
@@ -1142,6 +1144,7 @@ function simulateLogin(userData) {
 }
 
 function logout() {
+  localStorage.removeItem('token');
   App.currentUser = null;
   App.userGrade   = 3;
   App.profile     = {
@@ -1218,6 +1221,37 @@ function updateProfileAggregate() {
 }
 
 function markProfileDirty() {}
+
+// Pre-fill marks/community inputs from App.profile, then lock them if
+// App.profile.marksLocked. Null-safe: no-ops when inputs aren't on the page.
+function prefillAndLockMarks() {
+  const fields = {
+    profileMath:     'maths',
+    profilePhysics:  'physics',
+    profileChemistry:'chemistry',
+    profileCategory: 'category',
+  };
+  Object.entries(fields).forEach(([id, key]) => {
+    const el  = document.getElementById(id);
+    const val = App.profile[key];
+    if (el && val != null && val !== '') el.value = val;
+  });
+
+  const locked = App.profile.marksLocked === true;
+  Object.keys(fields).forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.disabled = locked;
+      el.classList.toggle('locked', locked);
+    }
+  });
+
+  const note = document.getElementById('marksLockNote');
+  if (note) {
+    note.classList.toggle('hidden', !locked);
+    if (locked) note.textContent = '🔒 Marks locked — contact support to update';
+  }
+}
 
 function setRankPhase(phase) {
   App.rankPhase = phase;
@@ -2084,7 +2118,18 @@ async function authenticatedFetch(url, options = {}) {
 // ============================================================
 async function restoreSessionFromToken() {
   const token = localStorage.getItem('token');
-  if (!token) return;
+  if (!token) {
+    App.currentUser = null;
+    App.userGrade   = 3;
+    App.profile     = {
+      name:'', email:'', mobile:'', category:'',
+      maths:null, physics:null, chemistry:null,
+      marksLocked:false, rank:null, rankPhase:'pre',
+      hasPaid:false, preferredColleges:[], preferredCourses:[],
+    };
+    updateNav();
+    return;
+  }
   try {
     const res = await authenticatedFetch(`${API_BASE}/auth/me`);
     if (res.status === 401) {
@@ -2111,6 +2156,7 @@ async function restoreSessionFromToken() {
     App.profile.hasPaid      = data.grade === '1';
     App.userGrade            = data.grade === '1' ? 1 : 2;
     updateNav();
+    prefillAndLockMarks();   // pre-fill + lock marks/community inputs if present
   } catch (e) {
     // silently fail if session restore errors
   }
