@@ -1,5 +1,5 @@
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -37,6 +37,17 @@ app.include_router(auth.router, prefix="/auth")
 app.include_router(predict.router, prefix="/predict")
 app.include_router(payment.router, prefix="/payment")
 
+@app.options("/{rest_of_path:path}")
+async def preflight_handler(rest_of_path: str, request: Request):
+    return Response(
+        status_code=200,
+        headers={
+            "Access-Control-Allow-Origin": request.headers.get("origin", "*"),
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+            "Access-Control-Allow-Headers": "Authorization, Content-Type",
+            "Access-Control-Allow-Credentials": "true",
+        }
+    )
 
 @app.on_event("startup")
 async def startup_checks():
@@ -48,7 +59,6 @@ async def startup_checks():
         print(f"⚠️  WARNING: Missing environment variables: {', '.join(missing)}")
     else:
         print("✅ All required environment variables are set.")
-
 
 @app.get("/")
 def root():
