@@ -37,18 +37,31 @@ def create_order(
     authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db)
 ):
+    # Guard: ensure Razorpay keys are configured
+    if not RAZORPAY_KEY_ID or not RAZORPAY_KEY_SECRET:
+        raise HTTPException(
+            status_code=503,
+            detail="Payment service is not configured. Please contact support."
+        )
+
     user = _get_user(authorization, db)
     if not user:
         raise HTTPException(status_code=401, detail="Login required")
     if user.has_paid:
         raise HTTPException(status_code=400, detail="Already purchased")
 
-    client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
-    order  = client.order.create({
-        "amount":   14900,
-        "currency": "INR",
-        "payment_capture": 1
-    })
+    try:
+        client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
+        order  = client.order.create({
+            "amount":   14900,
+            "currency": "INR",
+            "payment_capture": 1
+        })
+    except Exception as e:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Could not create payment order. Please try again. ({str(e)})"
+        )
 
     payment = Payment(
         user_id=user.id,
@@ -78,9 +91,12 @@ def verify_payment(
     if not user:
         raise HTTPException(status_code=401, detail="Login required")
 
-    # verify HMAC signature
-    body      = f"{data.razorpay_order_id}|{data.razorpay_payment_id}"
-    expected  = hmac.new(
+    if not RAZORPAY_KEY_SECRET:
+        raise HTTPException(status_code=503, detail="Payment service is not configured.")
+
+    # Verify HMAC signature
+    body     = f"{data.razorpay_order_id}|{data.razorpay_payment_id}"
+    expected = hmac.new(
         RAZORPAY_KEY_SECRET.encode(),
         body.encode(),
         hashlib.sha256
@@ -89,7 +105,7 @@ def verify_payment(
     if expected != data.razorpay_signature:
         raise HTTPException(status_code=400, detail="Invalid payment signature")
 
-    # update payment record
+    # Update payment record
     payment = db.query(Payment).filter(
         Payment.razorpay_order_id == data.razorpay_order_id
     ).first()
@@ -97,10 +113,10 @@ def verify_payment(
         payment.razorpay_payment_id = data.razorpay_payment_id
         payment.status = "paid"
 
-    # upgrade user to Grade 1 and lock marks
+    # Upgrade user to Grade 1 and lock marks
     user.has_paid    = True
     user.grade       = "1"
     user.marks_locked = True
     db.commit()
 
-    return {"status": "payment verified", "grade": "1"}
+    return {"status": "payment verified", "grade": "1"}
