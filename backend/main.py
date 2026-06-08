@@ -22,6 +22,7 @@ app.add_middleware(
         "http://localhost",
         "http://127.0.0.1",
         "null",
+        "https://pickyyseat.vercel.app",
     ],
     allow_methods=["GET", "POST"],
     allow_headers=["Authorization", "Content-Type"],
