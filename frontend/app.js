@@ -805,6 +805,10 @@ function showError(message, statusCode = null) {
   clearError();
   let msg = message;
 
+  if (statusCode === 429) {
+    msg = 'Too many predictions today. Come back tomorrow for more free predictions, or login to continue.';
+  }
+
   if (statusCode === 401) {
     msg = 'Session expired. Please log in again.';
     localStorage.removeItem('token');
@@ -1092,6 +1096,10 @@ async function runFreePrediction() {
         preferred_branches: [branchCode]
       })
     });
+    if (res.status === 429) {
+      showError('Too many predictions today. Come back tomorrow.', 429);
+      return;
+    }
     const data = await res.json();
     console.log('[freePredict] status:', res.status, 'body:', data);
     if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
@@ -1770,6 +1778,10 @@ const agg = calculateAggregate(
         preferred_branches: branchCodes
       })
     });
+    if (res.status === 429) {
+      showError('Too many predictions today. Come back tomorrow.', 429);
+      return;
+    }
     const data = await res.json();
     const recs = data.recommendations || [];
 
@@ -1926,6 +1938,10 @@ try {
       community: App.profile.category || 'OC'
     })
   });
+  if (res.status === 429) {
+    showError('Too many predictions today. Come back tomorrow.', 429);
+    return;
+  }
   const data = await res.json();
   rankBand = { low: data.range_min, high: data.range_max };
 } catch(e) {
@@ -2003,6 +2019,10 @@ const agg = calculateAggregate(App.profile.maths||0, App.profile.physics||0, App
         preferred_branches: branchCodes
       })
     });
+    if (res.status === 429) {
+      showError('Too many predictions today. Come back tomorrow.', 429);
+      return;
+    }
     const data = await res.json();
     const recs = data.recommendations || [];
 
