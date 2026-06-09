@@ -1653,7 +1653,9 @@ if (App.currentUser) {
           community: App.profile.category,
           maths: App.profile.maths,
           physics: App.profile.physics,
-          chemistry: App.profile.chemistry
+          chemistry: App.profile.chemistry,
+          preferred_colleges: JSON.stringify(App.profile.preferredColleges),
+          preferred_courses: JSON.stringify(App.profile.preferredCourses)
         })
       });
       if (!res.ok) {
@@ -1909,21 +1911,28 @@ const agg = calculateAggregate(
       return;
     }
     const data = await res.json();
-    const recs = data.recommendations || [];
+const recs = data.recommendations || [];
+const rankLow  = data.student_rank_range?.[0] || 0;
+const rankHigh = data.student_rank_range?.[1] || 0;
 
-    colleges.forEach(college => {
-      courses.forEach(course => {
-        const match = recs.find(r =>
-          r.college_code === parseInt(college.code) &&
-          (r.branch_code === (course.code || course.name) || r.branch_name === course.name)
-        );
-        combos.push({ college, course, prob: match ? match.match_confidence : 0 });
-      });
+colleges.forEach(college => {
+  courses.forEach(course => {
+    const match = recs.find(r =>
+      r.college_code === parseInt(college.code) &&
+      (r.branch_code === (course.code || course.name) || r.branch_name === course.name)
+    );
+    combos.push({ 
+      college, course, 
+      prob: match ? match.match_confidence : 0,
+      closingRank: match ? match.closing_rank : '—',
+      rankLow, rankHigh
     });
+  });
+});
   } catch(e) {
     colleges.forEach(college => {
       courses.forEach(course => {
-        combos.push({ college, course, prob: predictProbability(agg, college.code, course.name) });
+        combos.push({ college, course, prob: predictProbability(agg, college.code, course.name), closingRank: '—' });
       });
     });
   } finally {
@@ -1934,7 +1943,6 @@ const agg = calculateAggregate(
 
   grid.innerHTML = combos.map(combo => {
     const pc     = getProbClass(combo.prob);
-    const cutoff = getLastYearCutoff(combo.college.code, combo.course.name);
     return `
       <div class="combo-card prob-${pc.cls}">
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
@@ -1950,7 +1958,8 @@ const agg = calculateAggregate(
             <div class="combo-prob-pct" style="color:${pc.cls==='high'?'var(--success)':pc.cls==='mid'?'var(--warning)':'var(--danger)'}">
               ${combo.prob}%
             </div>
-           <div class="combo-prob-label">Closing Rank: ${cutoff !== '—' ? cutoff : '—'}</div>
+           <div class="combo-prob-label">Closing Rank: ${combo.closingRank || '—'}</div>
+           <div class="combo-prob-label" style="font-size:11px;color:var(--text-muted)">Rank Band: ${combo.rankLow ? combo.rankLow.toLocaleString() + '–' + combo.rankHigh.toLocaleString() : '—'}</div>
           </div>
           <span class="combo-status-tag ${pc.statusCls}">${pc.status}</span>
         </div>
@@ -2186,13 +2195,14 @@ const agg = calculateAggregate(App.profile.maths||0, App.profile.physics||0, App
           r.college_code === parseInt(college.code) &&
           (r.branch_code === (course.code || course.name) || r.branch_name === course.name)
         );
-        combos.push({ college, course, prob: match ? match.match_confidence : 0 });
+        combos.push({ college, course, prob: match ? match.match_confidence : 0, closingRank: match ? match.closing_rank : '—' });
+        
       });
     });
   } catch(e) {
     colleges.forEach(college => {
       courses.forEach(course => {
-        combos.push({ college, course, prob: predictProbability(agg, college.code, course.name) });
+        combos.push({ college, course, prob: predictProbability(agg, college.code, course.name), closingRank: '—', rankLow: 0, rankHigh: 0 });
       });
     });
   } finally {
@@ -2485,6 +2495,8 @@ async function restoreSessionFromToken() {
     App.profile.rankPhase    = data.rank_phase || 'pre';
     App.profile.hasPaid      = data.grade === '1';
     App.userGrade            = data.grade === '1' ? 1 : 2;
+    App.profile.preferredColleges = data.preferred_colleges ? JSON.parse(data.preferred_colleges) : [];
+    App.profile.preferredCourses  = data.preferred_courses  ? JSON.parse(data.preferred_courses)  : [];
     updateNav();
     prefillAndLockMarks();   // pre-fill + lock marks/community inputs if present
   } catch (e) {
