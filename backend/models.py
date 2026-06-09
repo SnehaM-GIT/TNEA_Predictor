@@ -31,6 +31,7 @@ class User(Base):
     has_paid      = Column(Boolean, default=False)
     preferred_colleges = Column(String, nullable=True)  # JSON string
     preferred_courses   = Column(String, nullable=True)  # JSON string
+    application_id = Column(String, nullable=True)
     created_at    = Column(DateTime, default=datetime.utcnow)
 
     predictions   = relationship("Prediction", back_populates="user")

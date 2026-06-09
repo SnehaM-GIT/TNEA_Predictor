@@ -216,3 +216,50 @@ def get_college_branches(college_code: int):
         for b in college_branches
         if b != ""
     ]
+
+    class VerifyRankInput(BaseModel):
+    application_id: str
+    name: str
+    rank: int
+
+@router.post("/verify-rank")
+def verify_rank(
+    data: VerifyRankInput,
+    authorization: Optional[str] = Header(None),
+    db: Session = Depends(get_db)
+):
+    import os
+    if os.getenv("RANK_LIST_RELEASED", "false").lower() != "true":
+        raise HTTPException(status_code=400, detail="Rank list not yet released")
+
+    rank_file = DATA_DIR / "2026_rank_list.csv"
+    if not rank_file.exists():
+        raise HTTPException(status_code=503, detail="Rank list file not uploaded yet")
+
+    rank_df = pd.read_csv(rank_file).fillna("")
+    match = rank_df[rank_df["application_id"].astype(str) == str(data.application_id)]
+
+    if match.empty:
+        raise HTTPException(status_code=404, detail="Application ID not found in rank list")
+
+    row       = match.iloc[0]
+    official_rank = int(row["rank"])
+
+    if official_rank != data.rank:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Rank mismatch. Your official rank is {official_rank}, you entered {data.rank}. Please check again."
+        )
+
+    user = _get_optional_user(authorization, db)
+    if user:
+        user.rank           = official_rank
+        user.application_id = data.application_id
+        db.commit()
+
+    return {
+        "verified":  True,
+        "rank":      official_rank,
+        "name":      str(row.get("name", "")),
+        "community": str(row.get("community", ""))
+    }

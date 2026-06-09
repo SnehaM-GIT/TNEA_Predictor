@@ -63,3 +63,13 @@ async def startup_checks():
 @app.get("/")
 def root():
     return {"status": "PickMySeat API is running"}
+
+    @app.get("/config")
+def get_config():
+    return {
+        "rank_list_released": os.getenv("RANK_LIST_RELEASED", "false").lower() == "true"
+    }
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}

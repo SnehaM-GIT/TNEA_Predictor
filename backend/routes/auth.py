@@ -32,6 +32,7 @@ class UpdateProfileInput(BaseModel):
     chemistry: Optional[float] = None
     preferred_colleges: Optional[str] = None
     preferred_courses: Optional[str] = None
+    application_id: Optional[str] = None
 
 def create_token(user_id: int):
     payload = {
@@ -99,6 +100,7 @@ def get_me(
             "rank": user.rank,
             "preferred_colleges": user.preferred_colleges,
             "preferred_courses": user.preferred_courses,
+            "application_id": user.application_id,
         }
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired")
@@ -132,6 +134,7 @@ def update_profile(
             user.marks_locked = True
         if data.preferred_colleges is not None: user.preferred_colleges = data.preferred_colleges
         if data.preferred_courses is not None: user.preferred_courses = data.preferred_courses
+        if data.application_id is not None: user.application_id = data.application_id
         db.commit()
         return {"status": "profile updated", "marks_locked": user.marks_locked}
     except jwt.ExpiredSignatureError:
