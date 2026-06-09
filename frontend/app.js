@@ -1645,20 +1645,67 @@ function closeMarksUpdate() {
   document.getElementById('marksUpdateModal')?.classList.add('hidden');
 }
 
-function confirmMarksUpdate() {
+async function confirmMarksUpdate() {
   const m = parseFloat(document.getElementById('updateMath')?.value)     || null;
   const p = parseFloat(document.getElementById('updatePhysics')?.value)  || null;
   const c = parseFloat(document.getElementById('updateChemistry')?.value)|| null;
   if (!m || !p || !c) { showToast('Please enter all three marks','error'); return; }
   if (m>100 || p>100 || c>100) { showToast('Each mark must be 0–100','error'); return; }
-  // RAZORPAY ₹25: new Razorpay({ key:'...', amount:2500, ... }).open()
-  App.profile.maths     = m;
-  App.profile.physics   = p;
-  App.profile.chemistry = c;
-  App.profile.marksLocked = true;
-  closeMarksUpdate();
-  showToast('Marks updated successfully ✅','success');
-  renderDashboard();
+
+  const btn = document.querySelector('#marksUpdateModal .btn-primary');
+  if (btn) { btn.disabled = true; btn.textContent = 'Processing...'; }
+
+  showLoader();
+  try {
+    const res = await authenticatedFetch(`${API_BASE}/payment/create-order-marks`, {
+      method: 'POST'
+    });
+    const data = await res.json();
+    if (!res.ok) { showError(data.detail || 'Could not start payment'); return; }
+
+    const rzp = new Razorpay({
+      key:         data.key_id,
+      amount:      data.amount,
+      currency:    data.currency,
+      order_id:    data.order_id,
+      name:        'PickMySeat',
+      description: 'Marks Update — ₹25',
+      prefill: {
+        name:  data.user_name  || '',
+        email: data.user_email || ''
+      },
+      theme: { color: '#6C63FF' },
+      handler: async function(response) {
+        const verRes = await authenticatedFetch(`${API_BASE}/payment/verify-marks`, {
+          method: 'POST',
+          body: JSON.stringify({
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_order_id:   response.razorpay_order_id,
+            razorpay_signature:  response.razorpay_signature,
+            maths: m, physics: p, chemistry: c
+          })
+        });
+        const verData = await verRes.json();
+        if (!verRes.ok) { showError('Payment verified but marks update failed. Contact support.'); return; }
+        App.profile.maths     = m;
+        App.profile.physics   = p;
+        App.profile.chemistry = c;
+        App.profile.marksLocked = true;
+        closeMarksUpdate();
+        showToast('Marks updated successfully ✅', 'success');
+        renderDashboard();
+      },
+      modal: {
+        ondismiss: function() { showToast('Payment cancelled', 'error'); }
+      }
+    });
+    rzp.open();
+  } catch(e) {
+    showError('No connection. Check your internet and retry.');
+  } finally {
+    hideLoader();
+    if (btn) { btn.disabled = false; btn.textContent = 'Pay ₹25 & Update'; }
+  }
 }
 
 // ============================================================
