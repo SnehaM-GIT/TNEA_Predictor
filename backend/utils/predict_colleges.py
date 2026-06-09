@@ -60,12 +60,20 @@ def _status(margin):
     return "SAFE"
 
 
-def _match_confidence(rank_conf, status):
-    if status == "SAFE":
-        return min(95, rank_conf + 10)
-    if status == "MARGINAL":
+def _match_confidence(rank_conf, status, safety_margin=0, closing_rank=1):
+    if status == "WONT_GET":
+        return 15
+
+    if closing_rank <= 0:
         return rank_conf
-    return max(10, rank_conf - 30)
+
+    # rank_ratio = student_rank / closing_rank
+    # low ratio (rank 1 vs closing 28) = very safe = high probability
+    # high ratio (rank 27 vs closing 28) = risky = lower probability
+    rank_ratio = (closing_rank - safety_margin) / closing_rank
+
+    prob = 95 - int(rank_ratio * 45)
+    return max(48, min(95, prob))
 
 
 def predict_colleges(marks, community, top_n=5):
@@ -114,7 +122,7 @@ def predict_colleges(marks, community, top_n=5):
             "closing_rank": int(row["predicted_closing_rank_2026"]),
             "safety_margin": margin,
             "status": status,
-            "match_confidence": int(_match_confidence(rank_conf, status)),
+          "match_confidence": int(_match_confidence(rank_conf, status, margin, int(row["predicted_closing_rank_2026"]))),
         })
 
     return {
