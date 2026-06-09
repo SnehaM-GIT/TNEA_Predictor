@@ -1867,45 +1867,72 @@ function initPremiumSearch() {
   populateAllCourses('premiumCourseSelect');
 }
 
-function runPremiumQuickPredict() {
+async function runPremiumQuickPredict() {
   const wrap   = document.getElementById('premiumSearchWrap');
   const course = document.getElementById('premiumCourseSelect')?.value;
-  const college= wrap?._selectedCollege;
+  const college = wrap?._selectedCollege;
 
   if (!college) { showToast('Please select a college', 'error'); return; }
-  if (!course)  { showToast('Please select a course',  'error'); return; }
+  if (!course)  { showToast('Please select a course', 'error'); return; }
 
-  const agg  = calculateAggregate(
+  const agg = calculateAggregate(
     App.profile.maths||0, App.profile.physics||0, App.profile.chemistry||0
   );
+  if (agg === 0) { showToast('Please add your marks in Profile first', 'error'); return; }
 
-  if (agg === 0) {
-    showToast('Please add your marks in Profile first', 'error'); return;
-  }
+  const branchObj  = BRANCHES.find(b => b.name === course || b.code === course);
+  const branchCode = branchObj ? branchObj.code : course;
 
-  const prob   = predictProbability(agg, college.code, course);
-  const cutoff = getLastYearCutoff(college.code, course);
-  const pc     = getProbClass(prob);
+  const btn = document.querySelector('#premiumSearchWrap .btn-primary');
+  if (btn) { btn.disabled = true; btn.textContent = 'Predicting...'; }
 
-  const result = document.getElementById('premiumQuickResult');
-  if (result) {
-    result.classList.remove('hidden');
-    result.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:16px;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border2)">
-        <div>
-          <div style="font-size:12px;color:var(--text-muted);margin-bottom:2px">
-            <span class="college-code-tag">${college.code}</span> ${college.name}
+  showLoader();
+  try {
+    const res = await authenticatedFetch(`${API_BASE}/predict/colleges`, {
+      method: 'POST',
+      body: JSON.stringify({
+        maths:              App.profile.maths || 0,
+        physics:            App.profile.physics || 0,
+        chemistry:          App.profile.chemistry || 0,
+        community:          App.profile.category || 'OC',
+        top_n:              1,
+        preferred_colleges: [parseInt(college.code)],
+        preferred_branches: [branchCode]
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) { showError(data.detail || 'Prediction failed', res.status); return; }
+
+    const rec    = data.recommendations?.[0];
+    const prob   = rec ? rec.match_confidence : 0;
+    const cutoff = rec ? rec.closing_rank : '—';
+    const pc     = getProbClass(prob);
+
+    const result = document.getElementById('premiumQuickResult');
+    if (result) {
+      result.classList.remove('hidden');
+      result.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:16px;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border2)">
+          <div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:2px">
+              <span class="college-code-tag">${college.code}</span> ${college.name}
+            </div>
+            <div style="font-size:14px;font-weight:600;color:var(--text-dim)">${course}</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Closing Rank: ${cutoff} · Agg: ${agg}/200</div>
           </div>
-          <div style="font-size:14px;font-weight:600;color:var(--text-dim)">${course}</div>
-          <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Cutoff: ${cutoff} · Agg: ${agg}/200</div>
-        </div>
-        <div style="text-align:right">
-          <div style="font-size:32px;font-weight:900;color:${prob>=65?'var(--success)':prob>=35?'var(--warning)':'var(--danger)'}">
-            ${prob}%
+          <div style="text-align:right">
+            <div style="font-size:32px;font-weight:900;color:${prob>=65?'var(--success)':prob>=35?'var(--warning)':'var(--danger)'}">
+              ${prob}%
+            </div>
+            <span class="combo-status-tag ${pc.statusCls}">${pc.status}</span>
           </div>
-          <span class="combo-status-tag ${pc.statusCls}">${pc.status}</span>
-        </div>
-      </div>`;
+        </div>`;
+    }
+  } catch(e) {
+    showError('No connection. Check your internet and retry.');
+  } finally {
+    hideLoader();
+    if (btn) { btn.disabled = false; btn.textContent = '🔮 Get Probability'; }
   }
 }
 
