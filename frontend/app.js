@@ -630,7 +630,7 @@ async function buildCollegeSearchDropdown(containerId, onSelect, placeholder = '
       list.innerHTML = `<div class="college-no-result">No colleges found. Try a different search.</div>`;
     } else {
       list.innerHTML = colleges.slice(0, 50).map(c => `
-        <div class="college-option" onclick="selectCollegeOption('${containerId}', '${c.code}')">
+        <div class="college-option" style="padding:14px 12px;min-height:48px;display:flex;align-items:center;gap:8px;cursor:pointer" onclick="selectCollegeOption('${containerId}', '${c.code}')">
           <span class="college-code-tag">${c.code}</span>
           <span class="college-option-name">${c.name}</span>
         </div>`).join('');
@@ -804,6 +804,10 @@ let errorTimeout = null;
 function showError(message, statusCode = null) {
   clearError();
   let msg = message;
+
+  if (statusCode === 429) {
+    msg = 'Too many predictions today. Come back tomorrow for more free predictions, or login to continue.';
+  }
 
   if (statusCode === 401) {
     msg = 'Session expired. Please log in again.';
@@ -1091,13 +1095,6 @@ async function runFreePrediction() {
   if (parseFloat(m)>100 || parseFloat(p)>100 || parseFloat(c)>100) {
     showToast('Each mark must be between 0 and 100', 'error'); return;
   }
-  if (!freeSelectedCollege) {
-    showToast('Please select a college', 'error'); return;
-  }
-  if (!course) {
-    showToast('Please select a course', 'error'); return;
-  }
-
   const btn = document.querySelector('#freePredictForm .predict-btn');
   if (btn) { btn.disabled = true; btn.textContent = 'Predicting...'; }
 
@@ -1106,7 +1103,7 @@ async function runFreePrediction() {
   const branchObj  = BRANCHES.find(b => b.name === course || b.code === course);
   const branchCode = branchObj ? branchObj.code : course;
 
-  let prob = 0, rankBand = { low: 0, high: 0 }, cutoff = '—', ok = false;
+  let prob = 0, rankBand = { low: 0, high: 0 }, cutoff = '—', ok = false, recs = [];
 
   try {
     showLoader();
@@ -1119,15 +1116,20 @@ async function runFreePrediction() {
         physics:            parseFloat(p),
         chemistry:          parseFloat(c),
         community:          document.getElementById('freeCategory')?.value || 'OC',
-        top_n:              1,
-        preferred_colleges: [parseInt(freeSelectedCollege.code)],
-        preferred_branches: [branchCode]
+        top_n:              freeSelectedCollege ? 1 : 5,
+        preferred_colleges: freeSelectedCollege ? [parseInt(freeSelectedCollege.code)] : null,
+        preferred_branches: (branchCode && branchCode !== '') ? [branchCode] : null
       })
     });
+    if (res.status === 429) {
+      showError('Too many predictions today. Come back tomorrow.', 429);
+      return;
+    }
     const data = await res.json();
     console.log('[freePredict] status:', res.status, 'body:', data);
     if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
-    const rec  = data.recommendations?.[0];
+    recs       = data.recommendations || [];
+    const rec  = recs[0];
     prob       = rec ? rec.match_confidence : 0;
     rankBand   = { low: data.student_rank_range?.[0], high: data.student_rank_range?.[1] };
     cutoff     = rec ? rec.closing_rank : '—';
@@ -1142,11 +1144,15 @@ async function runFreePrediction() {
 
   if (!ok) return;   // failed — leave form usable so the guest can retry
 
-  renderFreeResult({
-    agg, prob, rankBand, cutoff,
-    college: `[${freeSelectedCollege.code}] ${freeSelectedCollege.name}`,
-    course
-  });
+  if (freeSelectedCollege) {
+    renderFreeResult({
+      agg, prob, rankBand, cutoff,
+      college: `[${freeSelectedCollege.code}] ${freeSelectedCollege.name}`,
+      course: course || 'All branches'
+    });
+  } else {
+    renderFreeResultList({ agg, rankBand, recs, course: course || 'All branches' });
+  }
 
   setCookie('pms_free_used', '1', 7);
 
@@ -1185,6 +1191,53 @@ function renderFreeResult({ agg, prob, rankBand, cutoff, college, course }) {
   } else {
     msgEl.textContent = `⚠️ Very competitive. Your aggregate of ${agg} is below the typical cutoff of ${cutoff}. Consider safer options.`;
     msgEl.className   = 'result-message danger';
+  }
+
+  document.querySelector('.probability-display')?.classList.remove('hidden');
+  document.getElementById('freeResultList')?.classList.add('hidden');
+
+  document.getElementById('freeResultCard').classList.remove('hidden');
+  document.getElementById('freeResultCard').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function renderFreeResultList({ agg, rankBand, recs, course }) {
+  document.getElementById('resultCollegeName').textContent = 'Top colleges for your marks';
+  document.getElementById('resultCourseName').textContent  = course;
+
+  // single-result probability ring not applicable for a list
+  document.querySelector('.probability-display')?.classList.add('hidden');
+
+  const list = document.getElementById('freeResultList');
+  if (list) {
+    if (!recs.length) {
+      list.innerHTML = `<div class="free-result-empty">No colleges matched your marks. Try adjusting your inputs.</div>`;
+    } else {
+      list.innerHTML = recs.map(r => {
+        const pc = getProbClass(r.match_confidence);
+        return `
+          <div class="free-result-row">
+            <div class="free-result-row-main">
+              <div class="free-result-college">
+                <span class="college-code-tag small">${r.college_code}</span>${r.college_name}
+              </div>
+              <div class="free-result-branch">${r.branch_name}</div>
+              <div class="free-result-meta">Closing Rank: ${r.closing_rank} · Agg: ${agg}/200</div>
+            </div>
+            <div class="free-result-row-prob">
+              <div class="free-result-pct" style="color:${r.match_confidence>=65?'var(--success)':r.match_confidence>=35?'var(--warning)':'var(--danger)'}">${r.match_confidence}%</div>
+              <span class="combo-status-tag ${pc.statusCls}">${pc.status}</span>
+            </div>
+          </div>`;
+      }).join('');
+    }
+    list.classList.remove('hidden');
+  }
+
+  const msgEl = document.getElementById('resultMessage');
+  if (msgEl) {
+    const band = rankBand.low ? `${rankBand.low.toLocaleString()} – ${rankBand.high.toLocaleString()}` : '—';
+    msgEl.textContent = `Your aggregate ${agg}/200 · Predicted rank band ${band}. Showing your best ${recs.length} matches.`;
+    msgEl.className   = 'result-message';
   }
 
   document.getElementById('freeResultCard').classList.remove('hidden');
@@ -1637,20 +1690,67 @@ function closeMarksUpdate() {
   document.getElementById('marksUpdateModal')?.classList.add('hidden');
 }
 
-function confirmMarksUpdate() {
+async function confirmMarksUpdate() {
   const m = parseFloat(document.getElementById('updateMath')?.value)     || null;
   const p = parseFloat(document.getElementById('updatePhysics')?.value)  || null;
   const c = parseFloat(document.getElementById('updateChemistry')?.value)|| null;
   if (!m || !p || !c) { showToast('Please enter all three marks','error'); return; }
   if (m>100 || p>100 || c>100) { showToast('Each mark must be 0–100','error'); return; }
-  // RAZORPAY ₹25: new Razorpay({ key:'...', amount:2500, ... }).open()
-  App.profile.maths     = m;
-  App.profile.physics   = p;
-  App.profile.chemistry = c;
-  App.profile.marksLocked = true;
-  closeMarksUpdate();
-  showToast('Marks updated successfully ✅','success');
-  renderDashboard();
+
+  const btn = document.querySelector('#marksUpdateModal .btn-primary');
+  if (btn) { btn.disabled = true; btn.textContent = 'Processing...'; }
+
+  showLoader();
+  try {
+    const res = await authenticatedFetch(`${API_BASE}/payment/create-order-marks`, {
+      method: 'POST'
+    });
+    const data = await res.json();
+    if (!res.ok) { showError(data.detail || 'Could not start payment'); return; }
+
+    const rzp = new Razorpay({
+      key:         data.key_id,
+      amount:      data.amount,
+      currency:    data.currency,
+      order_id:    data.order_id,
+      name:        'PickMySeat',
+      description: 'Marks Update — ₹25',
+      prefill: {
+        name:  data.user_name  || '',
+        email: data.user_email || ''
+      },
+      theme: { color: '#6C63FF' },
+      handler: async function(response) {
+        const verRes = await authenticatedFetch(`${API_BASE}/payment/verify-marks`, {
+          method: 'POST',
+          body: JSON.stringify({
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_order_id:   response.razorpay_order_id,
+            razorpay_signature:  response.razorpay_signature,
+            maths: m, physics: p, chemistry: c
+          })
+        });
+        const verData = await verRes.json();
+        if (!verRes.ok) { showError('Payment verified but marks update failed. Contact support.'); return; }
+        App.profile.maths     = m;
+        App.profile.physics   = p;
+        App.profile.chemistry = c;
+        App.profile.marksLocked = true;
+        closeMarksUpdate();
+        showToast('Marks updated successfully ✅', 'success');
+        renderDashboard();
+      },
+      modal: {
+        ondismiss: function() { showToast('Payment cancelled', 'error'); }
+      }
+    });
+    rzp.open();
+  } catch(e) {
+    showError('No connection. Check your internet and retry.');
+  } finally {
+    hideLoader();
+    if (btn) { btn.disabled = false; btn.textContent = 'Pay ₹25 & Update'; }
+  }
 }
 
 // ============================================================
@@ -1804,6 +1904,10 @@ const agg = calculateAggregate(
         preferred_branches: branchCodes
       })
     });
+    if (res.status === 429) {
+      showError('Too many predictions today. Come back tomorrow.', 429);
+      return;
+    }
     const data = await res.json();
     const recs = data.recommendations || [];
 
@@ -1889,45 +1993,72 @@ function initPremiumSearch() {
   populateAllCourses('premiumCourseSelect');
 }
 
-function runPremiumQuickPredict() {
+async function runPremiumQuickPredict() {
   const wrap   = document.getElementById('premiumSearchWrap');
   const course = document.getElementById('premiumCourseSelect')?.value;
-  const college= wrap?._selectedCollege;
+  const college = wrap?._selectedCollege;
 
   if (!college) { showToast('Please select a college', 'error'); return; }
-  if (!course)  { showToast('Please select a course',  'error'); return; }
+  if (!course)  { showToast('Please select a course', 'error'); return; }
 
-  const agg  = calculateAggregate(
+  const agg = calculateAggregate(
     App.profile.maths||0, App.profile.physics||0, App.profile.chemistry||0
   );
+  if (agg === 0) { showToast('Please add your marks in Profile first', 'error'); return; }
 
-  if (agg === 0) {
-    showToast('Please add your marks in Profile first', 'error'); return;
-  }
+  const branchObj  = BRANCHES.find(b => b.name === course || b.code === course);
+  const branchCode = branchObj ? branchObj.code : course;
 
-  const prob   = predictProbability(agg, college.code, course);
-  const cutoff = getLastYearCutoff(college.code, course);
-  const pc     = getProbClass(prob);
+  const btn = document.querySelector('#premiumSearchWrap .btn-primary');
+  if (btn) { btn.disabled = true; btn.textContent = 'Predicting...'; }
 
-  const result = document.getElementById('premiumQuickResult');
-  if (result) {
-    result.classList.remove('hidden');
-    result.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:16px;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border2)">
-        <div>
-          <div style="font-size:12px;color:var(--text-muted);margin-bottom:2px">
-            <span class="college-code-tag">${college.code}</span> ${college.name}
+  showLoader();
+  try {
+    const res = await authenticatedFetch(`${API_BASE}/predict/colleges`, {
+      method: 'POST',
+      body: JSON.stringify({
+        maths:              App.profile.maths || 0,
+        physics:            App.profile.physics || 0,
+        chemistry:          App.profile.chemistry || 0,
+        community:          App.profile.category || 'OC',
+        top_n:              1,
+        preferred_colleges: [parseInt(college.code)],
+        preferred_branches: [branchCode]
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) { showError(data.detail || 'Prediction failed', res.status); return; }
+
+    const rec    = data.recommendations?.[0];
+    const prob   = rec ? rec.match_confidence : 0;
+    const cutoff = rec ? rec.closing_rank : '—';
+    const pc     = getProbClass(prob);
+
+    const result = document.getElementById('premiumQuickResult');
+    if (result) {
+      result.classList.remove('hidden');
+      result.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:16px;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border2)">
+          <div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:2px">
+              <span class="college-code-tag">${college.code}</span> ${college.name}
+            </div>
+            <div style="font-size:14px;font-weight:600;color:var(--text-dim)">${course}</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Closing Rank: ${cutoff} · Agg: ${agg}/200</div>
           </div>
-          <div style="font-size:14px;font-weight:600;color:var(--text-dim)">${course}</div>
-          <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Closing Rank: ${cutoff} · Agg: ${agg}/200</div>
-        </div>
-        <div style="text-align:right">
-          <div style="font-size:32px;font-weight:900;color:${prob>=65?'var(--success)':prob>=35?'var(--warning)':'var(--danger)'}">
-            ${prob}%
+          <div style="text-align:right">
+            <div style="font-size:32px;font-weight:900;color:${prob>=65?'var(--success)':prob>=35?'var(--warning)':'var(--danger)'}">
+              ${prob}%
+            </div>
+            <span class="combo-status-tag ${pc.statusCls}">${pc.status}</span>
           </div>
-          <span class="combo-status-tag ${pc.statusCls}">${pc.status}</span>
-        </div>
-      </div>`;
+        </div>`;
+    }
+  } catch(e) {
+    showError('No connection. Check your internet and retry.');
+  } finally {
+    hideLoader();
+    if (btn) { btn.disabled = false; btn.textContent = '🔮 Get Probability'; }
   }
 }
 
@@ -1960,6 +2091,10 @@ try {
       community: App.profile.category || 'OC'
     })
   });
+  if (res.status === 429) {
+    showError('Too many predictions today. Come back tomorrow.', 429);
+    return;
+  }
   const data = await res.json();
   rankBand = { low: data.range_min, high: data.range_max };
 } catch(e) {
@@ -2022,6 +2157,7 @@ async function renderChoiceList() {
 const agg = calculateAggregate(App.profile.maths||0, App.profile.physics||0, App.profile.chemistry||0);
   const combos = [];
 
+  showLoader();
   try {
     const collegeCodes = colleges.map(c => parseInt(c.code));
     const branchCodes  = courses.map(c => c.code);
@@ -2037,6 +2173,10 @@ const agg = calculateAggregate(App.profile.maths||0, App.profile.physics||0, App
         preferred_branches: branchCodes
       })
     });
+    if (res.status === 429) {
+      showError('Too many predictions today. Come back tomorrow.', 429);
+      return;
+    }
     const data = await res.json();
     const recs = data.recommendations || [];
 
@@ -2055,6 +2195,8 @@ const agg = calculateAggregate(App.profile.maths||0, App.profile.physics||0, App
         combos.push({ college, course, prob: predictProbability(agg, college.code, course.name) });
       });
     });
+  } finally {
+    hideLoader();
   }
 
   combos.sort((a,b) => b.prob - a.prob);
