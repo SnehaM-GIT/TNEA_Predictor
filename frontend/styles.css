@@ -2368,8 +2368,58 @@ button {
    ============================================ */
 
 @media (max-width: 768px) {
+  .nav-container {
+    padding: 12px 16px;
+  }
+
   .nav-links {
     display: none;
+  }
+
+  .nav-actions {
+    gap: 6px;
+  }
+
+  #navUpgradeBtn {
+    display: none !important;
+  }
+
+  .nav-premium {
+    display: none;
+  }
+
+  #themeToggle {
+    width: 30px;
+    height: 30px;
+    font-size: 14px;
+  }
+
+  .nav-user {
+    padding: 4px 8px;
+    gap: 6px;
+  }
+
+  #navUserName {
+    display: none;
+  }
+
+  .nav-avatar {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+
+  .nav-chevron {
+    display: none;
+  }
+
+  .brand-name {
+    font-size: 16px;
+  }
+
+  .brand-icon-img {
+    height: 28px;
+    width: 28px;
   }
 
   .page-container {
