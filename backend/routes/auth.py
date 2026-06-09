@@ -30,6 +30,8 @@ class UpdateProfileInput(BaseModel):
     maths: Optional[float] = None
     physics: Optional[float] = None
     chemistry: Optional[float] = None
+    preferred_colleges: Optional[str] = None
+    preferred_courses: Optional[str] = None
 
 def create_token(user_id: int):
     payload = {
@@ -95,6 +97,8 @@ def get_me(
             "chemistry": user.chemistry,
             "aggregate": user.aggregate,
             "rank": user.rank,
+            "preferred_colleges": user.preferred_colleges,
+            "preferred_courses": user.preferred_courses,
         }
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired")
@@ -124,9 +128,10 @@ def update_profile(
         if data.physics is not None: user.physics = data.physics
         if data.chemistry is not None: user.chemistry = data.chemistry
         if data.maths and data.physics and data.chemistry:
-            # Correct TNEA formula: (Maths/2) + (Physics/4) + (Chemistry/4) × 2
             user.aggregate = (data.maths / 2) + (data.physics / 4) + (data.chemistry / 4) * 2
             user.marks_locked = True
+        if data.preferred_colleges is not None: user.preferred_colleges = data.preferred_colleges
+        if data.preferred_courses is not None: user.preferred_courses = data.preferred_courses
         db.commit()
         return {"status": "profile updated", "marks_locked": user.marks_locked}
     except jwt.ExpiredSignatureError:
