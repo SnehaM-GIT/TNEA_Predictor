@@ -1103,7 +1103,7 @@ async function runFreePrediction() {
   const branchObj  = BRANCHES.find(b => b.name === course || b.code === course);
   const branchCode = branchObj ? branchObj.code : course;
 
-  let prob = 0, rankBand = { low: 0, high: 0 }, cutoff = '—', ok = false;
+  let prob = 0, rankBand = { low: 0, high: 0 }, cutoff = '—', ok = false, recs = [];
 
   try {
     showLoader();
@@ -1128,7 +1128,8 @@ async function runFreePrediction() {
     const data = await res.json();
     console.log('[freePredict] status:', res.status, 'body:', data);
     if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
-    const rec  = data.recommendations?.[0];
+    recs       = data.recommendations || [];
+    const rec  = recs[0];
     prob       = rec ? rec.match_confidence : 0;
     rankBand   = { low: data.student_rank_range?.[0], high: data.student_rank_range?.[1] };
     cutoff     = rec ? rec.closing_rank : '—';
@@ -1143,11 +1144,15 @@ async function runFreePrediction() {
 
   if (!ok) return;   // failed — leave form usable so the guest can retry
 
-  renderFreeResult({
-    agg, prob, rankBand, cutoff,
-    college: freeSelectedCollege ? `[${freeSelectedCollege.code}] ${freeSelectedCollege.name}` : 'Top colleges for your marks',
-    course: course || 'All branches'
-  });
+  if (freeSelectedCollege) {
+    renderFreeResult({
+      agg, prob, rankBand, cutoff,
+      college: `[${freeSelectedCollege.code}] ${freeSelectedCollege.name}`,
+      course: course || 'All branches'
+    });
+  } else {
+    renderFreeResultList({ agg, rankBand, recs, course: course || 'All branches' });
+  }
 
   setCookie('pms_free_used', '1', 7);
 
@@ -1186,6 +1191,53 @@ function renderFreeResult({ agg, prob, rankBand, cutoff, college, course }) {
   } else {
     msgEl.textContent = `⚠️ Very competitive. Your aggregate of ${agg} is below the typical cutoff of ${cutoff}. Consider safer options.`;
     msgEl.className   = 'result-message danger';
+  }
+
+  document.querySelector('.probability-display')?.classList.remove('hidden');
+  document.getElementById('freeResultList')?.classList.add('hidden');
+
+  document.getElementById('freeResultCard').classList.remove('hidden');
+  document.getElementById('freeResultCard').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function renderFreeResultList({ agg, rankBand, recs, course }) {
+  document.getElementById('resultCollegeName').textContent = 'Top colleges for your marks';
+  document.getElementById('resultCourseName').textContent  = course;
+
+  // single-result probability ring not applicable for a list
+  document.querySelector('.probability-display')?.classList.add('hidden');
+
+  const list = document.getElementById('freeResultList');
+  if (list) {
+    if (!recs.length) {
+      list.innerHTML = `<div class="free-result-empty">No colleges matched your marks. Try adjusting your inputs.</div>`;
+    } else {
+      list.innerHTML = recs.map(r => {
+        const pc = getProbClass(r.match_confidence);
+        return `
+          <div class="free-result-row">
+            <div class="free-result-row-main">
+              <div class="free-result-college">
+                <span class="college-code-tag small">${r.college_code}</span>${r.college_name}
+              </div>
+              <div class="free-result-branch">${r.branch_name}</div>
+              <div class="free-result-meta">Closing Rank: ${r.closing_rank} · Agg: ${agg}/200</div>
+            </div>
+            <div class="free-result-row-prob">
+              <div class="free-result-pct" style="color:${r.match_confidence>=65?'var(--success)':r.match_confidence>=35?'var(--warning)':'var(--danger)'}">${r.match_confidence}%</div>
+              <span class="combo-status-tag ${pc.statusCls}">${pc.status}</span>
+            </div>
+          </div>`;
+      }).join('');
+    }
+    list.classList.remove('hidden');
+  }
+
+  const msgEl = document.getElementById('resultMessage');
+  if (msgEl) {
+    const band = rankBand.low ? `${rankBand.low.toLocaleString()} – ${rankBand.high.toLocaleString()}` : '—';
+    msgEl.textContent = `Your aggregate ${agg}/200 · Predicted rank band ${band}. Showing your best ${recs.length} matches.`;
+    msgEl.className   = 'result-message';
   }
 
   document.getElementById('freeResultCard').classList.remove('hidden');

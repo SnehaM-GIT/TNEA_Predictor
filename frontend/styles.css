@@ -1810,6 +1810,62 @@ button {
   border: 1px solid;
 }
 
+.free-result-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.free-result-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+}
+
+.free-result-college {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.free-result-branch {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.free-result-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.free-result-row-prob {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.free-result-pct {
+  font-size: 24px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.free-result-empty {
+  padding: 24px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
 .result-message.high {
   background: var(--success-bg);
   color: var(--success);
