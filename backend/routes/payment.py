@@ -119,4 +119,92 @@ def verify_payment(
     user.marks_locked = True
     db.commit()
 
-    return {"status": "payment verified", "grade": "1"}
+    return {"status": "payment verified", "grade": "1"}
+
+
+@router.post("/create-order-marks")
+def create_order_marks(
+    authorization: Optional[str] = Header(None),
+    db: Session = Depends(get_db)
+):
+    user = _get_user(authorization, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Login required")
+    if not user.has_paid:
+        raise HTTPException(status_code=403, detail="Marks update requires Premium access")
+
+    if not RAZORPAY_KEY_ID or not RAZORPAY_KEY_SECRET:
+        raise HTTPException(status_code=503, detail="Payment service not configured")
+
+    try:
+        client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
+        order  = client.order.create({
+            "amount":   2500,
+            "currency": "INR",
+            "payment_capture": 1
+        })
+    except Exception as e:
+        raise HTTPException(status_code=503, detail="Payment service unavailable. Try again later.")
+
+    payment = Payment(
+        user_id=user.id,
+        razorpay_order_id=order["id"],
+        amount=2500,
+        status="created"
+    )
+    db.add(payment)
+    db.commit()
+
+    return {
+        "order_id":   order["id"],
+        "amount":     2500,
+        "currency":   "INR",
+        "key_id":     RAZORPAY_KEY_ID,
+        "user_name":  user.name,
+        "user_email": user.email
+    }
+
+
+class VerifyMarksUpdateInput(BaseModel):
+    razorpay_order_id:   str
+    razorpay_payment_id: str
+    razorpay_signature:  str
+    maths:   float
+    physics: float
+    chemistry: float
+
+
+@router.post("/verify-marks")
+def verify_marks_update(
+    data: VerifyMarksUpdateInput,
+    authorization: Optional[str] = Header(None),
+    db: Session = Depends(get_db)
+):
+    user = _get_user(authorization, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Login required")
+
+    body     = f"{data.razorpay_order_id}|{data.razorpay_payment_id}"
+    expected = hmac.new(
+        RAZORPAY_KEY_SECRET.encode(),
+        body.encode(),
+        hashlib.sha256
+    ).hexdigest()
+
+    if expected != data.razorpay_signature:
+        raise HTTPException(status_code=400, detail="Invalid payment signature")
+
+    payment = db.query(Payment).filter(
+        Payment.razorpay_order_id == data.razorpay_order_id
+    ).first()
+    if payment:
+        payment.razorpay_payment_id = data.razorpay_payment_id
+        payment.status = "paid"
+
+    user.maths     = data.maths
+    user.physics   = data.physics
+    user.chemistry = data.chemistry
+    user.aggregate = data.maths + data.physics/2 + data.chemistry/2
+    db.commit()
+
+    return {"status": "marks updated", "aggregate": user.aggregate}
