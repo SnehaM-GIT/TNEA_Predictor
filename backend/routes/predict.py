@@ -8,16 +8,33 @@ from auth_middleware import get_current_user, require_grade
 from models import User, Prediction, RankInput
 from slowapi import Limiter
 from slowapi.util import get_remote_address
-from datetime import datetime
+from datetime import datetime, date as _date
 import pandas as pd
 from pathlib import Path
 import jwt, os
+from collections import defaultdict
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
 
 VALID_COMMUNITIES = {"OC", "BC", "BCM", "MBC", "SC", "ST", "SCA"}
 DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "cleaned"
+
+# In-memory guest IP tracker — resets on redeploy (Redis later)
+_guest_ip_tracker: dict = defaultdict(lambda: {"date": None, "count": 0})
+
+def _check_guest_ip_limit(ip: str):
+    today = str(_date.today())
+    rec = _guest_ip_tracker[ip]
+    if rec["date"] != today:
+        rec["date"] = today
+        rec["count"] = 0
+    rec["count"] += 1
+    if rec["count"] > 1:
+        raise HTTPException(
+            status_code=429,
+            detail="Free predictions limited to 1 per day. Login for more."
+        )
 
 class MarksInput(BaseModel):
     maths: float
@@ -81,6 +98,10 @@ def predict_colleges(
     authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db)
 ):
+    # Grade 3 guest limit — 1 prediction per IP per day
+    if not authorization:
+        _check_guest_ip_limit(get_remote_address(request))
+
     marks = data.maths + data.physics / 2 + data.chemistry / 2
     try:
         result = get_college_predictions_filtered(
