@@ -2511,6 +2511,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadCollegesAndBranches();
   initTheme();
   await restoreSessionFromToken();
+  await checkRankListStatus();
   navigateTo('landing');
-  // FIREBASE: firebase.auth().onAuthStateChanged(user => { ... })
 });
