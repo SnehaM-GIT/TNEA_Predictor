@@ -217,11 +217,10 @@ def get_college_branches(college_code: int):
         if b != ""
     ]
 
-    class VerifyRankInput(BaseModel):
+class VerifyRankInput(BaseModel):
     application_id: str
     name: str
     rank: int
-
 @router.post("/verify-rank")
 def verify_rank(
     data: VerifyRankInput,
