@@ -1095,13 +1095,6 @@ async function runFreePrediction() {
   if (parseFloat(m)>100 || parseFloat(p)>100 || parseFloat(c)>100) {
     showToast('Each mark must be between 0 and 100', 'error'); return;
   }
-  if (!freeSelectedCollege) {
-    showToast('Please select a college', 'error'); return;
-  }
-  if (!course) {
-    showToast('Please select a course', 'error'); return;
-  }
-
   const btn = document.querySelector('#freePredictForm .predict-btn');
   if (btn) { btn.disabled = true; btn.textContent = 'Predicting...'; }
 
@@ -1123,9 +1116,9 @@ async function runFreePrediction() {
         physics:            parseFloat(p),
         chemistry:          parseFloat(c),
         community:          document.getElementById('freeCategory')?.value || 'OC',
-        top_n:              1,
-        preferred_colleges: [parseInt(freeSelectedCollege.code)],
-        preferred_branches: [branchCode]
+        top_n:              freeSelectedCollege ? 1 : 5,
+        preferred_colleges: freeSelectedCollege ? [parseInt(freeSelectedCollege.code)] : null,
+        preferred_branches: (branchCode && branchCode !== '') ? [branchCode] : null
       })
     });
     if (res.status === 429) {
@@ -1152,8 +1145,8 @@ async function runFreePrediction() {
 
   renderFreeResult({
     agg, prob, rankBand, cutoff,
-    college: `[${freeSelectedCollege.code}] ${freeSelectedCollege.name}`,
-    course
+    college: freeSelectedCollege ? `[${freeSelectedCollege.code}] ${freeSelectedCollege.name}` : 'Top colleges for your marks',
+    course: course || 'All branches'
   });
 
   setCookie('pms_free_used', '1', 7);
