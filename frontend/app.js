@@ -2004,6 +2004,7 @@ async function renderChoiceList() {
 const agg = calculateAggregate(App.profile.maths||0, App.profile.physics||0, App.profile.chemistry||0);
   const combos = [];
 
+  showLoader();
   try {
     const collegeCodes = colleges.map(c => parseInt(c.code));
     const branchCodes  = courses.map(c => c.code);
@@ -2041,6 +2042,8 @@ const agg = calculateAggregate(App.profile.maths||0, App.profile.physics||0, App
         combos.push({ college, course, prob: predictProbability(agg, college.code, course.name) });
       });
     });
+  } finally {
+    hideLoader();
   }
 
   combos.sort((a,b) => b.prob - a.prob);
