@@ -126,6 +126,7 @@ def update_profile(
         if data.maths and data.physics and data.chemistry:
             # Correct TNEA formula: (Maths/2) + (Physics/4) + (Chemistry/4) × 2
             user.aggregate = (data.maths / 2) + (data.physics / 4) + (data.chemistry / 4) * 2
+            user.marks_locked = True
         db.commit()
         return {"status": "profile updated", "marks_locked": user.marks_locked}
     except jwt.ExpiredSignatureError:
