@@ -630,7 +630,7 @@ async function buildCollegeSearchDropdown(containerId, onSelect, placeholder = '
       list.innerHTML = `<div class="college-no-result">No colleges found. Try a different search.</div>`;
     } else {
       list.innerHTML = colleges.slice(0, 50).map(c => `
-        <div class="college-option" onclick="selectCollegeOption('${containerId}', '${c.code}')">
+        <div class="college-option" style="padding:14px 12px;min-height:48px;display:flex;align-items:center;gap:8px;cursor:pointer" onclick="selectCollegeOption('${containerId}', '${c.code}')">
           <span class="college-code-tag">${c.code}</span>
           <span class="college-option-name">${c.name}</span>
         </div>`).join('');

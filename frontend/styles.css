@@ -2422,6 +2422,50 @@ button {
     width: 28px;
   }
 
+  .preferred-grid {
+    gap: 16px;
+  }
+
+  .preferred-slot {
+    min-height: 56px;
+    padding: 12px;
+  }
+
+  .preferred-slot select,
+  .preferred-slot .select-input {
+    font-size: 16px;
+    padding: 14px 12px;
+    min-height: 48px;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .college-search-input {
+    font-size: 16px;
+    padding: 14px 12px;
+    min-height: 48px;
+  }
+
+  .college-option {
+    padding: 14px 12px;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .college-dropdown-list {
+    max-height: 280px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .select-input.full-width {
+    font-size: 16px;
+    min-height: 48px;
+    padding: 14px 12px;
+  }
+
   .page-container {
     padding: 24px 16px;
   }
