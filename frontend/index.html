@@ -700,6 +700,25 @@
             </div>
             <div class="rank-verify-result hidden" id="rankVerifyResult"></div>
           </div>
+<div class="rank-section hidden" id="profileAppIdSection">
+  <h4 class="rank-title">📋 2026 Rank Verification</h4>
+  <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">
+    Rank list is out! Enter your Application ID and rank to get accurate predictions verified against the official list.
+  </p>
+  <div class="form-group">
+    <label>Application ID</label>
+    <input type="text" id="profileAppId" class="text-input" placeholder="e.g. TN2026XXXXXX"/>
+  </div>
+  <div class="form-group">
+    <label>Your TNEA Rank</label>
+    <input type="number" id="profileRankVerify" class="text-input" placeholder="e.g. 4521"/>
+  </div>
+  <button class="btn-primary" onclick="verifyAndSaveRank()">
+    ✅ Verify My Rank
+  </button>
+  <div id="rankVerifyStatus" class="hidden" style="margin-top:12px;padding:12px;border-radius:8px;font-size:13px;font-weight:600"></div>
+</div>
+
         </div>
 
         <div class="profile-section-card full-width" id="profileCollegesSection">

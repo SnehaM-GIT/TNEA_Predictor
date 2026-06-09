@@ -1388,6 +1388,15 @@ function renderProfile() {
   document.getElementById('profileRankSection')
     ?.classList.toggle('hidden', App.userGrade !== 1);
 
+    if (App.rankListReleased) {
+  const appIdSection = document.getElementById('profileAppIdSection');
+  if (appIdSection) {
+    appIdSection.classList.remove('hidden');
+    const appIdInput = document.getElementById('profileAppId');
+    if (appIdInput) appIdInput.value = App.profile.applicationId || '';
+  }
+}
+
   if (App.userGrade === 1 && App.profile.rank) {
     const rankEl = document.getElementById('profileRank');
     if (rankEl) rankEl.value = App.profile.rank;
@@ -2497,6 +2506,7 @@ async function restoreSessionFromToken() {
     App.userGrade            = data.grade === '1' ? 1 : 2;
     App.profile.preferredColleges = data.preferred_colleges ? JSON.parse(data.preferred_colleges) : [];
     App.profile.preferredCourses  = data.preferred_courses  ? JSON.parse(data.preferred_courses)  : [];
+    App.profile.applicationId = data.application_id || '';
     updateNav();
     prefillAndLockMarks();   // pre-fill + lock marks/community inputs if present
   } catch (e) {
@@ -2504,6 +2514,76 @@ async function restoreSessionFromToken() {
   }
 }
 
+
+async function checkRankListStatus() {
+  try {
+    const res  = await fetch(`${API_BASE}/config`);
+    const data = await res.json();
+    App.rankListReleased = data.rank_list_released || false;
+    const banner = document.getElementById('rankListBanner');
+    if (banner && data.rank_list_released) {
+      banner.classList.remove('hidden');
+      banner.innerHTML = `
+        <div style="background:linear-gradient(135deg,#6C63FF,#8B5CF6);color:white;padding:14px 24px;text-align:center;font-weight:600;font-size:14px;position:relative;z-index:1001">
+          🏆 2026 TNEA Rank List is out! Enter your Application ID and Rank for accurate predictions.
+          <button onclick="navigateTo('profile')" style="margin-left:12px;background:white;color:#6C63FF;border:none;padding:6px 14px;border-radius:6px;font-weight:700;cursor:pointer">
+            Update Now →
+          </button>
+        </div>`;
+    }
+  } catch(e) {
+    App.rankListReleased = false;
+  }
+}
+
+async function verifyAndSaveRank() {
+  const appId = document.getElementById('profileAppId')?.value?.trim();
+  const rank  = parseInt(document.getElementById('profileRankVerify')?.value);
+  const name  = App.profile.name || '';
+
+  if (!appId) { showToast('Please enter your Application ID', 'error'); return; }
+  if (!rank)  { showToast('Please enter your rank', 'error'); return; }
+
+  const btn = document.querySelector('#profileAppIdSection .btn-primary');
+  if (btn) { btn.disabled = true; btn.textContent = 'Verifying...'; }
+
+  showLoader();
+  try {
+    const res  = await authenticatedFetch(`${API_BASE}/predict/verify-rank`, {
+      method: 'POST',
+      body: JSON.stringify({ application_id: appId, name, rank })
+    });
+    const data = await res.json();
+
+    const statusEl = document.getElementById('rankVerifyStatus');
+    if (!res.ok) {
+      if (statusEl) {
+        statusEl.classList.remove('hidden');
+        statusEl.style.cssText = 'background:rgba(239,68,68,0.1);border:1px solid var(--error);color:var(--error);margin-top:12px;padding:12px;border-radius:8px;font-size:13px;font-weight:600';
+        statusEl.textContent = `❌ ${data.detail}`;
+      }
+      return;
+    }
+
+    App.profile.applicationId = appId;
+    App.profile.rank          = data.rank;
+
+    if (statusEl) {
+      statusEl.classList.remove('hidden');
+      statusEl.style.cssText = 'background:rgba(16,185,129,0.1);border:1px solid var(--success);color:var(--success);margin-top:12px;padding:12px;border-radius:8px;font-size:13px;font-weight:600';
+      statusEl.textContent = `✅ Rank #${data.rank.toLocaleString()} verified! Your predictions are now based on your official rank.`;
+    }
+
+    showToast(`Rank ${data.rank.toLocaleString()} verified ✅`, 'success');
+    setTimeout(() => navigateTo('dashboard'), 1500);
+
+  } catch(e) {
+    showError('No connection. Check your internet and retry.');
+  } finally {
+    hideLoader();
+    if (btn) { btn.disabled = false; btn.textContent = '✅ Verify My Rank'; }
+  }
+}
 // ============================================================
 // INIT
 // ============================================================
