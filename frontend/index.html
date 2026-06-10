@@ -417,9 +417,6 @@
               <option value="aided">Government Aided</option>
               <option value="private">Self-Financing</option>
             </select>
-            <select class="select-input" id="freeDistrict" onchange="filterFreeColleges()">
-              <option value="">All Districts</option>
-            </select>
           </div>
           <!-- Replace old college select with search container -->
           <div id="freeCollegeSearchContainer"></div>
@@ -655,10 +652,7 @@
           </div>
 
           <div class="aggregate-display">
-            <div>
-              <span class="agg-label">TNEA Aggregate</span>
-              <div class="agg-formula-note">= (M/2) + (P/4) + (C/4) × 2</div>
-            </div>
+            <span class="agg-label" style="margin-bottom:0">TNEA Aggregate</span>
             <span class="agg-value" id="profileAggValue">— / 200</span>
           </div>
 

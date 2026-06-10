@@ -1324,7 +1324,9 @@ function renderProfile() {
   document.getElementById('profileCategory').value = App.profile.category || '';
 
   const locked = App.profile.marksLocked;
-  document.getElementById('marksLockedBanner')?.classList.toggle('hidden', !locked);
+  // exactly one lock banner: Grade 1 gets "Update for ₹25", others "contact support"
+  document.getElementById('marksLockedBanner')
+    ?.classList.toggle('hidden', !(locked && App.userGrade === 1));
 
   ['profileMath','profilePhysics','profileChemistry'].forEach(id => {
     const el  = document.getElementById(id);
@@ -1344,7 +1346,7 @@ function renderProfile() {
 
   const marksLockNote = document.getElementById('marksLockNote');
   if (marksLockNote) {
-    if (locked) {
+    if (locked && App.userGrade !== 1) {
       marksLockNote.classList.remove('hidden');
       marksLockNote.textContent = '🔒 Marks locked — contact support to update';
     } else {
@@ -1410,9 +1412,12 @@ function prefillAndLockMarks() {
     }
   });
 
+  // exactly one lock banner: Grade 1 gets "Update for ₹25", others "contact support"
+  document.getElementById('marksLockedBanner')
+    ?.classList.toggle('hidden', !(locked && App.userGrade === 1));
   const note = document.getElementById('marksLockNote');
   if (note) {
-    note.classList.toggle('hidden', !locked);
+    note.classList.toggle('hidden', !(locked && App.userGrade !== 1));
     if (locked) note.textContent = '🔒 Marks locked — contact support to update';
   }
 }
@@ -1822,9 +1827,6 @@ function renderAggBanner() {
       <div class="agg-banner-value">${agg > 0 ? agg : '—'}</div>
       <div class="agg-banner-sub">Out of 200 · Maths + Physics + Chemistry</div>
       ${lockNote}
-    </div>
-    <div class="agg-formula">
-      = (${App.profile.maths||'M'}/2) + (${App.profile.physics||'P'}/4) + (${App.profile.chemistry||'C'}/4) × 2
     </div>`;
 }
 
@@ -1987,7 +1989,7 @@ async function renderComboProbCards() {
               ${combo.prob}%
             </div>
            <div class="combo-prob-label">Closing Rank: ${combo.closingRank || '—'}</div>
-           <div class="combo-prob-label" style="font-size:11px;color:var(--text-muted)">Rank Band: ${combo.rankLow ? combo.rankLow.toLocaleString() + '–' + combo.rankHigh.toLocaleString() : '—'}</div>
+           <div class="combo-prob-label" style="font-size:11px;color:var(--text-muted)">Rank Band: <span style="font-size:15px;font-weight:600;color:var(--text-secondary)">${combo.rankLow ? combo.rankLow.toLocaleString() + '–' + combo.rankHigh.toLocaleString() : '—'}</span></div>
            ${combo.estimated ? `<div class="combo-prob-label" style="font-size:11px;color:var(--text-muted)">⚠️ No historic data for your community — estimate based on overall cutoff</div>` : ''}
           </div>
           <span class="combo-status-tag ${pc.statusCls}">${pc.status}</span>
