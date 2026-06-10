@@ -130,7 +130,7 @@ def update_profile(
         if data.physics is not None: user.physics = data.physics
         if data.chemistry is not None: user.chemistry = data.chemistry
         if data.maths and data.physics and data.chemistry:
-            user.aggregate = (data.maths / 2) + (data.physics / 4) + (data.chemistry / 4) * 2
+            user.aggregate = data.maths + data.physics / 2 + data.chemistry / 2
             user.marks_locked = True
         if data.preferred_colleges is not None: user.preferred_colleges = data.preferred_colleges
         if data.preferred_courses is not None: user.preferred_courses = data.preferred_courses
