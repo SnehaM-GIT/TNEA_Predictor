@@ -18,7 +18,7 @@ def get_rank_prediction(marks: float, community: str):
 # Lazy caches built from cutoff_lookup_2026.csv (the per-combo model output;
 # cutoff_model_meta.pkl holds only training metadata, not combos).
 _OFFERED_COMBOS = None   # set of (college_code, branch_code) offered at all
-_COMBO_CLOSING = None    # dict (college_code, branch_code, community) -> closing rank
+_COMBO_CLOSING = None    # dict (college_code, branch_code) -> {community: closing rank}
 
 
 def _load_combo_caches():
@@ -29,11 +29,11 @@ def _load_combo_caches():
         _OFFERED_COMBOS = set(zip(
             lookup["college_code"].astype(int),
             lookup["branch_code"].astype(str)))
-        _COMBO_CLOSING = {
-            (int(r.college_code), str(r.branch_code), str(r.community)):
-                int(r.predicted_closing_rank_2026)
-            for r in lookup.itertuples()
-        }
+        _COMBO_CLOSING = {}
+        for r in lookup.itertuples():
+            _COMBO_CLOSING.setdefault(
+                (int(r.college_code), str(r.branch_code)), {}
+            )[str(r.community)] = int(r.predicted_closing_rank_2026)
     return _OFFERED_COMBOS, _COMBO_CLOSING
 
 
@@ -91,17 +91,14 @@ def get_college_predictions_filtered(
                     recs.append(rec)
                     continue
 
-                closing = combo_closing.get((ccode, bcode, community))
+                per_comm = combo_closing.get((ccode, bcode), {})
+                closing = per_comm.get(community)
                 if closing is None:
-                    # offered by the college, but no cutoff data for this community
-                    rec.update({
-                        "closing_rank":     None,
-                        "safety_margin":    None,
-                        "status":           "NO_DATA",
-                        "match_confidence": None,
-                    })
-                    recs.append(rec)
-                    continue
+                    # no cutoff for this community — estimate from the OC
+                    # (overall) cutoff, else the lowest (most conservative)
+                    # closing rank among communities that have data
+                    closing = per_comm.get("OC", min(per_comm.values()))
+                    rec["no_community_data"] = True
 
                 margin = closing - pred_rank
                 status = _status(margin)

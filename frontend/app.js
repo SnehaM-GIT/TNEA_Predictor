@@ -1914,6 +1914,7 @@ colleges.forEach(college => {
         college, course,
         prob: match.match_confidence,
         closingRank: match.closing_rank,
+        estimated: !!match.no_community_data,
         rankLow, rankHigh
       });
     }
@@ -1963,6 +1964,7 @@ colleges.forEach(college => {
             </div>
            <div class="combo-prob-label">Closing Rank: ${combo.closingRank || '—'}</div>
            <div class="combo-prob-label" style="font-size:11px;color:var(--text-muted)">Rank Band: ${combo.rankLow ? combo.rankLow.toLocaleString() + '–' + combo.rankHigh.toLocaleString() : '—'}</div>
+           ${combo.estimated ? `<div class="combo-prob-label" style="font-size:11px;color:var(--text-muted)">⚠️ No historic data for your community — estimate based on overall cutoff</div>` : ''}
           </div>
           <span class="combo-status-tag ${pc.statusCls}">${pc.status}</span>
         </div>
