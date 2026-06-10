@@ -1305,7 +1305,7 @@ async function signupUser() {
     const data = await res.json();
     if (!res.ok) { showError(data.detail || 'Signup failed', res.status); return; }
     localStorage.setItem('token', data.token);
-    simulateLogin({ email, name: data.name, hasPaid: false });
+    simulateLogin({ email, name: data.name, mobile, hasPaid: false });
   } catch(e) {
     showError('No connection. Check your internet and retry.');
   } finally {
@@ -1313,16 +1313,11 @@ async function signupUser() {
   }
 }
 
-function loginGoogle() {
-  // FIREBASE: firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider())
-  simulateLogin({ email:'demo@gmail.com', name:'Demo Student', hasPaid:false });
-}
-
 function simulateLogin(userData) {
   App.currentUser     = userData;
   App.profile.email   = userData.email  || '';
   App.profile.name    = userData.name   || '';
-  App.profile.mobile  = userData.mobile || '';
+  App.profile.mobile  = userData.mobile || App.profile.mobile || '';
   App.profile.hasPaid = userData.hasPaid || false;
   App.userGrade       = userData.hasPaid ? 1 : 2;
   showToast(`Welcome${userData.name ? ', ' + userData.name.split(' ')[0] : ''}! 🎉`, 'success');
