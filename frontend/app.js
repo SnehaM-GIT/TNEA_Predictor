@@ -1872,9 +1872,7 @@ async function renderComboProbCards() {
     return;
   }
 
-  // fetch once; per-combo evaluation happens below, OUTSIDE the try, so one
-  // bad combo or a failed request can never overwrite the others' state
-  let recs = [], rankLow = 0, rankHigh = 0;
+  const combos = [];
 
   showLoader();
   try {
@@ -1897,43 +1895,40 @@ async function renderComboProbCards() {
       return;
     }
     const data = await res.json();
-    recs     = data.recommendations || [];
-    rankLow  = data.student_rank_range?.[0] || 0;
-    rankHigh = data.student_rank_range?.[1] || 0;
+const recs = data.recommendations || [];
+const rankLow  = data.student_rank_range?.[0] || 0;
+const rankHigh = data.student_rank_range?.[1] || 0;
+
+colleges.forEach(college => {
+  courses.forEach(course => {
+    const match = recs.find(r =>
+      r.college_code === parseInt(college.code) &&
+      r.branch_code === course.code
+    );
+    if (match && match.not_offered) {
+      combos.push({ college, course, notOffered: true });
+    } else if (!match || match.match_confidence == null) {
+      combos.push({ college, course, noData: true });
+    } else {
+      combos.push({
+        college, course,
+        prob: match.match_confidence,
+        closingRank: match.closing_rank,
+        estimated: !!match.no_community_data,
+        rankLow, rankHigh
+      });
+    }
+  });
+});
   } catch(e) {
-    recs = [];
+    colleges.forEach(college => {
+      courses.forEach(course => {
+        combos.push({ college, course, noData: true });
+      });
+    });
   } finally {
     hideLoader();
   }
-
-  // each (college, course) pair evaluated independently
-  const combos = [];
-  colleges.forEach(college => {
-    courses.forEach(course => {
-      let combo;
-      try {
-        const match = recs.find(r =>
-          r.college_code === parseInt(college.code) &&
-          r.branch_code === course.code
-        );
-        if (match && match.not_offered) {
-          combo = { college, course, notOffered: true };
-        } else if (!match || match.match_confidence == null || match.no_community_data) {
-          combo = { college, course, noData: true };
-        } else {
-          combo = {
-            college, course,
-            prob: match.match_confidence,
-            closingRank: match.closing_rank,
-            rankLow, rankHigh
-          };
-        }
-      } catch(e) {
-        combo = { college, course, noData: true };
-      }
-      combos.push(combo);
-    });
-  });
 
   combos.sort((a,b) => (b.prob ?? -1) - (a.prob ?? -1));
 
@@ -1969,6 +1964,7 @@ async function renderComboProbCards() {
             </div>
            <div class="combo-prob-label">Closing Rank: ${combo.closingRank || '—'}</div>
            <div class="combo-prob-label" style="font-size:11px;color:var(--text-muted)">Rank Band: ${combo.rankLow ? combo.rankLow.toLocaleString() + '–' + combo.rankHigh.toLocaleString() : '—'}</div>
+           ${combo.estimated ? `<div class="combo-prob-label" style="font-size:11px;color:var(--text-muted)">⚠️ No historic data for your community — estimate based on overall cutoff</div>` : ''}
           </div>
           <span class="combo-status-tag ${pc.statusCls}">${pc.status}</span>
         </div>
@@ -2048,7 +2044,7 @@ async function runPremiumQuickPredict() {
     if (!res.ok) { showError(data.detail || 'Prediction failed', res.status); return; }
 
     const rec    = data.recommendations?.[0];
-    if (rec && (rec.not_offered || rec.match_confidence == null || rec.no_community_data)) {
+    if (rec && (rec.not_offered || rec.match_confidence == null)) {
       const result = document.getElementById('premiumQuickResult');
       if (result) {
         result.classList.remove('hidden');
@@ -2184,9 +2180,7 @@ async function renderChoiceList() {
     return;
   }
 
-  // fetch once; per-combo evaluation happens below, OUTSIDE the try, so one
-  // bad combo or a failed request can never overwrite the others' state
-  let recs = [];
+  const combos = [];
 
   showLoader();
   try {
@@ -2209,36 +2203,32 @@ async function renderChoiceList() {
       return;
     }
     const data = await res.json();
-    recs = data.recommendations || [];
-  } catch(e) {
-    recs = [];
-  } finally {
-    hideLoader();
-  }
+    const recs = data.recommendations || [];
 
-  // each (college, course) pair evaluated independently
-  const combos = [];
-  colleges.forEach(college => {
-    courses.forEach(course => {
-      let combo;
-      try {
+    colleges.forEach(college => {
+      courses.forEach(course => {
         const match = recs.find(r =>
           r.college_code === parseInt(college.code) &&
           r.branch_code === course.code
         );
         if (match && match.not_offered) {
-          combo = { college, course, notOffered: true };
-        } else if (!match || match.match_confidence == null || match.no_community_data) {
-          combo = { college, course, noData: true };
+          combos.push({ college, course, notOffered: true });
+        } else if (!match || match.match_confidence == null) {
+          combos.push({ college, course, noData: true });
         } else {
-          combo = { college, course, prob: match.match_confidence, closingRank: match.closing_rank };
+          combos.push({ college, course, prob: match.match_confidence, closingRank: match.closing_rank });
         }
-      } catch(e) {
-        combo = { college, course, noData: true };
-      }
-      combos.push(combo);
+      });
     });
-  });
+  } catch(e) {
+    colleges.forEach(college => {
+      courses.forEach(course => {
+        combos.push({ college, course, noData: true });
+      });
+    });
+  } finally {
+    hideLoader();
+  }
 
   combos.sort((a,b) => (b.prob ?? -1) - (a.prob ?? -1));
 
