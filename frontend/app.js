@@ -1609,6 +1609,7 @@ async function saveProfile() {
   App.profile.mobile   = document.getElementById('profileMobile')?.value?.trim()    || '';
   App.profile.category = document.getElementById('profileCategory')?.value          || '';
 
+  const marksWereLocked = App.profile.marksLocked;
   if (!App.profile.marksLocked) {
     const m = parseFloat(document.getElementById('profileMath')?.value)     || null;
     const p = parseFloat(document.getElementById('profilePhysics')?.value)  || null;
@@ -1654,18 +1655,23 @@ async function saveProfile() {
 if (App.currentUser) {
     showLoader();
     try {
+      const body = {
+        name: App.profile.name,
+        mobile: App.profile.mobile,
+        community: App.profile.category,
+        preferred_colleges: JSON.stringify(App.profile.preferredColleges),
+        preferred_courses: JSON.stringify(App.profile.preferredCourses)
+      };
+      // Marks are locked server-side after first save — sending them again gets a 403
+      // that discards the whole update, including preferences.
+      if (!marksWereLocked) {
+        body.maths     = App.profile.maths;
+        body.physics   = App.profile.physics;
+        body.chemistry = App.profile.chemistry;
+      }
       const res = await authenticatedFetch(`${API_BASE}/auth/update-profile`, {
         method: 'POST',
-        body: JSON.stringify({
-          name: App.profile.name,
-          mobile: App.profile.mobile,
-          community: App.profile.category,
-          maths: App.profile.maths,
-          physics: App.profile.physics,
-          chemistry: App.profile.chemistry,
-          preferred_colleges: JSON.stringify(App.profile.preferredColleges),
-          preferred_courses: JSON.stringify(App.profile.preferredCourses)
-        })
+        body: JSON.stringify(body)
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
