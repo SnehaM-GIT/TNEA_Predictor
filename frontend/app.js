@@ -939,47 +939,6 @@ function predictRankBand(aggregate) {
   return                  { low:45000, high:80000 };
 }
 
-// College prestige tier based on code prefix — adjusts cutoff
-function getCollegeTierAdjust(code) {
-  const c = parseInt(code);
-  // Top government autonomous
-  if (['0001','0002','0003','0004','2006','2007','5008'].includes(code)) return 10;
-  // Government
-  if (c < 2000 && c >= 1000) return -5;  // Chennai region private
-  if (code.startsWith('2') && c < 2100) return 0;  // government/aided
-  if (code.startsWith('2') && c >= 2600) return -8; // Salem/Namakkal belt
-  if (code.startsWith('2') && c >= 2700) return -5; // Coimbatore private
-  if (code.startsWith('3')) return -10;  // Trichy/Thanjavur region
-  if (code.startsWith('4')) return -12;  // South TN
-  if (code.startsWith('5')) return -10;  // Madurai/Dindigul
-  return -5;
-}
-
-function predictProbability(aggregate, collegeCode, courseName) {
-  const course = DATA.courses.find(c => c.name === courseName);
-  if (!course) return 50;
-
-  const tierAdj = getCollegeTierAdjust(collegeCode);
-  const cutoff  = course.cutoffBase + tierAdj;
-  const diff    = parseFloat(aggregate) - cutoff;
-
-  let prob;
-  if      (diff >= 15)  prob = 90 + Math.min(9, diff - 15);
-  else if (diff >= 8)   prob = 75 + (diff - 8) * 2;
-  else if (diff >= 0)   prob = 55 + diff * 2.5;
-  else if (diff >= -8)  prob = 40 + (diff + 8) * 2;
-  else if (diff >= -15) prob = 20 + (diff + 15) * 3;
-  else                  prob = Math.max(3, 20 + diff);
-
-  return Math.round(Math.min(99, Math.max(2, prob)));
-}
-
-function getLastYearCutoff(collegeCode, courseName) {
-  const course = DATA.courses.find(c => c.name === courseName);
-  if (!course) return '—';
-  return (course.cutoffBase + getCollegeTierAdjust(collegeCode)).toFixed(1);
-}
-
 function getProbClass(prob) {
   if (prob >= 65) return { cls:'high', barCls:'high', status:'Likely',   statusCls:'status-likely'   };
   if (prob >= 35) return { cls:'mid',  barCls:'mid',  status:'Possible', statusCls:'status-possible' };
@@ -1014,7 +973,7 @@ buildCollegeSearchDropdown('freeCollegeSearchContainer', async (college) => {
     freeSelectedCollege = college;
     if (college) {
         const branches = await getBranchesForColleges([college.code]);
-        populateCourseDropdown('freeCourse', branches);
+        populateCourseDropdown('freeCourse', branches.length ? branches : BRANCHES);
     } else {
         populateCourseDropdown('freeCourse', BRANCHES);
     }
@@ -1038,14 +997,25 @@ function populateCourseDropdown(selectId, branches) {
     if (current) sel.value = current;
 }
 
+// Per-college branch cache — official branch codes from the backend
+const _collegeBranchCache = {};
+
 async function getBranchesForColleges(collegeCodes) {
-    if (!collegeCodes || collegeCodes.length === 0) return BRANCHES;
+    if (!collegeCodes || collegeCodes.length === 0) return [];
     try {
         const results = await Promise.all(
-            collegeCodes.map(code =>
-                fetch(`${API_BASE}/predict/college-branches/${parseInt(code)}`)
-                    .then(r => r.json())
-            )
+            collegeCodes.map(async code => {
+                const key = String(parseInt(code));
+                if (_collegeBranchCache[key]) return _collegeBranchCache[key];
+                const r = await fetch(`${API_BASE}/predict/colleges/${parseInt(code)}/branches`);
+                if (!r.ok) return [];
+                const data = await r.json();
+                const mapped = Array.isArray(data)
+                    ? data.map(b => ({ code: b.branch_code, name: b.branch_name }))
+                    : [];
+                _collegeBranchCache[key] = mapped;
+                return mapped;
+            })
         );
         const seen = new Set();
         const merged = [];
@@ -1055,9 +1025,9 @@ async function getBranchesForColleges(collegeCodes) {
                 merged.push(b);
             }
         });
-        return merged.length > 0 ? merged : BRANCHES;
+        return merged;
     } catch(e) {
-        return BRANCHES;
+        return [];
     }
 }
 
@@ -1540,7 +1510,9 @@ async function renderPreferredCourses() {
         <div class="preferred-slot add-slot">
           <select class="select-input" onchange="addPreferredCourse(this.value);this.value=''">
             <option value="">+ Add Course ${i+1}</option>
-            ${availableBranches.map(b=>`<option value="${b.code}">${b.name}</option>`).join('')}
+            ${availableBranches.length
+              ? availableBranches.map(b=>`<option value="${b.code}">${b.name}</option>`).join('')
+              : `<option value="" disabled>Select colleges first to see available courses</option>`}
           </select>
         </div>`;
     } else {
@@ -1573,7 +1545,14 @@ function removePreferredCollege(i) {
 
 function addPreferredCourse(code) {
   if (!code) return;
-  const course = BRANCHES.find(c => c.code === code);
+  // resolve from the per-college cache first so the official code + name
+  // from the backend is what gets stored; BRANCHES as backup
+  let course = null;
+  for (const list of Object.values(_collegeBranchCache)) {
+    course = list.find(c => c.code === code);
+    if (course) break;
+  }
+  if (!course) course = BRANCHES.find(c => c.code === code);
   if (!course) return;
   if (App.profile.preferredCourses.find(c => c.code === code)) {
     showToast('Course already added','error'); renderPreferredCourses(); return;
@@ -1893,9 +1872,6 @@ async function renderComboProbCards() {
     return;
   }
 
-const agg = calculateAggregate(
-    App.profile.maths||0, App.profile.physics||0, App.profile.chemistry||0
-  );
   const combos = [];
 
   showLoader();
@@ -1927,30 +1903,49 @@ colleges.forEach(college => {
   courses.forEach(course => {
     const match = recs.find(r =>
       r.college_code === parseInt(college.code) &&
-      (r.branch_code === (course.code || course.name) || r.branch_name === course.name)
+      r.branch_code === course.code
     );
-    combos.push({ 
-      college, course, 
-      prob: match ? match.match_confidence : 0,
-      closingRank: match ? match.closing_rank : '—',
-      rankLow, rankHigh
-    });
+    if (match && match.not_offered) {
+      combos.push({ college, course, notOffered: true });
+    } else if (!match || match.match_confidence == null) {
+      combos.push({ college, course, noData: true });
+    } else {
+      combos.push({
+        college, course,
+        prob: match.match_confidence,
+        closingRank: match.closing_rank,
+        rankLow, rankHigh
+      });
+    }
   });
 });
   } catch(e) {
     colleges.forEach(college => {
       courses.forEach(course => {
-        combos.push({ college, course, prob: predictProbability(agg, college.code, course.name), closingRank: '—' });
+        combos.push({ college, course, noData: true });
       });
     });
   } finally {
     hideLoader();
   }
 
-  combos.sort((a,b) => b.prob - a.prob);
+  combos.sort((a,b) => (b.prob ?? -1) - (a.prob ?? -1));
 
   grid.innerHTML = combos.map(combo => {
-    const pc     = getProbClass(combo.prob);
+    if (combo.notOffered || combo.noData) {
+      return `
+        <div class="combo-card prob-low" style="opacity:0.7">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+            <span class="college-code-tag small">${combo.college.code}</span>
+            <div class="combo-college">${combo.college.name}</div>
+          </div>
+          <div class="combo-course">${combo.course.name}</div>
+          <div class="combo-prob-label" style="margin-top:12px">
+            ${combo.notOffered ? 'Course not offered by this college' : 'Data unavailable'}
+          </div>
+        </div>`;
+    }
+    const pc = getProbClass(combo.prob);
     return `
       <div class="combo-card prob-${pc.cls}">
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
@@ -2047,6 +2042,18 @@ async function runPremiumQuickPredict() {
     if (!res.ok) { showError(data.detail || 'Prediction failed', res.status); return; }
 
     const rec    = data.recommendations?.[0];
+    if (rec && (rec.not_offered || rec.match_confidence == null)) {
+      const result = document.getElementById('premiumQuickResult');
+      if (result) {
+        result.classList.remove('hidden');
+        result.innerHTML = `
+          <div style="padding:16px;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border2);color:var(--text-muted);font-size:14px">
+            <span class="college-code-tag">${college.code}</span> ${college.name} · ${course}<br/>
+            ${rec.not_offered ? 'Course not offered by this college' : 'Data unavailable'}
+          </div>`;
+      }
+      return;
+    }
     const prob   = rec ? rec.match_confidence : 0;
     const cutoff = rec ? rec.closing_rank : '—';
     const pc     = getProbClass(prob);
@@ -2171,7 +2178,6 @@ async function renderChoiceList() {
     return;
   }
 
-const agg = calculateAggregate(App.profile.maths||0, App.profile.physics||0, App.profile.chemistry||0);
   const combos = [];
 
   showLoader();
@@ -2201,26 +2207,32 @@ const agg = calculateAggregate(App.profile.maths||0, App.profile.physics||0, App
       courses.forEach(course => {
         const match = recs.find(r =>
           r.college_code === parseInt(college.code) &&
-          (r.branch_code === (course.code || course.name) || r.branch_name === course.name)
+          r.branch_code === course.code
         );
-        combos.push({ college, course, prob: match ? match.match_confidence : 0, closingRank: match ? match.closing_rank : '—' });
-        
+        if (match && match.not_offered) {
+          combos.push({ college, course, notOffered: true });
+        } else if (!match || match.match_confidence == null) {
+          combos.push({ college, course, noData: true });
+        } else {
+          combos.push({ college, course, prob: match.match_confidence, closingRank: match.closing_rank });
+        }
       });
     });
   } catch(e) {
     colleges.forEach(college => {
       courses.forEach(course => {
-        combos.push({ college, course, prob: predictProbability(agg, college.code, course.name), closingRank: '—', rankLow: 0, rankHigh: 0 });
+        combos.push({ college, course, noData: true });
       });
     });
   } finally {
     hideLoader();
   }
 
-  combos.sort((a,b) => b.prob - a.prob);
+  combos.sort((a,b) => (b.prob ?? -1) - (a.prob ?? -1));
 
-  const viable   = combos.filter(c => c.prob >= 35);
-  const unlikely = combos.filter(c => c.prob <  35);
+  const viable   = combos.filter(c => c.prob != null && c.prob >= 35);
+  const unlikely = combos.filter(c => c.prob != null && c.prob <  35);
+  const excluded = combos.filter(c => c.prob == null);
 
   wrap.innerHTML = `
     <div style="font-size:12px;color:var(--text-muted);margin-bottom:16px;font-style:italic;padding:10px 14px;background:var(--surface2);border-radius:8px">
@@ -2253,6 +2265,13 @@ const agg = calculateAggregate(App.profile.maths||0, App.profile.physics||0, App
         you are unlikely to be allotted these with your current marks:<br/>
         <span style="font-size:12px;margin-top:6px;display:block">
           ${unlikely.map(c=>`[${c.college.code}] ${c.college.name} · ${c.course.name} (${c.prob}%)`).join(' | ')}
+        </span>
+      </div>` : ''}
+    ${excluded.length > 0 ? `
+      <div class="choice-no-chance" style="margin-top:12px">
+        ℹ️ ${excluded.length} combination${excluded.length>1?'s':''} excluded:<br/>
+        <span style="font-size:12px;margin-top:6px;display:block">
+          ${excluded.map(c=>`[${c.college.code}] ${c.college.name} · ${c.course.name} (${c.notOffered ? 'not offered by this college' : 'data unavailable'})`).join(' | ')}
         </span>
       </div>` : ''}`;
 }

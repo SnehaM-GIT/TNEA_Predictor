@@ -115,6 +115,9 @@ def predict_colleges(
         user = _get_optional_user(authorization, db)
         if user and result.get("recommendations"):
             for rec in result["recommendations"]:
+                # skip combos the college doesn't offer / has no cutoff data for
+                if rec.get("not_offered") or rec.get("match_confidence") is None:
+                    continue
                 prediction = Prediction(
                     user_id=user.id,
                     maths=data.maths,
@@ -199,6 +202,32 @@ def get_branches_list():
     df = pd.read_csv(DATA_DIR / "course_codes.csv")
     df = df.fillna("")
     return df[["branch_code", "branch_name"]].to_dict(orient="records")
+
+
+# college_code -> [{branch_code, branch_name}] from cutoff_lookup_2026.csv
+# (the per-combo model output behind cutoff_model_meta.pkl). Built once, cached.
+_college_branch_map: dict = {}
+
+def _get_college_branch_map():
+    if not _college_branch_map:
+        cutoff_df = pd.read_csv(DATA_DIR / "cutoff_lookup_2026.csv")
+        courses_df = pd.read_csv(DATA_DIR / "course_codes.csv")
+        name_map = dict(zip(courses_df["branch_code"].astype(str), courses_df["branch_name"]))
+        pairs = cutoff_df[["college_code", "branch_code"]].drop_duplicates()
+        for ccode, bcode in pairs.itertuples(index=False):
+            bcode = str(bcode)
+            _college_branch_map.setdefault(int(ccode), []).append({
+                "branch_code": bcode,
+                "branch_name": name_map.get(bcode, f"Branch {bcode}")
+            })
+        for branches in _college_branch_map.values():
+            branches.sort(key=lambda b: b["branch_name"])
+    return _college_branch_map
+
+
+@router.get("/colleges/{college_code}/branches")
+def get_college_branches_official(college_code: int):
+    return _get_college_branch_map().get(college_code, [])
 
 
 @router.get("/college-branches/{college_code}")
