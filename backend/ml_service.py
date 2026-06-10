@@ -22,7 +22,7 @@ def get_college_predictions_filtered(
     preferred_colleges: Optional[List[int]] = None,
     preferred_branches: Optional[List[str]] = None
 ):
-    result = predict_colleges(marks, community, top_n=50)  # get more, then filter
+    result = predict_colleges(marks, community, top_n=500)  # get enough to cover preferred filters
     if "error" in result:
         raise ValueError(result["error"])
 
