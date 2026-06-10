@@ -1006,7 +1006,10 @@ async function getBranchesForColleges(collegeCodes) {
         const results = await Promise.all(
             collegeCodes.map(async code => {
                 const key = String(parseInt(code));
-                if (_collegeBranchCache[key]) return _collegeBranchCache[key];
+                if (_collegeBranchCache[key]) {
+                    console.log("branches for college", key, "(cached):", _collegeBranchCache[key].map(b => b.code));
+                    return _collegeBranchCache[key];
+                }
                 const r = await fetch(`${API_BASE}/predict/colleges/${parseInt(code)}/branches`);
                 if (!r.ok) return [];
                 const data = await r.json();
@@ -1014,9 +1017,11 @@ async function getBranchesForColleges(collegeCodes) {
                     ? data.map(b => ({ code: b.branch_code, name: b.branch_name }))
                     : [];
                 _collegeBranchCache[key] = mapped;
+                console.log("branches for college", key, "(fetched):", mapped.map(b => b.code));
                 return mapped;
             })
         );
+        // union of ALL selected colleges' branches, deduplicated by branch code
         const seen = new Set();
         const merged = [];
         results.flat().forEach(b => {
@@ -1025,6 +1030,7 @@ async function getBranchesForColleges(collegeCodes) {
                 merged.push(b);
             }
         });
+        console.log("final branch union:", merged.map(b => b.code));
         return merged;
     } catch(e) {
         return [];
@@ -1535,12 +1541,14 @@ function addPreferredCollege(college) {
   }
   App.profile.preferredColleges.push(college);
   renderPreferredColleges();
+  renderPreferredCourses();   // rebuild course dropdown with the new union
   showToast(`[${college.code}] ${college.name} added ✅`, 'success');
 }
 
 function removePreferredCollege(i) {
   App.profile.preferredColleges.splice(i,1);
   renderPreferredColleges();
+  renderPreferredCourses();   // rebuild course dropdown with the new union
 }
 
 function addPreferredCourse(code) {
@@ -1872,7 +1880,10 @@ async function renderComboProbCards() {
     return;
   }
 
-  const combos = [];
+  // fetch once; per-combo evaluation happens below, OUTSIDE the try block —
+  // an exception mid-loop used to jump to catch and stamp EVERY pair noData
+  // on top of combos already pushed, so one failure bled into all cards
+  let recs = [], rankLow = 0, rankHigh = 0;
 
   showLoader();
   try {
@@ -1895,40 +1906,53 @@ async function renderComboProbCards() {
       return;
     }
     const data = await res.json();
-const recs = data.recommendations || [];
-const rankLow  = data.student_rank_range?.[0] || 0;
-const rankHigh = data.student_rank_range?.[1] || 0;
-
-colleges.forEach(college => {
-  courses.forEach(course => {
-    const match = recs.find(r =>
-      r.college_code === parseInt(college.code) &&
-      r.branch_code === course.code
-    );
-    if (match && match.not_offered) {
-      combos.push({ college, course, notOffered: true });
-    } else if (!match || match.match_confidence == null) {
-      combos.push({ college, course, noData: true });
+    if (!res.ok) {
+      console.error('predict/colleges failed:', res.status, data);
     } else {
-      combos.push({
-        college, course,
-        prob: match.match_confidence,
-        closingRank: match.closing_rank,
-        estimated: !!match.no_community_data,
-        rankLow, rankHigh
-      });
+      recs     = data.recommendations || [];
+      rankLow  = data.student_rank_range?.[0] || 0;
+      rankHigh = data.student_rank_range?.[1] || 0;
     }
-  });
-});
   } catch(e) {
-    colleges.forEach(college => {
-      courses.forEach(course => {
-        combos.push({ college, course, noData: true });
-      });
-    });
+    console.error('predict/colleges request error:', e);
   } finally {
     hideLoader();
   }
+  console.log("recs from API:", JSON.stringify(recs));
+
+  // each (college, course) pair evaluated independently — one combo's state
+  // can never affect another
+  const combos = [];
+  colleges.forEach(college => {
+    courses.forEach(course => {
+      let combo;
+      try {
+        const match = recs.find(r =>
+          r.college_code === parseInt(college.code) &&
+          r.branch_code === course.code
+        );
+        console.log("pair:", college.code, course.code, "match:", match);
+        console.log("  no_community_data:", match?.no_community_data, "match_confidence:", match?.match_confidence);
+        if (match && match.not_offered) {
+          combo = { college, course, notOffered: true };
+        } else if (!match || match.match_confidence == null) {
+          combo = { college, course, noData: true };
+        } else {
+          combo = {
+            college, course,
+            prob: match.match_confidence,
+            closingRank: match.closing_rank,
+            estimated: !!match.no_community_data,
+            rankLow, rankHigh
+          };
+        }
+      } catch(e) {
+        console.error('combo evaluation failed for', college.code, course.code, e);
+        combo = { college, course, noData: true };
+      }
+      combos.push(combo);
+    });
+  });
 
   combos.sort((a,b) => (b.prob ?? -1) - (a.prob ?? -1));
 
@@ -2180,7 +2204,9 @@ async function renderChoiceList() {
     return;
   }
 
-  const combos = [];
+  // fetch once; per-combo evaluation happens below, OUTSIDE the try block —
+  // same isolation as renderComboProbCards
+  let recs = [];
 
   showLoader();
   try {
@@ -2203,32 +2229,41 @@ async function renderChoiceList() {
       return;
     }
     const data = await res.json();
-    const recs = data.recommendations || [];
+    if (!res.ok) {
+      console.error('predict/colleges failed:', res.status, data);
+    } else {
+      recs = data.recommendations || [];
+    }
+  } catch(e) {
+    console.error('predict/colleges request error:', e);
+  } finally {
+    hideLoader();
+  }
 
-    colleges.forEach(college => {
-      courses.forEach(course => {
+  // each (college, course) pair evaluated independently
+  const combos = [];
+  colleges.forEach(college => {
+    courses.forEach(course => {
+      let combo;
+      try {
         const match = recs.find(r =>
           r.college_code === parseInt(college.code) &&
           r.branch_code === course.code
         );
         if (match && match.not_offered) {
-          combos.push({ college, course, notOffered: true });
+          combo = { college, course, notOffered: true };
         } else if (!match || match.match_confidence == null) {
-          combos.push({ college, course, noData: true });
+          combo = { college, course, noData: true };
         } else {
-          combos.push({ college, course, prob: match.match_confidence, closingRank: match.closing_rank });
+          combo = { college, course, prob: match.match_confidence, closingRank: match.closing_rank };
         }
-      });
+      } catch(e) {
+        console.error('combo evaluation failed for', college.code, course.code, e);
+        combo = { college, course, noData: true };
+      }
+      combos.push(combo);
     });
-  } catch(e) {
-    colleges.forEach(college => {
-      courses.forEach(course => {
-        combos.push({ college, course, noData: true });
-      });
-    });
-  } finally {
-    hideLoader();
-  }
+  });
 
   combos.sort((a,b) => (b.prob ?? -1) - (a.prob ?? -1));
 
