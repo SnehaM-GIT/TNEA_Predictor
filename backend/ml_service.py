@@ -15,7 +15,7 @@ def get_rank_prediction(marks: float, community: str):
     return result
 
 
-Vdef get_college_predictions_filtered(
+def get_college_predictions_filtered(
     marks: float,
     community: str,
     top_n: int = 5,
@@ -23,10 +23,7 @@ Vdef get_college_predictions_filtered(
     preferred_branches: Optional[List[str]] = None
 ):
     if preferred_colleges or preferred_branches:
-        import pandas as pd
-        from pathlib import Path
-        from utils.predict_colleges import _load, _match_confidence, _status
-        from utils.ml_utils import predict_rank
+        from predict_colleges import _load, _match_confidence, _status
 
         if community == "BCM":
             community = "BC"
@@ -35,8 +32,8 @@ Vdef get_college_predictions_filtered(
         if "error" in rk:
             raise ValueError(rk["error"])
 
-        pred_rank  = int(rk["predicted_rank"])
-        rank_conf  = int(rk["confidence"])
+        pred_rank = int(rk["predicted_rank"])
+        rank_conf = int(rk["confidence"])
 
         lookup, colleges, branches = _load()
 
@@ -53,11 +50,11 @@ Vdef get_college_predictions_filtered(
 
         recs = []
         for _, row in df.iterrows():
-            code   = int(row["college_code"])
-            info   = colleges.get(code)
-            bcode  = str(row["branch_code"])
-            margin = int(row["safety_margin"])
-            status = row["status"]
+            code    = int(row["college_code"])
+            info    = colleges.get(code)
+            bcode   = str(row["branch_code"])
+            margin  = int(row["safety_margin"])
+            status  = row["status"]
             closing = int(row["predicted_closing_rank_2026"])
             recs.append({
                 "rank":             len(recs) + 1,
