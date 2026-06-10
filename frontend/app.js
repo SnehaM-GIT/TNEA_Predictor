@@ -1918,7 +1918,7 @@ async function renderComboProbCards() {
   } finally {
     hideLoader();
   }
-  console.log("recs from API:", JSON.stringify(recs));
+  console.log("RAW RECS:", JSON.stringify(recs, null, 2));
 
   // each (college, course) pair evaluated independently — one combo's state
   // can never affect another
@@ -1931,8 +1931,8 @@ async function renderComboProbCards() {
           r.college_code === parseInt(college.code) &&
           r.branch_code === course.code
         );
-        console.log("pair:", college.code, course.code, "match:", match);
-        console.log("  no_community_data:", match?.no_community_data, "match_confidence:", match?.match_confidence);
+        console.log("COMBO:", college.code, course.code,
+        "match:", JSON.stringify(match));
         if (match && match.not_offered) {
           combo = { college, course, notOffered: true };
         } else if (!match || match.match_confidence == null) {
