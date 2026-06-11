@@ -382,20 +382,20 @@
           <div class="marks-grid">
             <div class="marks-field">
               <label>Mathematics <span class="label-note">/ 100</span></label>
-              <input type="number" id="freeMath" min="0" max="100"
-                placeholder="e.g. 87" oninput="updateFreeAggregate()" class="marks-input"/>
+              <input type="number" id="freeMath" min="0" max="100" step="0.5"
+                placeholder="e.g. 87" oninput="if(this.value>100)this.value=100;if(this.value<0)this.value=0;updateFreeAggregate()" class="marks-input"/>
               <div class="marks-bar-wrap"><div class="marks-bar" id="mathBar"></div></div>
             </div>
             <div class="marks-field">
               <label>Physics <span class="label-note">/ 100</span></label>
-              <input type="number" id="freePhysics" min="0" max="100"
-                placeholder="e.g. 92" oninput="updateFreeAggregate()" class="marks-input"/>
+              <input type="number" id="freePhysics" min="0" max="100" step="0.5"
+                placeholder="e.g. 92" oninput="if(this.value>100)this.value=100;if(this.value<0)this.value=0;updateFreeAggregate()" class="marks-input"/>
               <div class="marks-bar-wrap"><div class="marks-bar" id="physicsBar"></div></div>
             </div>
             <div class="marks-field">
               <label>Chemistry <span class="label-note">/ 100</span></label>
-              <input type="number" id="freeChemistry" min="0" max="100"
-                placeholder="e.g. 78" oninput="updateFreeAggregate()" class="marks-input"/>
+              <input type="number" id="freeChemistry" min="0" max="100" step="0.5"
+                placeholder="e.g. 78" oninput="if(this.value>100)this.value=100;if(this.value<0)this.value=0;updateFreeAggregate()" class="marks-input"/>
               <div class="marks-bar-wrap"><div class="marks-bar" id="chemBar"></div></div>
             </div>
           </div>
@@ -636,18 +636,18 @@
           <div id="marksEditableGroup">
             <div class="form-group">
               <label>Mathematics <span class="label-note">/ 100</span></label>
-              <input type="number" id="profileMath" min="0" max="100" class="text-input"
-                placeholder="e.g. 87" oninput="updateProfileAggregate(); markProfileDirty()"/>
+              <input type="number" id="profileMath" min="0" max="100" step="0.5" class="text-input"
+                placeholder="e.g. 87" oninput="if(this.value>100)this.value=100;if(this.value<0)this.value=0;updateProfileAggregate(); markProfileDirty()"/>
             </div>
             <div class="form-group">
               <label>Physics <span class="label-note">/ 100</span></label>
-              <input type="number" id="profilePhysics" min="0" max="100" class="text-input"
-                placeholder="e.g. 92" oninput="updateProfileAggregate(); markProfileDirty()"/>
+              <input type="number" id="profilePhysics" min="0" max="100" step="0.5" class="text-input"
+                placeholder="e.g. 92" oninput="if(this.value>100)this.value=100;if(this.value<0)this.value=0;updateProfileAggregate(); markProfileDirty()"/>
             </div>
             <div class="form-group">
               <label>Chemistry <span class="label-note">/ 100</span></label>
-              <input type="number" id="profileChemistry" min="0" max="100" class="text-input"
-                placeholder="e.g. 78" oninput="updateProfileAggregate(); markProfileDirty()"/>
+              <input type="number" id="profileChemistry" min="0" max="100" step="0.5" class="text-input"
+                placeholder="e.g. 78" oninput="if(this.value>100)this.value=100;if(this.value<0)this.value=0;updateProfileAggregate(); markProfileDirty()"/>
             </div>
           </div>
 

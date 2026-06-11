@@ -1069,6 +1069,9 @@ async function runFreePrediction() {
   if (parseFloat(m)>100 || parseFloat(p)>100 || parseFloat(c)>100) {
     showToast('Each mark must be between 0 and 100', 'error'); return;
   }
+  if (parseFloat(m)<0 || parseFloat(p)<0 || parseFloat(c)<0) {
+    showToast('Marks cannot be negative', 'error'); return;
+  }
   const btn = document.querySelector('#freePredictForm .predict-btn');
   if (btn) { btn.disabled = true; btn.textContent = 'Predicting...'; }
 
@@ -1606,6 +1609,9 @@ async function saveProfile() {
       }
       if (m > 100 || p > 100 || c > 100) {
         showToast('Each mark must be between 0 and 100','error'); return;
+      }
+      if (m < 0 || p < 0 || c < 0) {
+        showToast('Marks cannot be negative', 'error'); return;
       }
       App.profile.maths     = m;
       App.profile.physics   = p;
@@ -2469,11 +2475,11 @@ async function verifyPayment(response) {
       })
     });
     const data = await res.json();
-    if (!res.ok) { showError('Payment verification failed. Contact support@pickmyseat.in'); return; }
+    if (!res.ok) { showError('Payment verification failed. Contact support.pickymyseat@gmail.com'); return; }
     App.profile.grade = '1';
     handlePaymentSuccess(response.razorpay_payment_id);
   } catch (e) {
-    showError('Payment verification failed. Contact support@pickmyseat.in');
+    showError('Payment verification failed. Contact support.pickymyseat@gmail.com');
   }
 }
 
