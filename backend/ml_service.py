@@ -18,7 +18,7 @@ def get_rank_prediction(marks: float, community: str):
 # Lazy caches built from cutoff_lookup_2026.csv (the per-combo model output;
 # cutoff_model_meta.pkl holds only training metadata, not combos).
 _OFFERED_COMBOS = None   # set of (college_code, branch_code) offered at all
-_COMBO_CLOSING = None    # dict (college_code, branch_code) -> {community: closing rank}
+_COMBO_CLOSING  = None   # dict (college_code, branch_code) -> {community: closing rank}
 
 
 def _load_combo_caches():
@@ -44,9 +44,12 @@ def get_college_predictions_filtered(
     preferred_colleges: Optional[List[int]] = None,
     preferred_branches: Optional[List[str]] = None
 ):
+    # ------------------------------------------------------------------ #
+    # PATH 1 — Both preferred_colleges AND preferred_branches given        #
+    # Direct per-combo lookup: every requested pair gets an answer,        #
+    # no top-N or attainability filter that can silently drop combos.      #
+    # ------------------------------------------------------------------ #
     if preferred_colleges and preferred_branches:
-        # Direct combo lookup: every (college, branch) pair the user picked
-        # gets an answer — no top-N filtering that can silently drop combos.
         from predict_colleges import _load, _match_confidence, _status
 
         if community == "BCM":
@@ -66,7 +69,7 @@ def get_college_predictions_filtered(
         recs = []
         for ccode in preferred_colleges:
             ccode = int(ccode)
-            info = colleges.get(ccode)
+            info  = colleges.get(ccode)
             for bcode in preferred_branches:
                 bcode = str(bcode)
                 rec = {
@@ -80,6 +83,8 @@ def get_college_predictions_filtered(
                     "rank_band_low":    rmin,
                     "rank_band_high":   rmax,
                 }
+
+                # College does not offer this branch at all
                 if (ccode, bcode) not in offered:
                     rec.update({
                         "not_offered":      True,
@@ -92,12 +97,23 @@ def get_college_predictions_filtered(
                     continue
 
                 per_comm = combo_closing.get((ccode, bcode), {})
-                closing = per_comm.get(community)
+                closing  = per_comm.get(community)
+
+                # No cutoff for this specific community — use best available
                 if closing is None:
-                    # no cutoff for this community — estimate from the OC
-                    # (overall) cutoff, else the lowest (most conservative)
-                    # closing rank among communities that have data
-                    closing = per_comm.get("OC", min(per_comm.values()))
+                    fallback = per_comm.get("OC") or (min(per_comm.values()) if per_comm else None)
+                    if fallback is None:
+                        # No data at all for this combo
+                        rec.update({
+                            "no_community_data": True,
+                            "closing_rank":      None,
+                            "safety_margin":     None,
+                            "status":            "NO_DATA",
+                            "match_confidence":  None,
+                        })
+                        recs.append(rec)
+                        continue
+                    closing = fallback
                     rec["no_community_data"] = True
 
                 margin = closing - pred_rank
@@ -110,7 +126,7 @@ def get_college_predictions_filtered(
                 })
                 recs.append(rec)
 
-        # confident combos first; not_offered / no-data sink to the bottom
+        # Confident combos first; not_offered / no-data sink to the bottom
         recs.sort(key=lambda r: (r["match_confidence"] is None,
                                  -(r["match_confidence"] or 0)))
         for i, r in enumerate(recs, 1):
@@ -125,6 +141,11 @@ def get_college_predictions_filtered(
             "message":            None,
         }
 
+    # ------------------------------------------------------------------ #
+    # PATH 2 — Only one of preferred_colleges or preferred_branches given  #
+    # Filter path — no attainability filter so results are not silently    #
+    # dropped for WONT_GET combos.                                         #
+    # ------------------------------------------------------------------ #
     if preferred_colleges or preferred_branches:
         from predict_colleges import _load, _match_confidence, _status
 
@@ -141,13 +162,15 @@ def get_college_predictions_filtered(
         lookup, colleges, branches = _load()
 
         df = lookup[lookup["community"] == community].copy()
-        df = df[df["predicted_closing_rank_2026"] >= pred_rank]
+        # NOTE: attainability filter intentionally removed — show all combos
+        # including WONT_GET so the student sees real data for their choices.
 
         if preferred_colleges:
             df = df[df["college_code"].isin(preferred_colleges)]
         if preferred_branches:
             df = df[df["branch_code"].isin(preferred_branches)]
 
+        df = df.copy()
         df["safety_margin"] = df["predicted_closing_rank_2026"] - pred_rank
         df["status"]        = df["safety_margin"].apply(_status)
 
@@ -187,7 +210,10 @@ def get_college_predictions_filtered(
             "message":            "No matches found. Try broadening your filters." if not recs else None
         }
 
-    # No preferences — use original predict_colleges
+    # ------------------------------------------------------------------ #
+    # PATH 3 — No preferences — Grade 3 free predict                      #
+    # Untouched: returns top-N via original predict_colleges logic.        #
+    # ------------------------------------------------------------------ #
     result = predict_colleges(marks, community, top_n=top_n)
     if "error" in result:
         raise ValueError(result["error"])

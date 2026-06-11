@@ -2567,11 +2567,29 @@ async function restoreSessionFromToken() {
     App.profile.rankPhase    = data.rank_phase || 'pre';
     App.profile.hasPaid      = data.grade === '1';
     App.userGrade            = data.grade === '1' ? 1 : 2;
-    App.profile.preferredColleges = data.preferred_colleges ? JSON.parse(data.preferred_colleges) : [];
+App.profile.preferredColleges = data.preferred_colleges ? JSON.parse(data.preferred_colleges) : [];
     App.profile.preferredCourses  = data.preferred_courses  ? JSON.parse(data.preferred_courses)  : [];
     App.profile.applicationId = data.application_id || '';
+
+    // Auto-clear stale course codes from pre-fix data
+    if (App.profile.preferredCourses.length > 0 && BRANCHES.length > 0) {
+      const validCodes = new Set(BRANCHES.map(b => b.code));
+      const hasStale = App.profile.preferredCourses.some(c => !c.code || !validCodes.has(c.code));
+      if (hasStale) {
+        App.profile.preferredCourses = [];
+        authenticatedFetch(`${API_BASE}/auth/update-profile`, {
+          method: 'POST',
+          body: JSON.stringify({
+            preferred_colleges: App.profile.preferredColleges,
+            preferred_courses: []
+          })
+        }).catch(() => {});
+        setTimeout(() => showToast('Course preferences were reset after a system update — please re-add them in Profile', 'warning'), 2000);
+      }
+    }
+
     updateNav();
-    prefillAndLockMarks();   // pre-fill + lock marks/community inputs if present
+    prefillAndLockMarks();
   } catch (e) {
     // silently fail if session restore errors
   }
