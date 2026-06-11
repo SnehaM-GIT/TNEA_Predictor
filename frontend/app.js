@@ -1914,6 +1914,7 @@ async function renderComboProbCards() {
       return;
     }
     const data = await res.json();
+    console.log('API response:', JSON.stringify(data, null, 2));
     if (!res.ok) {
       console.error('predict/colleges failed:', res.status, data);
     } else {
@@ -2036,7 +2037,7 @@ function initPremiumSearch() {
     wrap._selectedCollege = college;
   }, 'Search any college by name or code...');
 
-  populateAllCourses('premiumCourseSelect');
+  populateCourseDropdown('premiumCourseSelect', BRANCHES);
 }
 
 async function runPremiumQuickPredict() {
