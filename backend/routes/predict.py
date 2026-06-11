@@ -112,27 +112,35 @@ def predict_colleges(
             preferred_branches=data.preferred_branches
         )
 
-        user = _get_optional_user(authorization, db)
-        if user and result.get("recommendations"):
-            for rec in result["recommendations"]:
-                # skip combos the college doesn't offer / has no cutoff data for
-                if rec.get("not_offered") or rec.get("match_confidence") is None:
-                    continue
-                prediction = Prediction(
-                    user_id=user.id,
-                    maths=data.maths,
-                    physics=data.physics,
-                    chemistry=data.chemistry,
-                    aggregate=marks,
-                    community=data.community,
-                    predicted_rank_low=result.get("student_rank_range", [None])[0],
-                    predicted_rank_high=result.get("student_rank_range", [None, None])[1],
-                    college_code=str(rec["college_code"]),
-                    branch_code=rec["branch_code"],
-                    probability=rec["match_confidence"]
-                )
-                db.add(prediction)
-            db.commit()
+        # Persisting predictions must never break the response. A DB error
+        # here used to bubble up as an uncaught 500 whose error response
+        # carries no CORS header, so the browser reported it as
+        # "Failed to fetch" instead of the real status.
+        try:
+            user = _get_optional_user(authorization, db)
+            if user and result.get("recommendations"):
+                for rec in result["recommendations"]:
+                    # skip combos the college doesn't offer / has no cutoff data for
+                    if rec.get("not_offered") or rec.get("match_confidence") is None:
+                        continue
+                    prediction = Prediction(
+                        user_id=user.id,
+                        maths=data.maths,
+                        physics=data.physics,
+                        chemistry=data.chemistry,
+                        aggregate=marks,
+                        community=data.community,
+                        predicted_rank_low=result.get("student_rank_range", [None])[0],
+                        predicted_rank_high=result.get("student_rank_range", [None, None])[1],
+                        college_code=str(rec["college_code"]),
+                        branch_code=rec["branch_code"],
+                        probability=rec["match_confidence"]
+                    )
+                    db.add(prediction)
+                db.commit()
+        except Exception as e:
+            db.rollback()
+            print(f"predict_colleges: failed to persist predictions: {e}")
 
         return result
     except ValueError as e:

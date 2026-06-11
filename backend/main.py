@@ -1,5 +1,6 @@
 import os
 from fastapi import FastAPI, Request, Response
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -32,6 +33,26 @@ app.add_middleware(
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+# Uncaught exceptions otherwise produce a raw 500 with no CORS header, which
+# the browser surfaces as "Failed to fetch" instead of the real error. Reflect
+# the origin so the frontend can actually read the 500 and we can debug it.
+@app.exception_handler(Exception)
+async def cors_aware_500(request: Request, exc: Exception):
+    origin = request.headers.get("origin", "")
+    headers = {}
+    if origin in ALLOWED_ORIGINS:
+        headers = {
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Credentials": "true",
+        }
+    print(f"Unhandled error on {request.method} {request.url.path}: {exc!r}")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"},
+        headers=headers,
+    )
 
 app.include_router(auth.router, prefix="/auth")
 app.include_router(predict.router, prefix="/predict")
