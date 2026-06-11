@@ -24,16 +24,29 @@ _COMBO_CLOSING  = None   # dict (college_code, branch_code) -> {community: closi
 def _load_combo_caches():
     global _OFFERED_COMBOS, _COMBO_CLOSING
     if _OFFERED_COMBOS is None:
-        from predict_colleges import _load
-        lookup, _, _ = _load()
-        _OFFERED_COMBOS = set(zip(
-            lookup["college_code"].astype(int),
-            lookup["branch_code"].astype(str)))
-        _COMBO_CLOSING = {}
-        for r in lookup.itertuples():
-            _COMBO_CLOSING.setdefault(
-                (int(r.college_code), str(r.branch_code)), {}
-            )[str(r.community)] = int(r.predicted_closing_rank_2026)
+        import math
+        try:
+            from predict_colleges import _load
+            lookup, _, _ = _load()
+            _OFFERED_COMBOS = set(zip(
+                lookup["college_code"].astype(int),
+                lookup["branch_code"].astype(str)))
+            _COMBO_CLOSING = {}
+            for r in lookup.itertuples():
+                try:
+                    closing = r.predicted_closing_rank_2026
+                    if closing is None or (isinstance(closing, float)
+                       and math.isnan(closing)):
+                        continue
+                    _COMBO_CLOSING.setdefault(
+                        (int(r.college_code), str(r.branch_code)), {}
+                    )[str(r.community)] = int(closing)
+                except (ValueError, TypeError):
+                    continue
+        except Exception as e:
+            print(f"_load_combo_caches error: {e}")
+            _OFFERED_COMBOS = set()
+            _COMBO_CLOSING = {}
     return _OFFERED_COMBOS, _COMBO_CLOSING
 
 
