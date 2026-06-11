@@ -86,7 +86,7 @@ def predict_rank(request: Request, data: MarksInput):
     marks = data.maths + data.physics / 2 + data.chemistry / 2
     try:
         return get_rank_prediction(marks, data.community)
-    except ValueError as e:
+    except (ValueError, OverflowError) as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -143,7 +143,7 @@ def predict_colleges(
             print(f"predict_colleges: failed to persist predictions: {e}")
 
         return result
-    except ValueError as e:
+    except (ValueError, OverflowError) as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -169,7 +169,7 @@ def predict_combo(
             preferred_colleges=data.preferred_colleges,
             preferred_branches=data.preferred_branches
         )
-    except ValueError as e:
+    except (ValueError, OverflowError) as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 

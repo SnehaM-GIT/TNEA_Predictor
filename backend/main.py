@@ -48,18 +48,11 @@ async def cors_aware_500(request: Request, exc: Exception):
             "Access-Control-Allow-Credentials": "true",
         }
     import traceback
-    tb = traceback.format_exc()
-    print(f"Unhandled error on {request.method} {request.url.path}: {exc!r}\n{tb}")
-    # TEMP DEBUG: surface the exception in the response so it can be read from
-    # the Network tab without Railway log access. Revert to a generic message
-    # once the root cause is identified.
+    print(f"Unhandled error on {request.method} {request.url.path}: {exc!r}\n"
+          f"{traceback.format_exc()}")
     return JSONResponse(
         status_code=500,
-        content={
-            "detail": "Internal server error",
-            "debug_error": repr(exc),
-            "debug_trace": tb.splitlines()[-8:],
-        },
+        content={"detail": "Internal server error"},
         headers=headers,
     )
 

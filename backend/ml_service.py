@@ -4,8 +4,23 @@ from typing import Optional, List
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "utils"))
 
+import math
+
 from predict_colleges import predict_colleges
 from ml_utils import predict_rank
+
+
+def _json_safe(obj):
+    """Recursively replace NaN/inf floats with None so the response is JSON
+    compliant. Source: blank cells in college_codes.csv (e.g. district) load
+    as float NaN and land raw in the response, crashing FastAPI's encoder."""
+    if isinstance(obj, float):
+        return None if (math.isnan(obj) or math.isinf(obj)) else obj
+    if isinstance(obj, dict):
+        return {k: _json_safe(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_json_safe(v) for v in obj]
+    return obj
 
 
 def get_rank_prediction(marks: float, community: str):
@@ -145,14 +160,14 @@ def get_college_predictions_filtered(
         for i, r in enumerate(recs, 1):
             r["rank"] = i
 
-        return {
+        return _json_safe({
             "student_rank":       pred_rank,
             "student_rank_range": [rmin, rmax],
             "rank_confidence":    rank_conf,
             "community":          community,
             "recommendations":    recs,
             "message":            None,
-        }
+        })
 
     # ------------------------------------------------------------------ #
     # PATH 2 — Only one of preferred_colleges or preferred_branches given  #
@@ -214,14 +229,14 @@ def get_college_predictions_filtered(
         for i, r in enumerate(recs, 1):
             r["rank"] = i
 
-        return {
+        return _json_safe({
             "student_rank":       pred_rank,
             "student_rank_range": [int(rk["range_min"]), int(rk["range_max"])],
             "rank_confidence":    rank_conf,
             "community":          community,
             "recommendations":    recs,
             "message":            "No matches found. Try broadening your filters." if not recs else None
-        }
+        })
 
     # ------------------------------------------------------------------ #
     # PATH 3 — No preferences — Grade 3 free predict                      #
@@ -230,4 +245,4 @@ def get_college_predictions_filtered(
     result = predict_colleges(marks, community, top_n=top_n)
     if "error" in result:
         raise ValueError(result["error"])
-    return result
+    return _json_safe(result)
