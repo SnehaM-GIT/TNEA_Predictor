@@ -20,6 +20,8 @@ ALLOWED_ORIGINS = [
     "http://127.0.0.1",
     "null",
     "https://pickymyseat.vercel.app",
+    "https://pickmyseat.in",
+    "https://www.pickmyseat.in",
 ]
 
 app.add_middleware(
