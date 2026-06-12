@@ -2282,7 +2282,7 @@ async function renderChoiceList() {
 
   wrap.innerHTML = `
     <div style="font-size:12px;color:var(--text-muted);margin-bottom:16px;font-style:italic;padding:10px 14px;background:var(--surface2);border-radius:8px">
-      🤖 AI-generated priority order based on your marks and TNEA 2021–2024 cutoff data.
+      🤖 AI-generated priority order based on your marks and TNEA 2021–2025 cutoff data.
       Submit your choices in this exact order for the best outcome.
     </div>
     ${viable.map((combo,idx) => {
