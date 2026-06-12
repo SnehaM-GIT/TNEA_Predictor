@@ -2476,11 +2476,11 @@ async function verifyPayment(response) {
       })
     });
     const data = await res.json();
-    if (!res.ok) { showError('Payment verification failed. Contact support.pickymyseat@gmail.com'); return; }
+    if (!res.ok) { showError('Payment verification failed. Contact support.pickmyseat@gmail.com'); return; }
     App.profile.grade = '1';
     handlePaymentSuccess(response.razorpay_payment_id);
   } catch (e) {
-    showError('Payment verification failed. Contact support.pickymyseat@gmail.com');
+    showError('Payment verification failed. Contact support.pickmyseat@gmail.com');
   }
 }
 
