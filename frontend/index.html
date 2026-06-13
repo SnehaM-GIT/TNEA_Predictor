@@ -581,6 +581,10 @@
             <input type="tel" id="profileMobile" class="text-input" placeholder="+91 98765 43210" oninput="markProfileDirty()"/>
           </div>
           <div class="form-group">
+            <label>Application Number <span style="font-size:11px;color:var(--text-muted)">(optional)</span></label>
+            <input type="text" id="profileApplicationId" class="text-input" placeholder="e.g. TN2026XXXXXX" oninput="markProfileDirty()"/>
+          </div>
+          <div class="form-group">
             <label>Category</label>
             <select id="profileCategory" class="select-input full-width" onchange="markProfileDirty()">
               <option value="">Select category</option>

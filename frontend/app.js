@@ -19,6 +19,10 @@ const App = {
   rankPhase:       'pre',
   counsellingStep: 0,
   theme:           'dark',
+  simStep:         0,
+  simChoices:      [],
+  simAllotment:    null,
+  simFilter:       { college: '', branch: '', category: '' },
 
   profile: {
     name:              '',
@@ -1321,9 +1325,11 @@ function logout() {
 function renderProfile() {
   if (!App.currentUser) { navigateTo('auth'); return; }
 
-  document.getElementById('profileName').value     = App.profile.name     || '';
-  document.getElementById('profileEmail').value    = App.profile.email    || '';
-  document.getElementById('profileMobile').value   = App.profile.mobile   || '';
+  document.getElementById('profileName').value     = App.profile.name          || '';
+  document.getElementById('profileEmail').value    = App.profile.email         || '';
+  document.getElementById('profileMobile').value   = App.profile.mobile        || '';
+  const appIdBasicEl = document.getElementById('profileApplicationId');
+  if (appIdBasicEl) appIdBasicEl.value = App.profile.applicationId || '';
   document.getElementById('profileCategory').value = App.profile.category || '';
 
   const locked = App.profile.marksLocked;
@@ -1595,6 +1601,7 @@ async function saveProfile() {
   App.profile.name     = name;
   App.profile.email    = email;
   App.profile.mobile   = document.getElementById('profileMobile')?.value?.trim()    || '';
+  App.profile.applicationId = document.getElementById('profileApplicationId')?.value?.trim() || App.profile.applicationId || '';
   App.profile.category = document.getElementById('profileCategory')?.value          || '';
 
   const marksWereLocked = App.profile.marksLocked;
@@ -2322,41 +2329,363 @@ async function renderChoiceList() {
       </div>` : ''}`;
 }
 
+// ============================================================
+// COUNSELLING SIMULATION — Full TNEA Flow
+// ============================================================
+
+const TFC_LIST = [
+  'Government College of Technology, Coimbatore - 641013',
+  'PSG College of Technology, Coimbatore - 641004',
+  'CEG Campus, Anna University, Chennai - 600025',
+  'Government College of Engineering, Salem - 636011',
+  'Thiagarajar College of Engineering, Madurai - 625015',
+  'Government College of Engineering, Tirunelveli - 627007',
+  'Government College of Engineering, Bargur, Krishnagiri - 635104',
+  'Alagappa Chettiar Govt College of Engineering, Karaikudi - 630003',
+  'Government College of Engineering, Erode - 638316',
+  'University College of Engineering, Villupuram - 605103',
+];
+
+const SIM_BRANCHES = [
+  { code:'CS',   name:'COMPUTER SCIENCE AND ENGINEERING' },
+  { code:'EC',   name:'ELECTRONICS AND COMMUNICATION ENGINEERING' },
+  { code:'EE',   name:'ELECTRICAL AND ELECTRONICS ENGINEERING' },
+  { code:'ME',   name:'MECHANICAL ENGINEERING' },
+  { code:'CE',   name:'CIVIL ENGINEERING' },
+  { code:'IT',   name:'INFORMATION TECHNOLOGY' },
+  { code:'AIDS', name:'ARTIFICIAL INTELLIGENCE AND DATA SCIENCE' },
+  { code:'CSBS', name:'COMPUTER SCIENCE AND BUSINESS SYSTEMS' },
+  { code:'MECH', name:'MECHATRONICS ENGINEERING' },
+  { code:'CHE',  name:'CHEMICAL ENGINEERING' },
+];
+
+function simCollegeType(code) {
+  const govtCodes = ['0001','0002','0003','0004','0005','1516','2005','2369','2603','2615','2709','3464','3465','4974','5009','5901','1013','1014','1015','1026','3011','3016','3018','3019','3021','4020','4023','4024','5010','5017'];
+  return govtCodes.includes(code) ? 'Govt' : parseInt(code) < 3000 ? 'Aided' : 'Self-Financing';
+}
+
+function simGetSeats(collegeCode, branchCode) {
+  const h = (collegeCode + branchCode).split('').reduce((a,c)=>a+c.charCodeAt(0),0);
+  const type = simCollegeType(collegeCode);
+  const base = type==='Govt' ? 25 : type==='Aided' ? 45 : 60;
+  return { oc: base + (h % 15), comm: Math.floor((base + (h%15)) * 0.3) + (h%7) };
+}
+
+function simGetCutoff(collegeCode, branchCode, community) {
+  const h = (collegeCode+branchCode+community).split('').reduce((a,c)=>a+c.charCodeAt(0),0);
+  const type = simCollegeType(collegeCode);
+  const base = type==='Govt' ? 8000 : type==='Aided' ? 25000 : 80000;
+  return base + (h % (type==='Govt' ? 15000 : 40000));
+}
+
+function simRunAllotment() {
+  const rank = App.profile.rank || 99999;
+  const community = App.profile.category || 'OC';
+  for (const c of App.simChoices) {
+    const cutoff = simGetCutoff(c.collegeCode, c.branchCode, community);
+    if (rank <= cutoff) return { ...c, cutoff, community };
+  }
+  return null;
+}
+
+function simGoToStep(n) { App.simStep = n; renderCounsellingSimulation(); }
+
+function simToggleChoice(collegeCode, branchCode, branchName, collegeName) {
+  const idx = App.simChoices.findIndex(c=>c.collegeCode===collegeCode&&c.branchCode===branchCode);
+  if (idx >= 0) {
+    App.simChoices.splice(idx,1);
+    App.simChoices.forEach((c,i)=>c.order=i+1);
+  } else {
+    App.simChoices.push({ collegeCode, branchCode, branchName, collegeName, order: App.simChoices.length+1 });
+  }
+  renderCounsellingSimulation();
+}
+
+function simClearChoices() { App.simChoices=[]; renderCounsellingSimulation(); }
+
+function simLockAndAllot() {
+  if (App.simChoices.length===0) { showToast('Add at least one choice first','error'); return; }
+  App.simAllotment = simRunAllotment();
+  simGoToStep(2);
+}
+
+function simConfirmAllotment() {
+  const sel = document.querySelector('input[name="simOption"]:checked')?.value;
+  if (!sel) { showToast('Please select an option','error'); return; }
+  if (sel==='decline_quit') {
+    showToast('You quit counselling in this simulation.','warning');
+    resetCounselling(); return;
+  }
+  if (sel==='decline_next') {
+    showToast('You moved to Round 2. Add more choices and try again.','warning');
+    App.simChoices=[]; simGoToStep(1); return;
+  }
+  simGoToStep(3);
+}
+
 function renderCounsellingSimulation() {
   const sim = document.getElementById('counsellingSim');
   if (!sim) return;
-  const steps = [
-    { icon:'📝', title:'Registration',         desc:'Online registration on tnea.ac.in with your board roll number, date of birth and marks.' },
-    { icon:'✅', title:'Rank Publication',      desc:'TNEA publishes your rank. Compare it here against our AI prediction for accuracy.' },
-    { icon:'📋', title:'Choice Filling',        desc:'Fill college-course choices in priority order. Use your AI Choice List above for best results.' },
-    { icon:'🔒', title:'Choice Locking',        desc:'Lock your list before the deadline. No changes allowed after locking.' },
-    { icon:'🏛️', title:'Round 1 Allotment',     desc:'Seats allotted based on rank and choices. AI predicts your most likely allotment.' },
-    { icon:'🎯', title:'Acceptance / Upgrade',  desc:'Accept current seat or wait for Round 2 for a potentially better option.' },
-    { icon:'🎓', title:'Reporting to College',  desc:'Report to allotted college with originals. Admission confirmed.' },
-  ];
-  sim.innerHTML = `
-    <div class="sim-steps">
-      ${steps.map((step,idx) => `
-        <div class="sim-step ${idx===App.counsellingStep?'active':idx<App.counsellingStep?'done':''}">
-          <div class="sim-step-icon">${idx<App.counsellingStep?'✅':step.icon}</div>
-          <div>
-            <div class="sim-step-title">Step ${idx+1}: ${step.title}</div>
-            <div class="sim-step-desc">${step.desc}</div>
-          </div>
-        </div>`).join('')}
-    </div>
-    <div style="margin-top:20px;display:flex;align-items:center;gap:16px">
-      ${App.counsellingStep < steps.length-1
-        ? `<button class="btn-primary" onclick="advanceCounselling()">Simulate Next Step →</button>`
-        : `<button class="btn-outline" onclick="resetCounselling()">🔄 Restart Simulation</button>`}
-      <span style="font-size:13px;color:var(--text-muted)">
-        Step ${App.counsellingStep+1} of ${steps.length}
-      </span>
-    </div>`;
+
+  const stepLabels = ['📋 Status','✏️ Choice Filling','🏛️ Allotment','📄 Order'];
+  const indicator = `<div class="sim-progress">
+    ${stepLabels.map((lbl,i)=>`
+      <div class="sim-prog-item ${i===App.simStep?'active':i<App.simStep?'done':''}">
+        <div class="sim-prog-dot">${i<App.simStep?'✓':i+1}</div>
+        <div class="sim-prog-lbl">${lbl}</div>
+      </div>
+      ${i<stepLabels.length-1?'<div class="sim-prog-line '+(i<App.simStep?'done':'')+'"></div>':''}`).join('')}
+  </div>`;
+
+  let body = '';
+  if (App.simStep===0) body = simRenderStatus();
+  else if (App.simStep===1) body = simRenderChoiceFilling();
+  else if (App.simStep===2) body = simRenderAllotment();
+  else body = simRenderProvisionalOrder();
+
+  sim.innerHTML = indicator + body;
 }
 
-function advanceCounselling() { App.counsellingStep++; renderCounsellingSimulation(); }
-function resetCounselling()   { App.counsellingStep=0; renderCounsellingSimulation(); }
+function simRenderStatus() {
+  const p = App.profile;
+  const rank = p.rank || '—';
+  const _agg = calculateAggregate(p.maths, p.physics, p.chemistry);
+  const agg  = _agg > 0 ? _agg.toFixed(1) : '—';
+  const comm = p.category || '—';
+  const cRank = p.rank ? Math.floor(p.rank * 0.42) : '—';
+  const rnd = p.rank ? (1000000000 + Math.floor(p.rank * 12345) % 8999999999) : '—';
+  return `
+  <div class="sim-card">
+    <div class="sim-gov-hdr"><div class="sim-gov-title">GOVERNMENT OF TAMIL NADU</div><div class="sim-gov-sub">TAMIL NADU ENGINEERING ADMISSIONS — 2026</div></div>
+    <div class="sim-app-no">Application Number: ${p.applicationId||'Not entered'}</div>
+    <div class="sim-status-grid">
+      <div class="sim-status-row">
+        <div class="sim-status-cell"><span>Community</span><strong>${comm}</strong></div>
+        <div class="sim-status-cell"><span>Cutoff Marks</span><strong>${agg}</strong></div>
+      </div>
+      <div class="sim-status-row">
+        <div class="sim-status-cell"><span>General Rank</span><strong>${rank}</strong></div>
+        <div class="sim-status-cell"><span>Community Rank</span><strong>${cRank}</strong></div>
+      </div>
+      <div class="sim-status-row">
+        <div class="sim-status-cell"><span>Random Number</span><strong>${rnd}</strong></div>
+        <div class="sim-status-cell"><span>Upload Status</span><strong class="sim-ok">✅ Completed successfully</strong></div>
+      </div>
+      <div class="sim-status-row">
+        <div class="sim-status-cell"><span>Is Eminent Sports Person</span><strong>No</strong></div>
+        <div class="sim-status-cell"><span>Is Differently Abled Person</span><strong>No</strong></div>
+      </div>
+      <div class="sim-status-row">
+        <div class="sim-status-cell"><span>Ex-Serviceman</span><strong>No</strong></div>
+        <div class="sim-status-cell"><span>Certificate Verification Status</span><strong class="sim-ok">✅ Completed successfully</strong></div>
+      </div>
+    </div>
+    ${!p.rank ? '<div class="sim-warn">⚠️ Enter your rank in Profile for accurate simulation</div>' : ''}
+    <div class="sim-disclaimer">This is a simulation. Your actual status is on <a href="https://tneaonline.org" target="_blank">tneaonline.org ↗</a></div>
+    <button class="btn-primary btn-glow btn-full" onclick="simGoToStep(1)" style="margin-top:20px">Proceed to Choice Filling →</button>
+  </div>`;
+}
+
+function simRenderChoiceFilling() {
+  const f = App.simFilter;
+  const searchCol = (f.college||'').toLowerCase();
+  const searchBr  = (f.branch||'').toLowerCase();
+  const searchCat = f.category||'';
+
+  const filtered = COLLEGES.filter(col => {
+    if (searchCol && !col.name.toLowerCase().includes(searchCol)) return false;
+    if (searchCat) { const t=simCollegeType(col.code); if(t!==searchCat) return false; }
+    return true;
+  }).slice(0,10);
+
+  let rows = '';
+  filtered.forEach(col => {
+    SIM_BRANCHES.forEach(br => {
+      if (searchBr && !br.name.toLowerCase().includes(searchBr)) return;
+      const seats = simGetSeats(col.code, br.code);
+      const sel = App.simChoices.find(c=>c.collegeCode===col.code&&c.branchCode===br.code);
+      const safeColName = col.name.replace(/'/g,"\\'").replace(/"/g,'&quot;');
+      const safeBrName  = br.name.replace(/'/g,"\\'");
+      rows += `<tr class="${sel?'sim-row-sel':''}" onclick="simToggleChoice('${col.code}','${br.code}','${safeBrName}','${safeColName}')">
+        <td><input type="checkbox" ${sel?'checked':''} onclick="event.stopPropagation();simToggleChoice('${col.code}','${br.code}','${safeBrName}','${safeColName}')"/></td>
+        <td class="sim-order-cell">${sel?sel.order:''}</td>
+        <td>${col.code}</td>
+        <td class="sim-col-name">${col.name}</td>
+        <td>${br.name}</td>
+        <td class="${seats.oc===0?'sim-seat-zero':'sim-seat-ok'}">${seats.oc}</td>
+        <td class="${seats.comm===0?'sim-seat-zero':'sim-seat-ok'}">${seats.comm}</td>
+      </tr>`;
+    });
+  });
+
+  const myChoicesHtml = App.simChoices.length>0 ? `
+    <div class="sim-my-choices-list">
+      ${App.simChoices.map(c=>`
+        <div class="sim-choice-chip">
+          <span>${c.order}. [${c.collegeCode}] ${c.collegeName.substring(0,28)}… — ${c.branchName.substring(0,20)}…</span>
+          <button onclick="event.stopPropagation();simToggleChoice('${c.collegeCode}','${c.branchCode}','${c.branchName.replace(/'/g,"\\'")}','${c.collegeName.replace(/'/g,"\\'")}')">×</button>
+        </div>`).join('')}
+    </div>` : '<p style="font-size:13px;color:var(--text-muted);margin-top:8px">No choices selected yet. Check rows in the table below.</p>';
+
+  return `
+  <div class="sim-card">
+    <div class="sim-gov-hdr"><div class="sim-gov-title">GOVERNMENT OF TAMIL NADU</div><div class="sim-gov-sub">TAMIL NADU ENGINEERING ADMISSIONS — 2026</div></div>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">Fill your college-course choices in priority order. Choice 1 = your top preference. Reference: <a href="https://tneaonline.org" target="_blank" style="color:var(--accent)">tneaonline.org ↗</a></p>
+    <div class="sim-filter-box">
+      <div class="sim-filter-title">Filter Colleges</div>
+      <div class="sim-filter-grid">
+        <div><label>College Name:</label><input class="text-input" placeholder="e.g. Government College" value="${f.college||''}" oninput="App.simFilter.college=this.value;renderCounsellingSimulation()"/></div>
+        <div><label>Branch Name:</label><input class="text-input" placeholder="e.g. Computer Science" value="${f.branch||''}" oninput="App.simFilter.branch=this.value;renderCounsellingSimulation()"/></div>
+        <div><label>Category:</label>
+          <select class="select-input" onchange="App.simFilter.category=this.value;renderCounsellingSimulation()">
+            <option value="" ${!searchCat?'selected':''}>All Types</option>
+            <option value="Govt" ${searchCat==='Govt'?'selected':''}>Government</option>
+            <option value="Aided" ${searchCat==='Aided'?'selected':''}>Government Aided</option>
+            <option value="Self-Financing" ${searchCat==='Self-Financing'?'selected':''}>Self-Financing</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="sim-table-toolbar">
+      <span>Select a course — Academic</span>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="sim-autosave">● Changes are auto saved.</span>
+        ${App.simChoices.length>0?'<button class="btn-ghost" style="font-size:12px;padding:4px 10px" onclick="simClearChoices()">Clear All</button>':''}
+      </div>
+    </div>
+    <div class="sim-table-wrap">
+      <table class="sim-table">
+        <thead>
+          <tr>
+            <th>Select</th><th>Choice order</th><th>College Code</th>
+            <th>College Name</th><th>Branch Name</th>
+            <th colspan="2" style="text-align:center">Seat Availability</th>
+          </tr>
+          <tr><th colspan="5"></th><th class="sim-seat-head">OC</th><th class="sim-seat-head">Comm.</th></tr>
+        </thead>
+        <tbody>${rows||'<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-muted)">No results — try a different filter</td></tr>'}</tbody>
+      </table>
+    </div>
+    <div class="sim-my-choices-section">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <strong>My Choices List</strong>
+        <span style="font-size:13px;color:var(--text-muted)">${App.simChoices.length} selected</span>
+      </div>
+      ${myChoicesHtml}
+    </div>
+    <div style="display:flex;gap:12px;margin-top:20px;flex-wrap:wrap">
+      <button class="btn-ghost" onclick="simGoToStep(0)">← Back</button>
+      <button class="btn-primary btn-glow" onclick="simLockAndAllot()" ${App.simChoices.length===0?'style="opacity:0.5;cursor:not-allowed"':''}>
+        🔒 Lock Choices & Simulate Allotment
+      </button>
+    </div>
+  </div>`;
+}
+
+function simRenderAllotment() {
+  const allot = App.simAllotment;
+  const p = App.profile;
+  const rank = p.rank||'—';
+  const cRank = p.rank ? Math.floor(p.rank*0.42) : '—';
+  const comm = p.category||'OC';
+
+  if (!allot) return `
+  <div class="sim-card">
+    <div class="sim-gov-hdr"><div class="sim-gov-title">GOVERNMENT OF TAMIL NADU</div><div class="sim-gov-sub">TAMIL NADU ENGINEERING ADMISSIONS — 2026</div></div>
+    <div class="sim-no-allotment">
+      <div style="font-size:48px;margin-bottom:12px">😔</div>
+      <h3>No Seat Allotted in Round 1</h3>
+      <p>Your rank is above the cutoff for all your selected choices. Add more colleges or try Round 2.</p>
+      <div style="display:flex;gap:12px;margin-top:20px;justify-content:center;flex-wrap:wrap">
+        <button class="btn-ghost" onclick="simGoToStep(1)">← Add More Choices</button>
+        <button class="btn-outline" onclick="resetCounselling()">🔄 Restart</button>
+      </div>
+    </div>
+  </div>`;
+
+  const options = [
+    { id:'accept',         label:'I accept and confirm the current allotment.', sub:'இப்போது எனக்கு ஒதுக்கப்பட்டதை நான் ஏற்று உறுதி செய்கிறேன்' },
+    { id:'accept_upward',  label:'I accept the current allotment and opt for the upward movement. If allotted in upward movement, I confirm.', sub:'இப்போது எனக்கு ஒதுக்கப்பட்டதை நான் ஏற்கிறேன், ஆனால் மேல் முன்னுரிமை விருப்பங்களில் இடம் கிடைத்தால் அதை ஏற்று உறுதி செய்கிறேன்' },
+    { id:'decline_upward', label:'I decline current allotment and opt for the upward movement. If not allotted in upward movement, move to the next round.', sub:'இப்போது எனக்கு ஒதுக்கப்பட்டதை நான் ஏற்கவில்லை, மேல் முன்னுரிமையில் இடம் கிடைக்கவில்லை என்றால் அடுத்த சுற்றுக்கு செல்கிறேன்' },
+    { id:'decline_next',   label:'I decline current allotment and move to the next round to enable participation as per the vacancy position of the round.', sub:'இப்போது எனக்கு ஒதுக்கப்பட்டதை நான் ஏற்கவில்லை, அடுத்தகட்ட கலந்தாய்வில் சென்று தேர்வு உள்ள கல்லூரிகளுக்கு பங்கேற்க விரும்புகிறேன்' },
+    { id:'decline_quit',   label:'I decline current allotment and quit counselling. I am aware that I cannot participate in further rounds of counselling.', sub:'இப்போது எனக்கு ஒதுக்கப்பட்டதை நான் ஏற்கவில்லை, நான் கலந்தாய்விலிருந்து வெளியேறுகிறேன்' },
+  ];
+
+  return `
+  <div class="sim-card">
+    <div class="sim-gov-hdr"><div class="sim-gov-title">GOVERNMENT OF TAMIL NADU</div><div class="sim-gov-sub">TAMIL NADU ENGINEERING ADMISSIONS — 2026</div></div>
+    <div class="sim-allot-grid">
+      <div class="sim-allot-cell"><span>Community</span><strong>${comm}</strong></div>
+      <div class="sim-allot-cell"><span>General Rank</span><strong>${rank}</strong></div>
+      <div class="sim-allot-cell"><span>Community Rank</span><strong>${cRank}</strong></div>
+      <div class="sim-allot-cell"><span>Allotted Community</span><strong>${comm}</strong></div>
+      <div class="sim-allot-cell"><span>Branch Name</span><strong>${allot.branchName}</strong></div>
+      <div class="sim-allot-cell sim-allot-full"><span>College Name</span><strong>${allot.collegeCode} — ${allot.collegeName}</strong></div>
+    </div>
+    <div class="sim-options-title">Choose one of the options below:</div>
+    <div class="sim-options-list">
+      ${options.map((opt,i)=>`
+        <label class="sim-opt-row">
+          <input type="radio" name="simOption" value="${opt.id}" ${i===0?'checked':''}/>
+          <div>
+            <div class="sim-opt-en">${opt.label}</div>
+            <div class="sim-opt-ta">${opt.sub}</div>
+          </div>
+        </label>`).join('')}
+    </div>
+    <div class="form-group" style="margin-top:20px">
+      <label>Select Reporting TFC for tentative admission:</label>
+      <select class="select-input full-width">
+        <option value="">Select TFC...</option>
+        ${TFC_LIST.map(t=>`<option>${t}</option>`).join('')}
+      </select>
+    </div>
+    <div class="sim-confirm-note">⚠️ In the real portal, this action cannot be reversed. Here it's a simulation.</div>
+    <div style="display:flex;gap:12px;margin-top:16px;flex-wrap:wrap">
+      <button class="btn-ghost" onclick="simGoToStep(1)">← Back</button>
+      <button class="btn-primary btn-glow" onclick="simConfirmAllotment()">Save →</button>
+    </div>
+  </div>`;
+}
+
+function simRenderProvisionalOrder() {
+  const allot = App.simAllotment;
+  const p = App.profile;
+  const _agg2 = calculateAggregate(p.maths, p.physics, p.chemistry);
+  const provAgg = _agg2 > 0 ? _agg2.toFixed(1) : '—';
+  const today = new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'2-digit',year:'numeric'});
+  return `
+  <div class="sim-card">
+    <div class="sim-prov-wrap">
+      <div class="sim-prov-title">TAMIL NADU ENGINEERING ADMISSIONS — 2026</div>
+      <div class="sim-prov-sub">PROVISIONAL ALLOTMENT ORDER FOR B.E/B.TECH COURSES*</div>
+      <div class="sim-prov-ref">Ref.No. —/TNEA/2026 &nbsp;&nbsp; Date: ${today}</div>
+      <p class="sim-prov-intro">The candidate is informed that he/she has been <strong>PROVISIONALLY</strong> allotted as per the option exercised for admissions to the First year Degree Course, College and Branch as detailed below.</p>
+      <div class="sim-prov-grid">
+        <div class="sim-prov-row"><span>Application No.</span><span>: ${p.applicationId||'—'}</span></div>
+        <div class="sim-prov-row"><span>Name</span><span>: ${p.name||'—'}</span></div>
+        <div class="sim-prov-row"><span>Community</span><span>: ${p.category||'OC'}</span></div>
+        <div class="sim-prov-row"><span>Category</span><span>: ${allot?simCollegeType(allot.collegeCode):'—'}</span></div>
+        <div class="sim-prov-row"><span>Course</span><span>: B.E/B.Tech</span></div>
+        <div class="sim-prov-row"><span>Cutoff Mark</span><span>: ${provAgg}</span></div>
+        <div class="sim-prov-row"><span>College Allotted</span><span>: ${allot?`${allot.collegeCode} — ${allot.collegeName}`:'—'}</span></div>
+        <div class="sim-prov-row"><span>Branch Allotted</span><span>: ${allot?allot.branchName:'—'}</span></div>
+        <div class="sim-prov-row"><span>Seat Allotted Category</span><span>: ${p.category||'OC'} ACADEMIC</span></div>
+      </div>
+      <p class="sim-prov-disclaimer">* This is a <strong>simulation only</strong>. Your actual allotment order will be on <a href="https://tneaonline.org" target="_blank">tneaonline.org</a></p>
+    </div>
+    <div style="display:flex;gap:12px;margin-top:20px;justify-content:center;flex-wrap:wrap">
+      <button class="btn-outline" onclick="resetCounselling()">🔄 Restart Simulation</button>
+    </div>
+  </div>`;
+}
+
+function advanceCounselling() { App.simStep = Math.min(App.simStep+1,3); renderCounsellingSimulation(); }
+function resetCounselling() {
+  App.simStep=0; App.simChoices=[]; App.simAllotment=null;
+  App.simFilter={ college:'', branch:'', category:'' };
+  renderCounsellingSimulation();
+}
 
 // ============================================================
 // UPGRADE MODAL
