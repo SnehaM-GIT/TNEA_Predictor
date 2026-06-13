@@ -14,7 +14,7 @@ const App = {
   currentPage:     'landing',
   currentUser:     null,
   userGrade:       3,
-  liveCount:       342,
+  liveCount:       parseInt(localStorage.getItem('pms_live_count') || '300'),
   slotsLeft:       23,
   rankPhase:       'pre',
   counsellingStep: 0,
@@ -579,8 +579,20 @@ const DATA = {
 // ============================================================
 // THEME — Light / Dark toggle
 // ============================================================
+function togglePasswordVisibility(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  if (input.type === 'password') {
+    input.type = 'text';
+    btn.textContent = '🙈';
+  } else {
+    input.type = 'password';
+    btn.textContent = '👁️';
+  }
+}
+
 function initTheme() {
-  const saved = localStorage.getItem('pms_theme') || 'dark';
+  const saved = localStorage.getItem('pms_theme') || 'light';
   setTheme(saved);
 }
 
@@ -737,6 +749,7 @@ function updateNav() {
   const navUpgrade = document.getElementById('navUpgradeBtn');
   const navDash    = document.getElementById('navDashboard');
   const navProf    = document.getElementById('navProfile');
+  const themeBtn   = document.getElementById('themeToggle');
 
   if (App.currentUser) {
     navUser.classList.remove('hidden');
@@ -749,12 +762,15 @@ function updateNav() {
       App.profile.name ? App.profile.name.split(' ')[0] : 'Student';
     document.getElementById('dropdownInfo').textContent = App.profile.email || '';
     navUpgrade.classList.toggle('hidden', App.userGrade === 1);
+    if (themeBtn) themeBtn.style.display = 'flex';
   } else {
     navUser.classList.add('hidden');
     navLogin.classList.remove('hidden');
     navUpgrade.classList.add('hidden');
     navDash.classList.add('hidden');
     navProf.classList.add('hidden');
+    if (themeBtn) themeBtn.style.display = 'none';
+    setTheme('light');
   }
 }
 
@@ -888,11 +904,21 @@ function updateLiveCounts() {
   const update = () => {
     if (heroCount)  heroCount.textContent  = App.liveCount;
     if (modalCount) modalCount.textContent = App.liveCount;
+    localStorage.setItem('pms_live_count', App.liveCount);
   };
   update();
   setInterval(() => {
     if (Math.random() > 0.7) { App.liveCount++; update(); }
   }, 8000);
+}
+
+function incrementPredictionCount() {
+  App.liveCount++;
+  const heroCount  = document.getElementById('heroLiveCount');
+  const modalCount = document.getElementById('liveCount');
+  if (heroCount)  heroCount.textContent  = App.liveCount;
+  if (modalCount) modalCount.textContent = App.liveCount;
+  localStorage.setItem('pms_live_count', App.liveCount);
 }
 
 function observeScrollAnimations() {
@@ -1136,6 +1162,7 @@ async function runFreePrediction() {
   }
 
   setCookie('pms_free_used', '1', 7);
+  incrementPredictionCount();
 
   document.getElementById('freePredictForm')
     ?.querySelectorAll('input,select').forEach(el => el.disabled = true);
@@ -1307,6 +1334,7 @@ function simulateLogin(userData) {
 
 function logout() {
   localStorage.removeItem('token');
+  setTheme('light');
   App.currentUser = null;
   App.userGrade   = 3;
   App.profile     = {
@@ -1928,6 +1956,7 @@ async function renderComboProbCards() {
       recs     = data.recommendations || [];
       rankLow  = data.student_rank_range?.[0] || 0;
       rankHigh = data.student_rank_range?.[1] || 0;
+      incrementPredictionCount();
     }
   } catch(e) {
     console.error('predict/colleges request error:', e);

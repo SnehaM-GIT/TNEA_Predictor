@@ -143,7 +143,7 @@
         <button id="themeToggle" onclick="toggleTheme()" 
           style="background:var(--surface2);border:1px solid var(--border2);color:var(--text-muted);
           width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:16px;
-          display:flex;align-items:center;justify-content:center;transition:all 0.3s ease;">
+          display:none;align-items:center;justify-content:center;transition:all 0.3s ease;">
           🌙
         </button>
         
@@ -519,7 +519,10 @@
           </div>
           <div class="form-group">
             <label>Password</label>
-            <input type="password" id="loginPassword" class="text-input" placeholder="••••••••"/>
+            <div class="password-field-wrap">
+              <input type="password" id="loginPassword" class="text-input" placeholder="••••••••"/>
+              <button type="button" class="password-eye-btn" onclick="togglePasswordVisibility('loginPassword', this)">👁️</button>
+            </div>
           </div>
           <button class="btn-primary btn-glow btn-full" onclick="loginUser()">Login to Dashboard</button>
         </div>
@@ -535,11 +538,14 @@
           </div>
           <div class="form-group">
             <label>Mobile Number</label>
-            <input type="tel" id="signupMobile" class="text-input" placeholder="+91 98765 43210"/>
+            <input type="tel" id="signupMobile" class="text-input" placeholder="99999 99999"/>
           </div>
           <div class="form-group">
             <label>Password</label>
-            <input type="password" id="signupPassword" class="text-input" placeholder="Min 8 characters"/>
+            <div class="password-field-wrap">
+              <input type="password" id="signupPassword" class="text-input" placeholder="Min 8 characters"/>
+              <button type="button" class="password-eye-btn" onclick="togglePasswordVisibility('signupPassword', this)">👁️</button>
+            </div>
           </div>
           <div class="form-group" style="display:flex;align-items:flex-start;gap:8px;margin:20px 0">
             <input type="checkbox" id="signupTermsCheckbox" style="margin-top:4px;cursor:pointer"/>
@@ -578,7 +584,7 @@
           </div>
           <div class="form-group">
             <label>Mobile Number</label>
-            <input type="tel" id="profileMobile" class="text-input" placeholder="+91 98765 43210" oninput="markProfileDirty()"/>
+            <input type="tel" id="profileMobile" class="text-input" placeholder="99999 99999" oninput="markProfileDirty()"/>
           </div>
           <div class="form-group">
             <label>Application Number <span style="font-size:11px;color:var(--text-muted)">(optional)</span></label>
