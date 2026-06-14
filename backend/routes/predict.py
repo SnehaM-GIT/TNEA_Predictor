@@ -208,7 +208,7 @@ def get_colleges_list():
 @router.get("/branches-list")
 def get_branches_list():
     df = pd.read_csv(DATA_DIR / "course_codes.csv")
-    df = df.fillna("")
+    df = df.fillna("").sort_values("branch_name")
     return df[["branch_code", "branch_name"]].to_dict(orient="records")
 
 
@@ -248,11 +248,12 @@ def get_college_branches(college_code: int):
         cutoff_df["college_code"] == college_code
     ]["branch_code"].unique().tolist()
 
-    return [
+result = [
         {"code": str(b), "name": branch_map.get(str(b), f"Branch {b}")}
         for b in college_branches
         if b != ""
     ]
+    return sorted(result, key=lambda x: x["name"])
 
 class VerifyRankInput(BaseModel):
     application_id: str
