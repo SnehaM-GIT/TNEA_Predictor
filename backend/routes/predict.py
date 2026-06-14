@@ -244,11 +244,11 @@ def get_college_branches(college_code: int):
     branches_df = pd.read_csv(DATA_DIR / "course_codes.csv").fillna("")
     branch_map = dict(zip(branches_df["branch_code"], branches_df["branch_name"]))
 
-    college_branches = cutoff_df[
+college_branches = cutoff_df[
         cutoff_df["college_code"] == college_code
     ]["branch_code"].unique().tolist()
 
-result = [
+    result = [
         {"code": str(b), "name": branch_map.get(str(b), f"Branch {b}")}
         for b in college_branches
         if b != ""
