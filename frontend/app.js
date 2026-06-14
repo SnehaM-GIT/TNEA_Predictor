@@ -2021,6 +2021,7 @@ async function renderComboProbCards() {
             college, course,
             prob: match.match_confidence,
             closingRank: match.closing_rank,
+            communityRanks: match.community_closing_ranks || {},
             estimated: !!match.no_community_data,
             rankLow, rankHigh
           };
@@ -2065,8 +2066,14 @@ async function renderComboProbCards() {
             <div class="combo-prob-pct" style="color:${pc.cls==='high'?'var(--success)':pc.cls==='mid'?'var(--warning)':'var(--danger)'}">
               ${combo.prob}%
             </div>
-           <div class="combo-prob-label">Closing Rank: ${combo.closingRank || '—'}</div>
+          <div class="combo-prob-label">${App.profile.category || 'OC'} Closing Rank: ${combo.closingRank ? combo.closingRank.toLocaleString() : '—'}</div>
            <div class="combo-prob-label" style="font-size:11px;color:var(--text-muted)">Rank Band: <span style="font-size:15px;font-weight:600;color:var(--text-secondary)">${combo.rankLow ? combo.rankLow.toLocaleString() + '–' + combo.rankHigh.toLocaleString() : '—'}</span></div>
+           ${combo.communityRanks && Object.keys(combo.communityRanks).length > 0 ? `
+           <div style="margin-top:6px;font-size:11px;color:var(--text-muted)">
+             ${['OC','BC','MBC','SC'].filter(c => combo.communityRanks[c]).map(c =>
+               `<span style="margin-right:8px"><strong>${c}:</strong> ${combo.communityRanks[c].toLocaleString()}</span>`
+             ).join('')}
+           </div>` : ''}
            ${combo.estimated ? `<div class="combo-prob-label" style="font-size:11px;color:var(--text-muted)">⚠️ No historic data for your community — estimate based on overall cutoff</div>` : ''}
           </div>
           <span class="combo-status-tag ${pc.statusCls}">${pc.status}</span>

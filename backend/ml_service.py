@@ -151,6 +151,7 @@ def get_college_predictions_filtered(
                     "safety_margin":    margin,
                     "status":           status,
                     "match_confidence": int(_match_confidence(rank_conf, status, margin, closing)),
+                    "community_closing_ranks": dict(per_comm),
                 })
                 recs.append(rec)
 
@@ -222,6 +223,7 @@ def get_college_predictions_filtered(
                 "safety_margin":    margin,
                 "status":           status,
                 "match_confidence": int(_match_confidence(rank_conf, status, margin, closing)),
+                "community_closing_ranks": _load_combo_caches()[1].get((code, bcode), {}),
             })
 
         recs.sort(key=lambda x: x["match_confidence"], reverse=True)
