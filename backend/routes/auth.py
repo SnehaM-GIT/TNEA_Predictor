@@ -2,10 +2,13 @@ from fastapi import APIRouter, HTTPException, Depends, Header
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from database import get_db
-from models import User
+from models import User, PasswordResetToken
 import bcrypt
 import jwt
 import os
+import secrets
+import smtplib
+from email.mime.text import MIMEText
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -34,12 +37,45 @@ class UpdateProfileInput(BaseModel):
     preferred_courses: Optional[str] = None
     application_id: Optional[str] = None
 
+class ForgotPasswordInput(BaseModel):
+    email: str
+
+class ValidateTokenInput(BaseModel):
+    token: str
+
+class ResetPasswordInput(BaseModel):
+    token: str
+    new_password: str
+
 def create_token(user_id: int):
     payload = {
         "user_id": user_id,
         "exp": datetime.utcnow() + timedelta(days=30)
     }
     return jwt.encode(payload, SECRET_KEY, algorithm="HS256")
+
+def send_reset_email(to_email: str, token: str):
+    reset_url = f"{os.getenv('RESET_BASE_URL', 'https://pickmyseat.in')}/reset-password.html?token={token}"
+    body = f"""Hi,
+
+You requested a password reset for your PickMySeat account.
+
+Click the link below to reset your password (valid for 1 hour):
+{reset_url}
+
+If you didn't request this, ignore this email.
+
+— PickMySeat Team
+"""
+    msg = MIMEText(body)
+    msg['Subject'] = 'Reset your PickMySeat password'
+    msg['From']    = os.getenv('SMTP_USER')
+    msg['To']      = to_email
+
+    with smtplib.SMTP(os.getenv('SMTP_HOST', 'smtp.gmail.com'), int(os.getenv('SMTP_PORT', 587))) as server:
+        server.starttls()
+        server.login(os.getenv('SMTP_USER'), os.getenv('SMTP_PASS'))
+        server.send_message(msg)
 
 @router.post("/signup")
 def signup(data: SignupInput, db: Session = Depends(get_db)):
@@ -141,3 +177,62 @@ def update_profile(
         raise HTTPException(status_code=401, detail="Token expired")
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid token")
+
+@router.post("/forgot-password")
+def forgot_password(data: ForgotPasswordInput, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == data.email.strip().lower()).first()
+    if user:
+        # delete any existing unused tokens for this user
+        db.query(PasswordResetToken).filter(
+            PasswordResetToken.user_id == user.id,
+            PasswordResetToken.used == False
+        ).delete()
+        db.commit()
+
+        token = secrets.token_urlsafe(32)
+        db.add(PasswordResetToken(
+            user_id    = user.id,
+            token      = token,
+            expires_at = datetime.utcnow() + timedelta(hours=1),
+            used       = False
+        ))
+        db.commit()
+
+        try:
+            send_reset_email(user.email, token)
+        except Exception as e:
+            print(f"Email send failed: {e}")
+
+    # always return 200 — don't reveal if email exists
+    return {"message": "If that email is registered, a reset link has been sent."}
+
+@router.post("/validate-reset-token")
+def validate_reset_token(data: ValidateTokenInput, db: Session = Depends(get_db)):
+    row = db.query(PasswordResetToken).filter(
+        PasswordResetToken.token      == data.token,
+        PasswordResetToken.used       == False,
+        PasswordResetToken.expires_at >  datetime.utcnow()
+    ).first()
+    if not row:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset link.")
+    return {"valid": True}
+
+@router.post("/reset-password")
+def reset_password(data: ResetPasswordInput, db: Session = Depends(get_db)):
+    if len(data.new_password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters.")
+
+    row = db.query(PasswordResetToken).filter(
+        PasswordResetToken.token      == data.token,
+        PasswordResetToken.used       == False,
+        PasswordResetToken.expires_at >  datetime.utcnow()
+    ).first()
+    if not row:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset link.")
+
+    user = db.query(User).filter(User.id == row.user_id).first()
+    user.password_hash = bcrypt.hashpw(data.new_password.encode(), bcrypt.gensalt()).decode()
+    row.used = True
+    db.commit()
+
+    return {"message": "Password updated successfully."}

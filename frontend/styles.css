@@ -52,25 +52,25 @@
 }
 
 [data-theme="dark"] {
-  /* Dark Mode - Refined Brown Palette */
-  --bg-primary: #0F0D0A;
-  --bg-secondary: #161310;
-  --surface1: #1C1814;
-  --surface2: #241F1A;
-  --surface3: #2C261F;
+  /* Dark Mode - Brown Palette */
+  --bg-primary: #1A1510;
+  --bg-secondary: #2E261C;
+  --surface1: #2E261C;
+  --surface2: #3D3228;
+  --surface3: #4A3F2F;
   
-  --text-primary: #F5F2EE;
-  --text-secondary: #CEC5B8;
-  --text-muted: #9E9186;
+  --text-primary: #FAF8F5;
+  --text-secondary: #D9CFC1;
+  --text-muted: #B8A898;
   
-  --border1: #231F1B;
-  --border2: #2E2820;
-  --border3: #3D3630;
+  --border1: #3D3228;
+  --border2: #4A3F2F;
+  --border3: #6B5842;
   
-  --accent: #A89078;
-  --accent-hover: #C4AD97;
-  --accent-light: #7A6550;
-  --accent-bg: #241F1A;
+  --accent: #B8A898;
+  --accent-hover: #D9CFC1;
+  --accent-light: #8B7355;
+  --accent-bg: #3D3228;
   
   --success: #4CAF50;
   --success-bg: #1B5E20;
@@ -79,14 +79,14 @@
   --error: #EF5350;
   --error-bg: #B71C1C;
   
-  --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 12px 36px rgba(0, 0, 0, 0.65);
-  --shadow-xl: 0 24px 56px rgba(0, 0, 0, 0.75);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 20px 48px rgba(0, 0, 0, 0.6);
   
-  --gradient-primary: linear-gradient(135deg, #A89078 0%, #7A6550 100%);
-  --gradient-surface: linear-gradient(180deg, #1C1814 0%, #241F1A 100%);
-  --gradient-accent: linear-gradient(135deg, #C4AD97 0%, #A89078 100%);
+  --gradient-primary: linear-gradient(135deg, #B8A898 0%, #8B7355 100%);
+  --gradient-surface: linear-gradient(180deg, #2E261C 0%, #3D3228 100%);
+  --gradient-accent: linear-gradient(135deg, #D9CFC1 0%, #B8A898 100%);
 }
 
 /* ============================================
@@ -243,7 +243,7 @@ body.loading #loader-overlay {
 }
 
 [data-theme="dark"] .modal-overlay {
-  background: rgba(0, 0, 0, 0.92);
+  background: rgba(0, 0, 0, 0.9);
 }
 
 .modal-overlay.hidden {
@@ -631,8 +631,8 @@ button {
 }
 
 [data-theme="dark"] .navbar {
-  background: rgba(15, 13, 10, 0.88);
-  border-bottom-color: var(--border1);
+  background: rgba(26, 21, 16, 0.85);
+  border-bottom-color: var(--border2);
 }
 
 .nav-container {
@@ -869,7 +869,7 @@ button {
 
 .hero {
   position: relative;
-  min-height: 80vh;
+  min-height: 85vh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -880,13 +880,9 @@ button {
 .hero-bg-orb {
   position: absolute;
   border-radius: 50%;
-  filter: blur(90px);
-  opacity: 0.12;
+  filter: blur(80px);
+  opacity: 0.15;
   pointer-events: none;
-}
-
-[data-theme="dark"] .hero-bg-orb {
-  opacity: 0.055;
 }
 
 .orb1 {
@@ -915,10 +911,6 @@ button {
   left: 50%;
   transform: translate(-50%, -50%);
   animation: pulse 15s ease-in-out infinite;
-}
-
-[data-theme="dark"] .orb3 {
-  opacity: 0.025;
 }
 
 @keyframes float {
@@ -1062,10 +1054,6 @@ button {
   background: var(--bg-secondary);
   border-top: 1px solid var(--border1);
   border-bottom: 1px solid var(--border1);
-}
-
-[data-theme="dark"] .section-dark {
-  background: #0D0B08;
 }
 
 .section-container {
@@ -2055,6 +2043,136 @@ button {
   color: var(--text-muted);
   margin-top: 24px;
   line-height: 1.5;
+}
+/* ============================================
+   FORGOT / RESET PASSWORD
+   ============================================ */
+
+.forgot-link {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.2s ease;
+  text-decoration: none;
+  font-family: inherit;
+}
+
+.forgot-link:hover {
+  color: var(--accent);
+}
+
+.forgot-back {
+  margin-bottom: 24px;
+}
+
+.forgot-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.forgot-desc {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+
+.forgot-success {
+  margin-top: 16px;
+  padding: 14px 16px;
+  background: rgba(76, 175, 80, 0.1);
+  border: 1px solid rgba(76, 175, 80, 0.3);
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--success);
+  text-align: center;
+}
+
+/* ============================================
+   RESET PASSWORD PAGE (reset-password.html)
+   ============================================ */
+
+.reset-page-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--bg-primary);
+}
+
+.reset-box {
+  background: var(--surface1);
+  border: 1px solid var(--border2);
+  border-radius: 20px;
+  padding: 40px;
+  max-width: 440px;
+  width: 100%;
+  box-shadow: var(--shadow-lg);
+  text-align: center;
+}
+
+.reset-box .auth-brand {
+  margin-bottom: 28px;
+}
+
+.reset-box h2 {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  text-align: left;
+}
+
+.reset-box p {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-bottom: 24px;
+  text-align: left;
+  line-height: 1.5;
+}
+
+.reset-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 0;
+}
+
+.reset-state-icon {
+  font-size: 48px;
+}
+
+.reset-state h3 {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.reset-state p {
+  font-size: 14px;
+  color: var(--text-muted);
+  text-align: center;
+  margin: 0;
+}
+
+.reset-state a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.reset-state a:hover {
+  color: var(--accent-hover);
 }
 
 /* ============================================

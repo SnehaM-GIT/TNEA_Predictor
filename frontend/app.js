@@ -1225,10 +1225,44 @@ function renderFreeResultList({ agg, rankBand, recs, course }) {
 // AUTH
 // ============================================================
 function switchAuth(mode) {
-  document.getElementById('loginForm') ?.classList.toggle('hidden', mode !== 'login');
-  document.getElementById('signupForm')?.classList.toggle('hidden', mode !== 'signup');
-  document.getElementById('loginTab')  ?.classList.toggle('active', mode === 'login');
-  document.getElementById('signupTab') ?.classList.toggle('active', mode === 'signup');
+  document.getElementById('loginForm')        ?.classList.toggle('hidden', mode !== 'login');
+  document.getElementById('signupForm')       ?.classList.toggle('hidden', mode !== 'signup');
+  document.getElementById('forgotPasswordForm')?.classList.add('hidden');
+  document.getElementById('loginTab')         ?.classList.toggle('active', mode === 'login');
+  document.getElementById('signupTab')        ?.classList.toggle('active', mode === 'signup');
+}
+
+// ── FORGOT PASSWORD ──────────────────────────────────────────────────────────
+
+function showForgotPassword() {
+  document.getElementById('loginForm')        ?.classList.add('hidden');
+  document.getElementById('forgotPasswordForm')?.classList.remove('hidden');
+  document.getElementById('forgotSuccessMsg') ?.classList.add('hidden');
+  document.getElementById('forgotEmail')      && (document.getElementById('forgotEmail').value = '');
+}
+
+function backToLogin() {
+  document.getElementById('forgotPasswordForm')?.classList.add('hidden');
+  document.getElementById('loginForm')        ?.classList.remove('hidden');
+}
+
+async function submitForgotPassword() {
+  const email = document.getElementById('forgotEmail')?.value?.trim();
+  if (!email) { showToast('Please enter your email', 'error'); return; }
+  showLoader();
+  try {
+    const res = await fetch(`${API_BASE}/auth/forgot-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    // Always show success (don't reveal if email exists or not)
+    document.getElementById('forgotSuccessMsg')?.classList.remove('hidden');
+  } catch(e) {
+    showError('No connection. Check your internet and retry.');
+  } finally {
+    hideLoader();
+  }
 }
 
 async function loginUser() {

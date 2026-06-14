@@ -36,6 +36,7 @@ class User(Base):
 
     predictions   = relationship("Prediction", back_populates="user")
     payments      = relationship("Payment", back_populates="user")
+    reset_tokens = relationship("PasswordResetToken", back_populates="user")
 
 
 class Prediction(Base):
@@ -92,5 +93,18 @@ class CutoffCache(Base):
     branch_code          = Column(String)
     community            = Column(String)
     predicted_cutoff_rank = Column(Integer)
-    last_year_cutoff     = Column(Integer, nullable=True)
-    updated_at           = Column(DateTime, default=datetime.utcnow)
+    last_year_cutoff      = Column(Integer, nullable=True)
+    updated_at            = Column(DateTime, default=datetime.utcnow)
+
+
+class PasswordResetToken(Base):
+    __tablename__ = "password_reset_tokens"
+
+    id         = Column(Integer, primary_key=True, index=True)
+    user_id    = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    token      = Column(String(255), unique=True, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    used       = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", back_populates="reset_tokens")
