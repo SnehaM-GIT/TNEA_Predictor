@@ -143,7 +143,7 @@
         <button id="themeToggle" onclick="toggleTheme()" 
           style="background:var(--surface2);border:1px solid var(--border2);color:var(--text-muted);
           width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:16px;
-          display:flex;align-items:center;justify-content:center;transition:all 0.3s ease;">
+          display:none;align-items:center;justify-content:center;transition:all 0.3s ease;">
           🌙
         </button>
         
@@ -189,7 +189,7 @@
           <span class="gradient-text">Before Counselling Day</span>
         </h1>
         <p class="hero-subtitle animate-slide-up delay-1">
-          AI-powered TNEA seat predictor trained on 2021–2024 data.<br/>
+          AI-powered TNEA seat predictor trained on 2021–2025 data.<br/>
           Enter your marks. Get your rank band. Find your college.
         </p>
         <div class="hero-actions animate-slide-up delay-2">
@@ -201,7 +201,7 @@
           </button>
         </div>
         <div class="hero-stats animate-fade-in delay-3">
-          <div class="stat-chip">📊 TNEA 2021–2024 Data</div>
+          <div class="stat-chip">📊 TNEA 2021–2025 Data</div>
           <div class="stat-chip">🏛️ 500+ Colleges</div>
           <div class="stat-chip">🎓 AI Rank Prediction</div>
           <div class="stat-chip">⚡ Results in 5 seconds</div>
@@ -347,15 +347,13 @@
           <p>AI-powered TNEA seat predictor</p>
         </div>
         <div class="footer-links">
-          <span>Built on TNEA 2021–2024 open data</span>
-          <span>·</span>
-          <span>Powered by XGBoost</span>
-          <span>·</span>
-          <span>Secured by Firebase</span>
+          <span>Built on TNEA 2021–2025 open data</span>
           <span>·</span>
           <a href="privacy.html" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none;font-weight:500">Privacy Policy</a>
           <span>·</span>
           <a href="terms.html" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none;font-weight:500">Terms of Service</a>
+          <span>·</span>
+          <a href="mailto:support.pickmyseat@gmail.com" style="color:var(--accent);text-decoration:none;font-weight:500">Contact: support.pickmyseat@gmail.com</a>
         </div>
       </div>
     </footer>
@@ -545,13 +543,16 @@
             <label>Email</label>
             <input type="email" id="loginEmail" class="text-input" placeholder="your@email.com"/>
           </div>
-          <div class="form-group">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-              <label style="margin:0">Password</label>
-              <button class="forgot-link" onclick="showForgotPassword()">Forgot password?</button>
-            </div>
-            <input type="password" id="loginPassword" class="text-input" placeholder="••••••••"/>
-          </div>
+<div class="form-group">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <label style="margin:0">Password</label>
+        <button class="forgot-link" onclick="showForgotPassword()">Forgot password?</button>
+    </div>
+    <div class="password-field-wrap">
+        <input type="password" id="loginPassword" class="text-input" placeholder="••••••••"/>
+        <button type="button" class="password-eye-btn" onclick="togglePasswordVisibility('loginPassword', this)">👁️</button>
+    </div>
+</div>
           <button class="btn-primary btn-glow btn-full" onclick="loginUser()">Login to Dashboard</button>
         </div>
 
@@ -583,11 +584,14 @@
           </div>
           <div class="form-group">
             <label>Mobile Number</label>
-            <input type="tel" id="signupMobile" class="text-input" placeholder="+91 98765 43210"/>
+            <input type="tel" id="signupMobile" class="text-input" placeholder="99999 99999"/>
           </div>
           <div class="form-group">
             <label>Password</label>
-            <input type="password" id="signupPassword" class="text-input" placeholder="Min 8 characters"/>
+            <div class="password-field-wrap">
+              <input type="password" id="signupPassword" class="text-input" placeholder="Min 8 characters"/>
+              <button type="button" class="password-eye-btn" onclick="togglePasswordVisibility('signupPassword', this)">👁️</button>
+            </div>
           </div>
           <div class="form-group" style="display:flex;align-items:flex-start;gap:8px;margin:20px 0">
             <input type="checkbox" id="signupTermsCheckbox" style="margin-top:4px;cursor:pointer"/>
@@ -626,7 +630,11 @@
           </div>
           <div class="form-group">
             <label>Mobile Number</label>
-            <input type="tel" id="profileMobile" class="text-input" placeholder="+91 98765 43210" oninput="markProfileDirty()"/>
+            <input type="tel" id="profileMobile" class="text-input" placeholder="99999 99999" oninput="markProfileDirty()"/>
+          </div>
+          <div class="form-group">
+            <label>Application Number <span style="font-size:11px;color:var(--text-muted)">(optional)</span></label>
+            <input type="text" id="profileApplicationId" class="text-input" placeholder="e.g. TN2026XXXXXX" oninput="markProfileDirty()"/>
           </div>
           <div class="form-group">
             <label>Category</label>
