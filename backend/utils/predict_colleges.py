@@ -82,10 +82,10 @@ def predict_colleges(marks, community, top_n=5):
     lookup, colleges, branches = _load()
 
     # Pre-compute all community closing ranks per college+branch combo
-comm_rank_map = {}
-for _, row in lookup.iterrows():
-    key = (int(row['college_code']), str(row['branch_code']))
-    comm_rank_map.setdefault(key, {})[str(row['community'])] = int(row['predicted_closing_rank_2026'])
+    comm_rank_map = {}
+    for _, row in lookup.iterrows():
+        key = (int(row['college_code']), str(row['branch_code']))
+        comm_rank_map.setdefault(key, {})[str(row['community'])] = int(row['predicted_closing_rank_2026'])
 
     rk = predict_rank(marks, community)
     if "error" in rk:
