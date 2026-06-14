@@ -20,7 +20,6 @@ limiter = Limiter(key_func=get_remote_address)
 VALID_COMMUNITIES = {"OC", "BC", "BCM", "MBC", "SC", "ST", "SCA"}
 DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "cleaned"
 
-# In-memory guest IP tracker — resets on redeploy (Redis later)
 _guest_ip_tracker: dict = defaultdict(lambda: {"date": None, "count": 0})
 
 def _check_guest_ip_limit(ip: str):
@@ -98,7 +97,6 @@ def predict_colleges(
     authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db)
 ):
-    # Grade 3 guest limit — 1 prediction per IP per day
     if not authorization:
         _check_guest_ip_limit(get_remote_address(request))
 
@@ -112,15 +110,10 @@ def predict_colleges(
             preferred_branches=data.preferred_branches
         )
 
-        # Persisting predictions must never break the response. A DB error
-        # here used to bubble up as an uncaught 500 whose error response
-        # carries no CORS header, so the browser reported it as
-        # "Failed to fetch" instead of the real status.
         try:
             user = _get_optional_user(authorization, db)
             if user and result.get("recommendations"):
                 for rec in result["recommendations"]:
-                    # skip combos the college doesn't offer / has no cutoff data for
                     if rec.get("not_offered") or rec.get("match_confidence") is None:
                         continue
                     prediction = Prediction(
@@ -212,8 +205,6 @@ def get_branches_list():
     return df[["branch_code", "branch_name"]].to_dict(orient="records")
 
 
-# college_code -> [{branch_code, branch_name}] from cutoff_lookup_2026.csv
-# (the per-combo model output behind cutoff_model_meta.pkl). Built once, cached.
 _college_branch_map: dict = {}
 
 def _get_college_branch_map():
@@ -244,7 +235,7 @@ def get_college_branches(college_code: int):
     branches_df = pd.read_csv(DATA_DIR / "course_codes.csv").fillna("")
     branch_map = dict(zip(branches_df["branch_code"], branches_df["branch_name"]))
 
-college_branches = cutoff_df[
+    college_branches = cutoff_df[
         cutoff_df["college_code"] == college_code
     ]["branch_code"].unique().tolist()
 
@@ -255,17 +246,19 @@ college_branches = cutoff_df[
     ]
     return sorted(result, key=lambda x: x["name"])
 
+
 class VerifyRankInput(BaseModel):
     application_id: str
     name: str
     rank: int
+
+
 @router.post("/verify-rank")
 def verify_rank(
     data: VerifyRankInput,
     authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db)
 ):
-    import os
     if os.getenv("RANK_LIST_RELEASED", "false").lower() != "true":
         raise HTTPException(status_code=400, detail="Rank list not yet released")
 
@@ -279,7 +272,7 @@ def verify_rank(
     if match.empty:
         raise HTTPException(status_code=404, detail="Application ID not found in rank list")
 
-    row       = match.iloc[0]
+    row = match.iloc[0]
     official_rank = int(row["rank"])
 
     if official_rank != data.rank:
@@ -290,13 +283,13 @@ def verify_rank(
 
     user = _get_optional_user(authorization, db)
     if user:
-        user.rank           = official_rank
+        user.rank = official_rank
         user.application_id = data.application_id
         db.commit()
 
     return {
-        "verified":  True,
-        "rank":      official_rank,
-        "name":      str(row.get("name", "")),
+        "verified": True,
+        "rank": official_rank,
+        "name": str(row.get("name", "")),
         "community": str(row.get("community", ""))
     }
