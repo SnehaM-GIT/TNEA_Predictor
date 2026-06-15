@@ -14,7 +14,9 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 router = APIRouter()
-SECRET_KEY = os.getenv("SECRET_KEY", "pickmyseat_secret")
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError("SECRET_KEY environment variable is not set")
 
 class SignupInput(BaseModel):
     email: str
@@ -57,10 +59,12 @@ def create_token(user_id: int):
 
 def send_reset_email(to_email: str, token: str):
     reset_url    = f"{os.getenv('RESET_BASE_URL', 'https://pickmyseat.in')}/reset-password.html?token={token}"
-    smtp_user    = os.getenv('SMTP_USER', 'support.pickmyseat@gmail.com')
-    smtp_pass    = os.getenv('SMTP_PASS', '')
+    smtp_user    = os.getenv('SMTP_USER')
+    smtp_pass    = os.getenv('SMTP_PASS')
     smtp_host    = os.getenv('SMTP_HOST', 'smtp.gmail.com')
     smtp_port    = int(os.getenv('SMTP_PORT', 587))
+    if not smtp_user or not smtp_pass:
+        raise RuntimeError("SMTP_USER and SMTP_PASS environment variables must be set")
 
     # ── Plain-text fallback ───────────────────────────────────────────────────
     plain = f"""Hi,
