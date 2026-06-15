@@ -15,7 +15,7 @@ router = APIRouter()
 
 RAZORPAY_KEY_ID     = os.getenv("RAZORPAY_KEY_ID")
 RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET")
-SECRET_KEY          = os.getenv("SECRET_KEY", "pickmyseat_secret")
+SECRET_KEY          = os.getenv("SECRET_KEY")
 
 def _get_user(authorization: Optional[str], db: Session):
     if not authorization or not authorization.startswith("Bearer "):

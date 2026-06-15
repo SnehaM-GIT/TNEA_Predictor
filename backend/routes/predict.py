@@ -71,7 +71,7 @@ def _get_optional_user(authorization: Optional[str], db: Session):
     if not authorization or not authorization.startswith("Bearer "):
         return None
     try:
-        SECRET_KEY = os.getenv("SECRET_KEY", "pickmyseat_secret")
+        SECRET_KEY = os.getenv("SECRET_KEY")
         token = authorization.split(" ")[1]
         payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
         return db.query(User).filter(User.id == payload.get("user_id")).first()

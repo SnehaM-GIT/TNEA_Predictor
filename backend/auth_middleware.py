@@ -5,7 +5,7 @@ from typing import Optional
 from sqlalchemy.orm import Session
 from models import User
 
-SECRET_KEY = os.getenv("SECRET_KEY", "pickmyseat_secret")
+SECRET_KEY = os.getenv("SECRET_KEY")
 
 def get_current_user(authorization: Optional[str] = Header(None), db: Session = None):
     if not authorization or not authorization.startswith("Bearer "):
