@@ -1033,7 +1033,7 @@ button {
 .ticker-track {
   display: flex;
   gap: 32px;
-  animation: scroll 30s linear infinite;
+  animation: scroll 15s linear infinite;
   white-space: nowrap;
 }
 

@@ -868,17 +868,41 @@ function clearError() {
 // LANDING
 // ============================================================
 function initLanding() {
-  renderTicker();
+  renderTicker();          // render static ticker immediately (no flash)
+  loadDynamicTicker();     // then replace with real user names from API
   renderTestimonials();
   updateLiveCounts();
   observeScrollAnimations();
 }
 
-function renderTicker() {
+function renderTicker(extraEvents = []) {
   const track = document.getElementById('tickerTrack');
   if (!track) return;
-  const doubled = [...DATA.tickerEvents, ...DATA.tickerEvents];
+  const allEvents = [...extraEvents, ...DATA.tickerEvents];
+  const doubled = [...allEvents, ...allEvents];
   track.innerHTML = doubled.map(ev => `<span class="ticker-item">🟢 ${ev}</span>`).join('');
+}
+
+// Fetch recent registrations from the API and inject them into the ticker
+async function loadDynamicTicker() {
+  try {
+    const res = await fetch(`${API_BASE}/auth/recent-users`);
+    if (!res.ok) throw new Error('no data');
+    const data = await res.json();
+    // data is an array of { first_name, action } objects
+    const dynamicEvents = (data || []).map(u => {
+      const actions = [
+        `${u.first_name} just joined PickMySeat 🎉`,
+        `${u.first_name} predicted their college seat 🎯`,
+        `${u.first_name} is exploring TNEA colleges 🏛️`,
+      ];
+      return u.action || actions[Math.floor(Math.random() * actions.length)];
+    });
+    renderTicker(dynamicEvents);
+  } catch (e) {
+    // Fallback to static ticker silently
+    renderTicker();
+  }
 }
 
 function renderTestimonials() {

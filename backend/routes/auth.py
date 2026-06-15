@@ -9,6 +9,7 @@ import os
 import secrets
 import smtplib
 from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -55,27 +56,119 @@ def create_token(user_id: int):
     return jwt.encode(payload, SECRET_KEY, algorithm="HS256")
 
 def send_reset_email(to_email: str, token: str):
-    reset_url = f"{os.getenv('RESET_BASE_URL', 'https://pickmyseat.in')}/reset-password.html?token={token}"
-    body = f"""Hi,
+    reset_url    = f"{os.getenv('RESET_BASE_URL', 'https://pickmyseat.in')}/reset-password.html?token={token}"
+    smtp_user    = os.getenv('SMTP_USER', 'support.pickmyseat@gmail.com')
+    smtp_pass    = os.getenv('SMTP_PASS', '')
+    smtp_host    = os.getenv('SMTP_HOST', 'smtp.gmail.com')
+    smtp_port    = int(os.getenv('SMTP_PORT', 587))
+
+    # ── Plain-text fallback ───────────────────────────────────────────────────
+    plain = f"""Hi,
 
 You requested a password reset for your PickMySeat account.
 
-Click the link below to reset your password (valid for 1 hour):
+Reset your password here (valid for 1 hour):
 {reset_url}
 
-If you didn't request this, ignore this email.
+If you didn't request this, ignore this email — your account is safe.
 
-— PickMySeat Team
+— PickMySeat Support
+support.pickmyseat@gmail.com
 """
-    msg = MIMEText(body)
-    msg['Subject'] = 'Reset your PickMySeat password'
-    msg['From']    = os.getenv('SMTP_USER')
-    msg['To']      = to_email
 
-    with smtplib.SMTP(os.getenv('SMTP_HOST', 'smtp.gmail.com'), int(os.getenv('SMTP_PORT', 587))) as server:
+    # ── HTML body ─────────────────────────────────────────────────────────────
+    html = f"""<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/></head>
+<body style="margin:0;padding:0;background:#0f0f13;font-family:Inter,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f0f13;padding:40px 16px;">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0"
+             style="background:#1a1a24;border-radius:16px;overflow:hidden;border:1px solid #2a2a3a;max-width:560px;width:100%;">
+
+        <!-- Header -->
+        <tr>
+          <td style="background:linear-gradient(135deg,#8b7355,#a0845c);padding:32px 40px;text-align:center;">
+            <div style="font-size:36px;margin-bottom:8px;">🎓</div>
+            <h1 style="margin:0;color:#fff;font-size:24px;font-weight:800;letter-spacing:-0.5px;">PickMySeat</h1>
+            <p style="margin:6px 0 0;color:rgba(255,255,255,0.8);font-size:13px;">AI-powered TNEA College Seat Predictor</p>
+          </td>
+        </tr>
+
+        <!-- Body -->
+        <tr>
+          <td style="padding:40px;">
+            <h2 style="margin:0 0 12px;color:#f0ece6;font-size:20px;font-weight:700;">🔑 Reset Your Password</h2>
+            <p style="margin:0 0 24px;color:#a0a0b0;font-size:15px;line-height:1.6;">
+              We received a request to reset the password for your PickMySeat account.
+              Click the button below — this link is valid for <strong style="color:#c9a87a;">1 hour</strong>.
+            </p>
+
+            <!-- CTA Button -->
+            <table cellpadding="0" cellspacing="0" style="margin:0 auto 32px;">
+              <tr>
+                <td align="center" style="border-radius:10px;background:linear-gradient(135deg,#8b7355,#a0845c);">
+                  <a href="{reset_url}"
+                     style="display:inline-block;padding:14px 40px;color:#fff;font-size:16px;
+                            font-weight:700;text-decoration:none;border-radius:10px;
+                            background:linear-gradient(135deg,#8b7355,#a0845c);">
+                    Reset My Password →
+                  </a>
+                </td>
+              </tr>
+            </table>
+
+            <!-- Fallback URL -->
+            <p style="margin:0 0 6px;color:#606070;font-size:13px;">Button not working? Copy this link:</p>
+            <p style="margin:0 0 28px;word-break:break-all;">
+              <a href="{reset_url}" style="color:#c9a87a;font-size:12px;text-decoration:none;">{reset_url}</a>
+            </p>
+
+            <!-- Security note -->
+            <div style="background:#13131c;border-left:3px solid #8b7355;border-radius:6px;padding:14px 16px;margin-bottom:24px;">
+              <p style="margin:0;color:#a0a0b0;font-size:13px;line-height:1.5;">
+                ⚠️ If you didn't request a password reset, you can safely ignore this email.
+                Your account has not been changed.
+              </p>
+            </div>
+
+            <p style="margin:0;color:#505060;font-size:13px;">— The PickMySeat Team</p>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="background:#13131c;padding:18px 40px;text-align:center;border-top:1px solid #2a2a3a;">
+            <p style="margin:0 0 4px;color:#404050;font-size:12px;">
+              PickMySeat · TNEA 2026 College Predictor · pickmyseat.in
+            </p>
+            <p style="margin:0;font-size:12px;">
+              <a href="mailto:support.pickmyseat@gmail.com"
+                 style="color:#8b7355;text-decoration:none;">support.pickmyseat@gmail.com</a>
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>"""
+
+    # ── Build MIME ────────────────────────────────────────────────────────────
+    msg = MIMEMultipart('alternative')
+    msg['Subject'] = 'Reset your PickMySeat password'
+    msg['From']    = f'PickMySeat <{smtp_user}>'
+    msg['To']      = to_email
+    msg.attach(MIMEText(plain, 'plain'))
+    msg.attach(MIMEText(html,  'html'))
+
+    with smtplib.SMTP(smtp_host, smtp_port) as server:
+        server.ehlo()
         server.starttls()
-        server.login(os.getenv('SMTP_USER'), os.getenv('SMTP_PASS'))
-        server.send_message(msg)
+        server.ehlo()
+        server.login(smtp_user, smtp_pass)
+        server.sendmail(smtp_user, to_email, msg.as_string())
 
 @router.post("/signup")
 def signup(data: SignupInput, db: Session = Depends(get_db)):
@@ -236,3 +329,29 @@ def reset_password(data: ResetPasswordInput, db: Session = Depends(get_db)):
     db.commit()
 
     return {"message": "Password updated successfully."}
+
+@router.get("/recent-users")
+def recent_users(db: Session = Depends(get_db)):
+    """Return first names + a ticker message for the last 10 registered users.
+    This is a public, low-sensitivity endpoint — it only exposes first names.
+    """
+    import random
+    users = (
+        db.query(User)
+        .order_by(User.id.desc())
+        .limit(10)
+        .all()
+    )
+    action_templates = [
+        "{name} just joined PickMySeat 🎉",
+        "{name} predicted their college seat 🎯",
+        "{name} is exploring TNEA colleges 🏛️",
+        "{name} checked their rank prediction 🏆",
+        "{name} unlocked 15 college combinations 🚀",
+    ]
+    result = []
+    for u in users:
+        first_name = (u.name or "A student").split()[0]
+        action = random.choice(action_templates).format(name=first_name)
+        result.append({"first_name": first_name, "action": action})
+    return result
