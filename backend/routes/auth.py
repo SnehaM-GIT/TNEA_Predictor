@@ -278,30 +278,32 @@ def update_profile(
 @router.post("/forgot-password")
 def forgot_password(data: ForgotPasswordInput, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == data.email.strip().lower()).first()
-    if user:
-        # delete any existing unused tokens for this user
-        db.query(PasswordResetToken).filter(
-            PasswordResetToken.user_id == user.id,
-            PasswordResetToken.used == False
-        ).delete()
-        db.commit()
+    if not user:
+        raise HTTPException(status_code=404, detail="Email address not found. Please check and try again.")
+        
+    # delete any existing unused tokens for this user
+    db.query(PasswordResetToken).filter(
+        PasswordResetToken.user_id == user.id,
+        PasswordResetToken.used == False
+    ).delete()
+    db.commit()
 
-        token = secrets.token_urlsafe(32)
-        db.add(PasswordResetToken(
-            user_id    = user.id,
-            token      = token,
-            expires_at = datetime.utcnow() + timedelta(hours=1),
-            used       = False
-        ))
-        db.commit()
+    token = secrets.token_urlsafe(32)
+    db.add(PasswordResetToken(
+        user_id    = user.id,
+        token      = token,
+        expires_at = datetime.utcnow() + timedelta(hours=1),
+        used       = False
+    ))
+    db.commit()
 
-        try:
-            send_reset_email(user.email, token)
-        except Exception as e:
-            print(f"Email send failed: {e}")
+    try:
+        send_reset_email(user.email, token)
+    except Exception as e:
+        print(f"Email send failed: {e}")
+        raise HTTPException(status_code=500, detail="Failed to send reset email. Please try again later.")
 
-    # always return 200 — don't reveal if email exists
-    return {"message": "If that email is registered, a reset link has been sent."}
+    return {"message": "A reset link has been sent to your email."}
 
 @router.post("/validate-reset-token")
 def validate_reset_token(data: ValidateTokenInput, db: Session = Depends(get_db)):

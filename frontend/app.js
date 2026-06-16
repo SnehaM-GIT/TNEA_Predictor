@@ -1311,7 +1311,11 @@ async function submitForgotPassword() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email })
     });
-    // Always show success (don't reveal if email exists or not)
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      showError(data.detail || 'Failed to send reset link.');
+      return;
+    }
     document.getElementById('forgotSuccessMsg')?.classList.remove('hidden');
   } catch(e) {
     showError('No connection. Check your internet and retry.');
