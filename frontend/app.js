@@ -1859,6 +1859,7 @@ function renderDashboard() {
   document.getElementById('dashWelcome').textContent = `Welcome back, ${name.split(' ')[0]}`;
 
   renderDashInfoCard();
+  renderDashAggCard();
   renderGrade1RankInput();
   renderComboProbCards();
   renderLockedSections();
@@ -1870,6 +1871,33 @@ function renderDashInfoCard() {
   const initials = App.profile.name
     ? App.profile.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)
     : (App.profile.email||'S')[0].toUpperCase();
+
+  card.innerHTML = `
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
+      <div class="dash-avatar">${initials}</div>
+      <div class="dash-user-info">
+        <div class="dash-user-name">${App.profile.name || 'Student'}</div>
+        <div class="dash-user-meta">
+          ${App.profile.email || ''}
+          ${App.profile.mobile   ? ' · ' + App.profile.mobile   : ''}
+          ${App.profile.category ? ' · ' + App.profile.category : ''}
+        </div>
+      </div>
+    </div>
+    <div class="dash-marks-chips">
+      ${App.profile.maths     != null ? `<span class="mark-chip">Maths: ${App.profile.maths}</span>`     : ''}
+      ${App.profile.physics   != null ? `<span class="mark-chip">Physics: ${App.profile.physics}</span>` : ''}
+      ${App.profile.chemistry != null ? `<span class="mark-chip">Chem: ${App.profile.chemistry}</span>`  : ''}
+      ${App.profile.maths == null
+        ? `<span class="mark-chip" style="color:var(--warning)">⚠️ Add marks in Profile</span>` : ''}
+      ${App.profile.marksLocked
+        ? `<span class="mark-chip" style="color:var(--text-muted);border-color:rgba(245,158,11,0.3)">🔒 Marks locked</span>` : ''}
+    </div>`;
+}
+
+function renderDashAggCard() {
+  const card = document.getElementById('dashAggCard');
+  if (!card) return;
   const agg = calculateAggregate(
     App.profile.maths||0, App.profile.physics||0, App.profile.chemistry||0
   );
@@ -1882,32 +1910,10 @@ function renderDashInfoCard() {
     : `<div style="font-size:13px;color:var(--text-muted);margin-top:6px">Marks will lock after first save</div>`;
 
   card.innerHTML = `
-    <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px">
-      <div class="dash-avatar">${initials}</div>
-      <div class="dash-user-info">
-        <div class="dash-user-name">${App.profile.name || 'Student'}</div>
-        <div class="dash-user-meta">
-          ${App.profile.email || ''}
-          ${App.profile.mobile   ? ' · ' + App.profile.mobile   : ''}
-          ${App.profile.category ? ' · ' + App.profile.category : ''}
-        </div>
-        <div class="dash-marks-chips">
-          ${App.profile.maths     != null ? `<span class="mark-chip">Maths: ${App.profile.maths}</span>`     : ''}
-          ${App.profile.physics   != null ? `<span class="mark-chip">Physics: ${App.profile.physics}</span>` : ''}
-          ${App.profile.chemistry != null ? `<span class="mark-chip">Chem: ${App.profile.chemistry}</span>`  : ''}
-          ${App.profile.maths == null
-            ? `<span class="mark-chip" style="color:var(--warning)">⚠️ Add marks in Profile</span>` : ''}
-          ${App.profile.marksLocked
-            ? `<span class="mark-chip" style="color:var(--text-muted);border-color:rgba(245,158,11,0.3)">🔒 Marks locked</span>` : ''}
-        </div>
-      </div>
-    </div>
-    <div style="border-top:1px solid var(--border1);padding-top:16px">
-      <div class="agg-banner-label">TNEA Aggregate</div>
-      <div class="agg-banner-value">${agg > 0 ? agg : '—'} <span style="font-size:18px;font-weight:500;color:var(--text-muted)">/ 200</span></div>
-      <div class="agg-banner-sub">Maths + Physics/2 + Chemistry/2 × 2</div>
-      ${lockNote}
-    </div>`;
+    <div class="agg-banner-label">TNEA Aggregate</div>
+    <div class="agg-banner-value">${agg > 0 ? agg : '—'} <span style="font-size:18px;font-weight:500;color:var(--text-muted)">/ 200</span></div>
+    <div class="agg-banner-sub">Maths + Physics/2 + Chemistry/2 × 2</div>
+    ${lockNote}`;
 }
 
 function renderGrade1RankInput() {
