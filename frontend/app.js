@@ -1912,7 +1912,7 @@ function renderDashAggCard() {
   card.innerHTML = `
     <div class="agg-banner-label">TNEA Aggregate</div>
     <div class="agg-banner-value">${agg > 0 ? agg : '—'} <span style="font-size:18px;font-weight:500;color:var(--text-muted)">/ 200</span></div>
-    <div class="agg-banner-sub">Maths + Physics/2 + Chemistry/2 × 2</div>
+    <div class="agg-banner-sub">Maths + Physics/2 + Chemistry/2</div>
     ${lockNote}`;
 }
 

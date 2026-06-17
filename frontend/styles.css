@@ -2443,7 +2443,7 @@ button {
   grid-template-columns: 1fr 1fr 1fr;
   gap: 24px;
   margin-bottom: 40px;
-  align-items: start;
+  align-items: stretch;
 }
 
 .dash-info-card {
