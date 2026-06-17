@@ -77,13 +77,20 @@ async def preflight_handler(rest_of_path: str, request: Request):
 @app.on_event("startup")
 async def startup_checks():
     missing = []
-    for var in ["RAZORPAY_KEY_ID", "RAZORPAY_KEY_SECRET", "SECRET_KEY", "DATABASE_URL"]:
+    for var in ["RAZORPAY_KEY_ID", "RAZORPAY_KEY_SECRET", "SECRET_KEY", "DATABASE_URL",
+                "SMTP_USER", "SMTP_PASS"]:
         if not os.getenv(var):
             missing.append(var)
     if missing:
         print(f"⚠️  WARNING: Missing environment variables: {', '.join(missing)}")
     else:
         print("✅ All required environment variables are set.")
+    # Log SMTP config (no secrets) so Railway logs show what's wired up
+    print(f"📧 SMTP: host={os.getenv('SMTP_HOST','smtp.gmail.com')} "
+          f"port={os.getenv('SMTP_PORT','587')} "
+          f"user={'SET' if os.getenv('SMTP_USER') else 'MISSING'} "
+          f"pass={'SET' if os.getenv('SMTP_PASS') else 'MISSING'} "
+          f"reset_base={os.getenv('RESET_BASE_URL','NOT SET')}")
 
 @app.get("/")
 def root():
