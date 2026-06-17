@@ -8,6 +8,7 @@ import jwt
 import os
 import secrets
 import smtplib
+import traceback
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
@@ -167,12 +168,30 @@ support.pickmyseat@gmail.com
     msg.attach(MIMEText(plain, 'plain'))
     msg.attach(MIMEText(html,  'html'))
 
-    with smtplib.SMTP(smtp_host, smtp_port) as server:
-        server.ehlo()
-        server.starttls()
-        server.ehlo()
-        server.login(smtp_user, smtp_pass)
-        server.sendmail(smtp_user, to_email, msg.as_string())
+    print(f"[SMTP] connecting {smtp_host}:{smtp_port} user={smtp_user}")
+    try:
+        with smtplib.SMTP(smtp_host, smtp_port, timeout=15) as server:
+            server.ehlo()
+            print("[SMTP] ehlo ok — starting TLS")
+            server.starttls()
+            server.ehlo()
+            print("[SMTP] TLS ok — logging in")
+            server.login(smtp_user, smtp_pass)
+            print(f"[SMTP] login ok — sending to {to_email}")
+            server.sendmail(smtp_user, to_email, msg.as_string())
+            print("[SMTP] sendmail ok")
+    except smtplib.SMTPAuthenticationError as e:
+        print(f"[SMTP] AUTH FAILED (wrong app password or 2FA not enabled): {e}")
+        raise
+    except (TimeoutError, smtplib.SMTPConnectError, ConnectionRefusedError, OSError) as e:
+        print(f"[SMTP] CONNECT FAILED port={smtp_port} — Railway may block outbound SMTP: {type(e).__name__}: {e}")
+        raise
+    except smtplib.SMTPException as e:
+        print(f"[SMTP] SMTP ERROR: {type(e).__name__}: {e}")
+        raise
+    except Exception as e:
+        print(f"[SMTP] UNEXPECTED: {type(e).__name__}: {e}\n{traceback.format_exc()}")
+        raise
 
 @router.post("/signup")
 def signup(data: SignupInput, db: Session = Depends(get_db)):
@@ -300,7 +319,7 @@ def forgot_password(data: ForgotPasswordInput, db: Session = Depends(get_db)):
     try:
         send_reset_email(user.email, token)
     except Exception as e:
-        print(f"Email send failed: {e}")
+        print(f"[forgot-password] send failed for {user.email}: {type(e).__name__}: {e}")
         raise HTTPException(status_code=500, detail="Failed to send reset email. Please try again later.")
 
     return {"message": "A reset link has been sent to your email."}
