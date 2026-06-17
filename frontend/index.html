@@ -132,20 +132,14 @@
       <div class="nav-brand" onclick="navigateTo('landing')">
         <img class="brand-icon-img" src="logo-light.png" alt="PickMySeat"/>
         <span class="brand-name">PickMySeat</span>
+        <span id="navTierBadge" class="nav-tier-badge hidden"></span>
       </div>
       <div class="nav-links">
-        <button class="nav-link" onclick="navigateTo('landing')">Home</button>
+        <button class="nav-link" id="navHome" onclick="navigateTo('landing')">Home</button>
         <button class="nav-link hidden" id="navDashboard" onclick="navigateTo('dashboard')">Dashboard</button>
         <button class="nav-link hidden" id="navProfile" onclick="navigateTo('profile')">Profile</button>
       </div>
       <div class="nav-actions">
-        <!-- Theme Toggle Button -->
-        <button id="themeToggle" onclick="toggleTheme()" 
-          style="background:var(--surface2);border:1px solid var(--border2);color:var(--text-muted);
-          width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:16px;
-          display:none;align-items:center;justify-content:center;transition:all 0.3s ease;">
-          🌙
-        </button>
         
         <div class="hidden" id="navUserBlock">
           <div class="nav-user" onclick="toggleUserMenu()">
@@ -156,6 +150,7 @@
           <div class="user-dropdown hidden" id="userDropdown">
             <div class="dropdown-info" id="dropdownInfo"></div>
             <hr class="dropdown-divider"/>
+            <button class="dropdown-item" onclick="navigateTo('profile')">✏️ Edit Profile</button>
             <button class="dropdown-item" onclick="navigateTo('profile')">👤 Profile</button>
             <button class="dropdown-item" onclick="navigateTo('dashboard')">📊 Dashboard</button>
             <div class="dropdown-divider"></div>
@@ -758,14 +753,13 @@
           <h1>Dashboard</h1>
           <p id="dashWelcome">Welcome back</p>
         </div>
-        <div class="dashboard-header-actions">
-          <div class="user-tier-badge" id="dashTierBadge"></div>
-          <button class="btn-outline" onclick="navigateTo('profile')">✏️ Edit Profile</button>
-        </div>
       </div>
 
-      <div class="dash-profile-card" id="dashProfileCard"></div>
-      <div class="agg-banner" id="dashAggBanner"></div>
+      <!-- Top row: user info + aggregate (left) · rank analysis (right) -->
+      <div class="dash-top-row">
+        <div class="dash-info-card" id="dashInfoCard"></div>
+        <div class="rank-card" id="dashRankCard"></div>
+      </div>
 
       <!-- Grade 1: Rank Input Section -->
       <div class="rank-input-section hidden" id="grade1RankInput">
@@ -787,19 +781,6 @@
           <p>All your college-course combinations ordered by probability</p>
         </div>
         <div class="combo-grid" id="comboProbGrid"></div>
-      </div>
-
-      <div class="locked-section" id="dashRankSection" style="margin-top:40px">
-        <div class="lock-overlay" id="rankLockOverlay">
-          <span class="lock-icon">🔒</span>
-          <p>Rank Prediction & Verification</p>
-          <button class="btn-primary" onclick="showUpgradeModal('rank')">Unlock Premium — ₹149</button>
-        </div>
-        <div class="dash-section-title">
-          <h2>🏆 Rank Analysis</h2>
-          <p>AI-predicted rank band from your marks</p>
-        </div>
-        <div class="rank-card" id="dashRankCard"></div>
       </div>
 
       <div class="locked-section" id="dashChoiceList" style="margin-top:40px">

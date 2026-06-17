@@ -591,22 +591,6 @@ function togglePasswordVisibility(inputId, btn) {
   }
 }
 
-function initTheme() {
-  const saved = localStorage.getItem('pms_theme') || 'light';
-  setTheme(saved);
-}
-
-function setTheme(theme) {
-  App.theme = theme;
-  document.documentElement.setAttribute('data-theme', theme);
-  localStorage.setItem('pms_theme', theme);
-  const btn = document.getElementById('themeToggle');
-  if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
-}
-
-function toggleTheme() {
-  setTheme(App.theme === 'dark' ? 'light' : 'dark');
-}
 
 // ============================================================
 // SEARCHABLE COLLEGE DROPDOWN
@@ -749,7 +733,13 @@ function updateNav() {
   const navUpgrade = document.getElementById('navUpgradeBtn');
   const navDash    = document.getElementById('navDashboard');
   const navProf    = document.getElementById('navProfile');
-  const themeBtn   = document.getElementById('themeToggle');
+  const tierBadge  = document.getElementById('navTierBadge');
+
+  // active nav link highlight (Task 8)
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+  const activeNavMap = { landing: 'navHome', dashboard: 'navDashboard', profile: 'navProfile' };
+  const activeId = activeNavMap[App.currentPage];
+  if (activeId) document.getElementById(activeId)?.classList.add('active');
 
   if (App.currentUser) {
     navUser.classList.remove('hidden');
@@ -762,15 +752,17 @@ function updateNav() {
       App.profile.name ? App.profile.name.split(' ')[0] : 'Student';
     document.getElementById('dropdownInfo').textContent = App.profile.email || '';
     navUpgrade.classList.toggle('hidden', App.userGrade === 1);
-    if (themeBtn) themeBtn.style.display = 'flex';
+    if (tierBadge) {
+      tierBadge.textContent = App.userGrade === 1 ? '⚡ Premium' : '🎓 Student';
+      tierBadge.classList.remove('hidden');
+    }
   } else {
     navUser.classList.add('hidden');
     navLogin.classList.remove('hidden');
     navUpgrade.classList.add('hidden');
     navDash.classList.add('hidden');
     navProf.classList.add('hidden');
-    if (themeBtn) themeBtn.style.display = 'none';
-    setTheme('light');
+    if (tierBadge) tierBadge.classList.add('hidden');
   }
 }
 
@@ -1396,7 +1388,6 @@ function simulateLogin(userData) {
 
 function logout() {
   localStorage.removeItem('token');
-  setTheme('light');
   App.currentUser = null;
   App.userGrade   = 3;
   App.profile     = {
@@ -1867,52 +1858,18 @@ function renderDashboard() {
   const name = App.profile.name || App.profile.email || 'Student';
   document.getElementById('dashWelcome').textContent = `Welcome back, ${name.split(' ')[0]}`;
 
-  const badge = document.getElementById('dashTierBadge');
-  if (badge) {
-    badge.textContent  = App.userGrade === 1 ? '⚡ Premium' : '🎓 Student';
-    badge.style.cssText = App.userGrade === 1
-      ? 'background:rgba(108,99,255,0.2);color:var(--accent);border:1px solid rgba(108,99,255,0.3);border-radius:100px;padding:6px 14px;font-size:12px;font-weight:700'
-      : 'background:rgba(56,189,248,0.1);color:#38BDF8;border:1px solid rgba(56,189,248,0.2);border-radius:100px;padding:6px 14px;font-size:12px;font-weight:700';
-  }
-
-  renderDashProfileCard();
-  renderAggBanner();
+  renderDashInfoCard();
   renderGrade1RankInput();
   renderComboProbCards();
   renderLockedSections();
 }
 
-function renderDashProfileCard() {
-  const card = document.getElementById('dashProfileCard');
+function renderDashInfoCard() {
+  const card = document.getElementById('dashInfoCard');
   if (!card) return;
   const initials = App.profile.name
     ? App.profile.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)
     : (App.profile.email||'S')[0].toUpperCase();
-
-  card.innerHTML = `
-    <div class="dash-avatar">${initials}</div>
-    <div class="dash-user-info">
-      <div class="dash-user-name">${App.profile.name || 'Student'}</div>
-      <div class="dash-user-meta">
-        ${App.profile.email || ''}
-        ${App.profile.mobile   ? ' · ' + App.profile.mobile   : ''}
-        ${App.profile.category ? ' · ' + App.profile.category : ''}
-      </div>
-      <div class="dash-marks-chips">
-        ${App.profile.maths     != null ? `<span class="mark-chip">Maths: ${App.profile.maths}</span>`     : ''}
-        ${App.profile.physics   != null ? `<span class="mark-chip">Physics: ${App.profile.physics}</span>` : ''}
-        ${App.profile.chemistry != null ? `<span class="mark-chip">Chem: ${App.profile.chemistry}</span>`  : ''}
-        ${App.profile.maths == null
-          ? `<span class="mark-chip" style="color:var(--warning)">⚠️ Add marks in Profile</span>` : ''}
-        ${App.profile.marksLocked
-          ? `<span class="mark-chip" style="color:var(--text-muted);border-color:rgba(245,158,11,0.3)">🔒 Marks locked</span>` : ''}
-      </div>
-    </div>`;
-}
-
-function renderAggBanner() {
-  const banner = document.getElementById('dashAggBanner');
-  if (!banner) return;
   const agg = calculateAggregate(
     App.profile.maths||0, App.profile.physics||0, App.profile.chemistry||0
   );
@@ -1924,11 +1881,31 @@ function renderAggBanner() {
        </div>`
     : `<div style="font-size:13px;color:var(--text-muted);margin-top:6px">Marks will lock after first save</div>`;
 
-  banner.innerHTML = `
-    <div class="agg-main">
-      <div class="agg-banner-label">Your TNEA Aggregate</div>
-      <div class="agg-banner-value">${agg > 0 ? agg : '—'}</div>
-      <div class="agg-banner-sub">Out of 200 · Maths + Physics + Chemistry</div>
+  card.innerHTML = `
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px">
+      <div class="dash-avatar">${initials}</div>
+      <div class="dash-user-info">
+        <div class="dash-user-name">${App.profile.name || 'Student'}</div>
+        <div class="dash-user-meta">
+          ${App.profile.email || ''}
+          ${App.profile.mobile   ? ' · ' + App.profile.mobile   : ''}
+          ${App.profile.category ? ' · ' + App.profile.category : ''}
+        </div>
+        <div class="dash-marks-chips">
+          ${App.profile.maths     != null ? `<span class="mark-chip">Maths: ${App.profile.maths}</span>`     : ''}
+          ${App.profile.physics   != null ? `<span class="mark-chip">Physics: ${App.profile.physics}</span>` : ''}
+          ${App.profile.chemistry != null ? `<span class="mark-chip">Chem: ${App.profile.chemistry}</span>`  : ''}
+          ${App.profile.maths == null
+            ? `<span class="mark-chip" style="color:var(--warning)">⚠️ Add marks in Profile</span>` : ''}
+          ${App.profile.marksLocked
+            ? `<span class="mark-chip" style="color:var(--text-muted);border-color:rgba(245,158,11,0.3)">🔒 Marks locked</span>` : ''}
+        </div>
+      </div>
+    </div>
+    <div style="border-top:1px solid var(--border1);padding-top:16px">
+      <div class="agg-banner-label">TNEA Aggregate</div>
+      <div class="agg-banner-value">${agg > 0 ? agg : '—'} <span style="font-size:18px;font-weight:500;color:var(--text-muted)">/ 200</span></div>
+      <div class="agg-banner-sub">Maths + Physics/2 + Chemistry/2 × 2</div>
       ${lockNote}
     </div>`;
 }
@@ -2098,9 +2075,7 @@ async function renderComboProbCards() {
            <div class="combo-prob-label" style="font-size:11px;color:var(--text-muted)">Rank Band: <span style="font-size:15px;font-weight:600;color:var(--text-secondary)">${combo.rankLow ? combo.rankLow.toLocaleString() + '–' + combo.rankHigh.toLocaleString() : '—'}</span></div>
            ${combo.communityRanks && Object.keys(combo.communityRanks).length > 0 ? `
            <div style="margin-top:6px;font-size:11px;color:var(--text-muted)">
-             ${['OC','BC','MBC','SC'].filter(c => combo.communityRanks[c]).map(c =>
-               `<span style="margin-right:8px"><strong>${c}:</strong> ${combo.communityRanks[c].toLocaleString()}</span>`
-             ).join('')}
+             ${(()=>{const cat=App.profile.category||'OC';const cols=cat==='OC'?['OC']:['OC',cat];return cols.filter(c=>combo.communityRanks[c]).map(c=>`<span style="margin-right:8px"><strong>${c==='OC'?'General':c}:</strong> ${combo.communityRanks[c].toLocaleString()}</span>`).join('');})()}
            </div>` : ''}
            ${combo.estimated ? `<div class="combo-prob-label" style="font-size:11px;color:var(--text-muted)">⚠️ No historic data for your community — estimate based on overall cutoff</div>` : ''}
           </div>
@@ -2228,11 +2203,11 @@ async function runPremiumQuickPredict() {
 
 function renderLockedSections() {
   const isPremium = App.userGrade === 1;
-  document.getElementById('rankLockOverlay')       ?.style.setProperty('display', isPremium?'none':'flex');
+  // rank analysis: visible to all logged-in users (Task 2 — not premium-locked)
   document.getElementById('choiceLockOverlay')     ?.style.setProperty('display', isPremium?'none':'flex');
   document.getElementById('counsellingLockOverlay')?.style.setProperty('display', isPremium?'none':'flex');
+  renderRankCard();
   if (isPremium) {
-    renderRankCard();
     renderChoiceList();
     renderCounsellingSimulation();
     setTimeout(initPremiumSearch, 100);
@@ -2292,15 +2267,9 @@ try {
               ? `${rankBand.low.toLocaleString()} – ${rankBand.high.toLocaleString()}`
               : 'Enter marks first'}
         </div>
-        <div style="font-size:13px;color:var(--text-muted);margin-top:6px">
-          Based on aggregate ${agg}/200 · TNEA 2024 model
-        </div>
       </div>
       <div style="flex:1">
         ${verifyHtml}
-        <div style="margin-top:12px;font-size:13px;color:var(--text-muted)">
-          🔄 Probabilities update as more students submit marks
-        </div>
       </div>
     </div>`;
 }
@@ -3203,7 +3172,6 @@ async function verifyAndSaveRank() {
 // ============================================================
 document.addEventListener('DOMContentLoaded', async () => {
   await loadCollegesAndBranches();
-  initTheme();
   await restoreSessionFromToken();
   await checkRankListStatus();
   navigateTo('landing');
