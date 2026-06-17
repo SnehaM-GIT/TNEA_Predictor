@@ -7,10 +7,8 @@ import bcrypt
 import jwt
 import os
 import secrets
-import smtplib
+import resend
 import traceback
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -59,29 +57,8 @@ def create_token(user_id: int):
     return jwt.encode(payload, SECRET_KEY, algorithm="HS256")
 
 def send_reset_email(to_email: str, token: str):
-    reset_url    = f"{os.getenv('RESET_BASE_URL', 'https://pickmyseat.in')}/reset-password.html?token={token}"
-    smtp_user    = os.getenv('SMTP_USER')
-    smtp_pass    = os.getenv('SMTP_PASS')
-    smtp_host    = os.getenv('SMTP_HOST', 'smtp.gmail.com')
-    smtp_port    = int(os.getenv('SMTP_PORT', 587))
-    if not smtp_user or not smtp_pass:
-        raise RuntimeError("SMTP_USER and SMTP_PASS environment variables must be set")
+    reset_url = f"{os.getenv('RESET_BASE_URL', 'https://pickmyseat.in')}/reset-password.html?token={token}"
 
-    # ── Plain-text fallback ───────────────────────────────────────────────────
-    plain = f"""Hi,
-
-You requested a password reset for your PickMySeat account.
-
-Reset your password here (valid for 1 hour):
-{reset_url}
-
-If you didn't request this, ignore this email — your account is safe.
-
-— PickMySeat Support
-support.pickmyseat@gmail.com
-"""
-
-    # ── HTML body ─────────────────────────────────────────────────────────────
     html = f"""<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/></head>
@@ -160,37 +137,21 @@ support.pickmyseat@gmail.com
 </body>
 </html>"""
 
-    # ── Build MIME ────────────────────────────────────────────────────────────
-    msg = MIMEMultipart('alternative')
-    msg['Subject'] = 'Reset your PickMySeat password'
-    msg['From']    = f'PickMySeat <{smtp_user}>'
-    msg['To']      = to_email
-    msg.attach(MIMEText(plain, 'plain'))
-    msg.attach(MIMEText(html,  'html'))
+    resend.api_key = os.getenv("RESEND_API_KEY")
+    if not resend.api_key:
+        raise RuntimeError("RESEND_API_KEY environment variable is not set")
 
-    print(f"[SMTP] connecting {smtp_host}:{smtp_port} user={smtp_user}")
+    print(f"[Resend] sending to {to_email}")
     try:
-        with smtplib.SMTP(smtp_host, smtp_port, timeout=15) as server:
-            server.ehlo()
-            print("[SMTP] ehlo ok — starting TLS")
-            server.starttls()
-            server.ehlo()
-            print("[SMTP] TLS ok — logging in")
-            server.login(smtp_user, smtp_pass)
-            print(f"[SMTP] login ok — sending to {to_email}")
-            server.sendmail(smtp_user, to_email, msg.as_string())
-            print("[SMTP] sendmail ok")
-    except smtplib.SMTPAuthenticationError as e:
-        print(f"[SMTP] AUTH FAILED (wrong app password or 2FA not enabled): {e}")
-        raise
-    except (TimeoutError, smtplib.SMTPConnectError, ConnectionRefusedError, OSError) as e:
-        print(f"[SMTP] CONNECT FAILED port={smtp_port} — Railway may block outbound SMTP: {type(e).__name__}: {e}")
-        raise
-    except smtplib.SMTPException as e:
-        print(f"[SMTP] SMTP ERROR: {type(e).__name__}: {e}")
-        raise
+        response = resend.Emails.send({
+            "from": "PickMySeat <onboarding@resend.dev>",
+            "to": [to_email],
+            "subject": "Reset your PickMySeat password",
+            "html": html,
+        })
+        print(f"[Resend] ok — id={response.get('id') if isinstance(response, dict) else getattr(response, 'id', response)}")
     except Exception as e:
-        print(f"[SMTP] UNEXPECTED: {type(e).__name__}: {e}\n{traceback.format_exc()}")
+        print(f"[Resend] FAILED: {type(e).__name__}: {e}\n{traceback.format_exc()}")
         raise
 
 @router.post("/signup")
