@@ -98,6 +98,24 @@ def get_config():
         "rank_list_released": os.getenv("RANK_LIST_RELEASED", "false").lower() == "true"
     }
 
+# ============================================================
+# VISITOR COUNT — IP-based unique visitor tracking
+# Starts at 300, increments only for new IPs (resets on restart)
+# ============================================================
+_visitor_ips: set = set()
+_visitor_count: int = 300
+
+@app.get("/visitor-count")
+async def visitor_count(request: Request):
+    global _visitor_count, _visitor_ips
+    # Respect X-Forwarded-For header from proxies (Railway, Vercel, etc.)
+    forwarded = request.headers.get("x-forwarded-for")
+    ip = forwarded.split(",")[0].strip() if forwarded else (request.client.host if request.client else "unknown")
+    if ip not in _visitor_ips:
+        _visitor_ips.add(ip)
+        _visitor_count += 1
+    return {"count": _visitor_count}
+
 @app.get("/health")
 def health():
     return {"status": "ok"}

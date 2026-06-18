@@ -1,0 +1,7 @@
+/* Added dynamically - Premium Nav Badge styles */
+.nav-tier-badge.premium-active {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #fff;
+  font-weight: 700;
+  border: none;
+}

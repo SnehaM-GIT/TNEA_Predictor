@@ -14,7 +14,7 @@ const App = {
   currentPage:     'landing',
   currentUser:     null,
   userGrade:       3,
-  liveCount:       parseInt(localStorage.getItem('pms_live_count') || '300'),
+  liveCount:       300,
   slotsLeft:       23,
   rankPhase:       'pre',
   counsellingStep: 0,
@@ -753,7 +753,9 @@ function updateNav() {
     document.getElementById('dropdownInfo').textContent = App.profile.email || '';
     navUpgrade.classList.toggle('hidden', App.userGrade === 1);
     if (tierBadge) {
-      tierBadge.textContent = App.userGrade === 1 ? '⚡ Premium' : '🎓 Student';
+      tierBadge.textContent = App.userGrade === 1 ? '👑 Premium' : '🎓 Student';
+      if (App.userGrade === 1) tierBadge.classList.add('premium-active');
+      else tierBadge.classList.remove('premium-active');
       tierBadge.classList.remove('hidden');
     }
   } else {
@@ -862,9 +864,9 @@ function clearError() {
 function initLanding() {
   renderTicker();          // render static ticker immediately (no flash)
   loadDynamicTicker();     // then replace with real user names from API
-  renderTestimonials();
   updateLiveCounts();
   observeScrollAnimations();
+  updateLandingForPremium();
 }
 
 function renderTicker(extraEvents = []) {
@@ -914,27 +916,24 @@ function renderTestimonials() {
     </div>`).join('');
 }
 
-function updateLiveCounts() {
-  const heroCount  = document.getElementById('heroLiveCount');
-  const modalCount = document.getElementById('liveCount');
-  const update = () => {
-    if (heroCount)  heroCount.textContent  = App.liveCount;
-    if (modalCount) modalCount.textContent = App.liveCount;
-    localStorage.setItem('pms_live_count', App.liveCount);
-  };
-  update();
-  setInterval(() => {
-    if (Math.random() > 0.7) { App.liveCount++; update(); }
-  }, 8000);
-}
-
-function incrementPredictionCount() {
-  App.liveCount++;
+async function updateLiveCounts() {
+  try {
+    const res = await fetch(`${API_BASE}/visitor-count`);
+    if (res.ok) {
+      const data = await res.json();
+      App.liveCount = data.count;
+    }
+  } catch(e) {
+    if (!App.liveCount || App.liveCount < 300) App.liveCount = 300;
+  }
   const heroCount  = document.getElementById('heroLiveCount');
   const modalCount = document.getElementById('liveCount');
   if (heroCount)  heroCount.textContent  = App.liveCount;
   if (modalCount) modalCount.textContent = App.liveCount;
-  localStorage.setItem('pms_live_count', App.liveCount);
+}
+
+function incrementPredictionCount() {
+  // No-op: visitor count is now tracked server-side by unique IP
 }
 
 function observeScrollAnimations() {
@@ -950,6 +949,20 @@ function observeScrollAnimations() {
     el.style.opacity = '0';
     observer.observe(el);
   });
+}
+
+// Hide ALL pricing/upgrade UI from premium users on the landing page
+function updateLandingForPremium() {
+  if (App.userGrade !== 1) return;
+  // Hide the entire "Choose Your Access" pricing & tiers section
+  const tiersSection = document.getElementById('tiersSection');
+  if (tiersSection) tiersSection.style.display = 'none';
+  // Hide the hero "Get Full Access" button
+  const heroAccessBtn = document.getElementById('heroGetAccessBtn');
+  if (heroAccessBtn) heroAccessBtn.style.display = 'none';
+  // Hide the CTA banner "Get Premium for ₹149" button
+  const ctaPremiumBtn = document.getElementById('ctaPremiumBtn');
+  if (ctaPremiumBtn) ctaPremiumBtn.style.display = 'none';
 }
 
 // ============================================================
@@ -1893,6 +1906,11 @@ function renderDashInfoCard() {
       ${App.profile.marksLocked
         ? `<span class="mark-chip" style="color:var(--text-muted);border-color:rgba(245,158,11,0.3)">🔒 Marks locked</span>` : ''}
     </div>`;
+  // Make card clickable only if key profile details are missing
+  const _infoMissing = !App.profile.maths || !App.profile.physics || !App.profile.chemistry || !App.profile.category;
+  card.style.cursor = _infoMissing ? 'pointer' : '';
+  card.title = _infoMissing ? 'Click to complete your profile' : '';
+  card.onclick = _infoMissing ? () => navigateTo('profile') : null;
 }
 
 function renderDashAggCard() {
@@ -1905,7 +1923,7 @@ function renderDashAggCard() {
     ? `<div class="agg-lock-row">🔒 Marks locked ·
         ${App.userGrade === 1
           ? `<button class="link-btn" onclick="openMarksUpdate()">Update for ₹25 after board results</button>`
-          : `<button class="link-btn" onclick="showUpgradeModal('marks-update')">Upgrade to Premium to update marks</button>`}
+          : `<button class="link-btn" onclick="showUpgradeModal('marks-update')">Upgrade to Premium to receive advanced features and unlock marks</button>`}
        </div>`
     : `<div style="font-size:13px;color:var(--text-muted);margin-top:6px">Marks will lock after first save</div>`;
 
@@ -1914,6 +1932,11 @@ function renderDashAggCard() {
     <div class="agg-banner-value">${agg > 0 ? agg : '—'} <span style="font-size:18px;font-weight:500;color:var(--text-muted)">/ 200</span></div>
     <div class="agg-banner-sub">Maths + Physics/2 + Chemistry/2</div>
     ${lockNote}`;
+  // Make card clickable only if marks have not been entered yet
+  const _noMarks = App.profile.maths == null;
+  card.style.cursor = _noMarks ? 'pointer' : '';
+  card.title = _noMarks ? 'Click to add your marks' : '';
+  card.onclick = _noMarks ? () => navigateTo('profile') : null;
 }
 
 function renderGrade1RankInput() {
@@ -2996,6 +3019,7 @@ function handlePaymentSuccess(paymentId) {
   App.profile.marksLocked = true;
   App.userGrade           = 1;
   App.slotsLeft           = Math.max(0, App.slotsLeft - 1);
+  updateNav();   // immediately hide the "Get Premium" nav button and show crown badge
   // FIRESTORE: db.collection('users').doc(uid).update({ has_paid:true, razorpay_payment_id:paymentId })
   showToast('🎉 Premium unlocked! Welcome to full access.', 'success', 5000);
   setTimeout(() => navigateTo('dashboard'), 1000);
