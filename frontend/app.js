@@ -3198,9 +3198,44 @@ async function verifyAndSaveRank() {
   }
 }
 // ============================================================
+// THEME (DARK/LIGHT MODE)
+// ============================================================
+function initTheme() {
+  const savedTheme = localStorage.getItem('pms_theme');
+  const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  
+  // 1. If user previously chose a theme, use it
+  // 2. Otherwise, check system preference
+  if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+    document.documentElement.classList.add('dark-theme');
+    const btn = document.getElementById('themeToggleBtn');
+    if (btn) btn.textContent = '☀️';
+  } else {
+    document.documentElement.classList.remove('dark-theme');
+    const btn = document.getElementById('themeToggleBtn');
+    if (btn) btn.textContent = '🌙';
+  }
+}
+
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.classList.toggle('dark-theme');
+  const btn = document.getElementById('themeToggleBtn');
+  
+  if (isDark) {
+    localStorage.setItem('pms_theme', 'dark');
+    if (btn) btn.textContent = '☀️';
+  } else {
+    localStorage.setItem('pms_theme', 'light');
+    if (btn) btn.textContent = '🌙';
+  }
+}
+
+// ============================================================
 // INIT
 // ============================================================
 document.addEventListener('DOMContentLoaded', async () => {
+  initTheme();
   await loadCollegesAndBranches();
   await restoreSessionFromToken();
   await checkRankListStatus();

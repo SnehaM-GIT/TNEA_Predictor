@@ -51,6 +51,55 @@
   --gradient-accent: linear-gradient(135deg, #B8A898 0%, #8B7355 100%);
 }
 
+/* Dark Mode - Warm Espresso Palette */
+html.dark-theme {
+  --bg-primary: #15120F;
+  --bg-secondary: #1E1A16;
+  --surface1: #24201B;
+  --surface2: #2A2520;
+  --surface3: #322D27;
+  
+  --brown-50: #15120F;
+  --brown-100: #1E1A16;
+  --brown-200: #2A2520;
+  --brown-300: #3D352E;
+  --brown-400: #5C5046;
+  --brown-500: #8B7355;
+  --brown-600: #A89173;
+  --brown-700: #C2AE93;
+  --brown-800: #DCD0C0;
+  --brown-900: #F3EFE9;
+  
+  --text-primary: #F3EFE9;
+  --text-secondary: #DCD0C0;
+  --text-muted: #A89173;
+  
+  --border1: #322D27;
+  --border2: #3D352E;
+  --border3: #5C5046;
+  
+  --accent: #A89173;
+  --accent-hover: #C2AE93;
+  --accent-light: #3D352E;
+  --accent-bg: #2A2520;
+  
+  --success: #6EE7B7;
+  --success-bg: rgba(16, 185, 129, 0.1);
+  --warning: #FCD34D;
+  --warning-bg: rgba(245, 158, 11, 0.1);
+  --error: #FCA5A5;
+  --error-bg: rgba(239, 68, 68, 0.1);
+  
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 20px 48px rgba(0, 0, 0, 0.6);
+  
+  --gradient-primary: linear-gradient(135deg, #A89173 0%, #8B7355 100%);
+  --gradient-surface: linear-gradient(180deg, #24201B 0%, #1E1A16 100%);
+  --gradient-accent: linear-gradient(135deg, #5C5046 0%, #3D352E 100%);
+}
+
 
 /* ============================================
    BASE STYLES
