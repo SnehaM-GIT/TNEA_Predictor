@@ -874,7 +874,8 @@ function renderTicker(extraEvents = []) {
   if (!track) return;
   const allEvents = [...extraEvents, ...DATA.tickerEvents];
   const doubled = [...allEvents, ...allEvents];
-  track.innerHTML = doubled.map(ev => `<span class="ticker-item">🟢 ${ev}</span>`).join('');
+  const bulletStyle = 'display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--success);margin-right:8px;box-shadow:0 0 6px var(--success)';
+  track.innerHTML = doubled.map(ev => `<span class="ticker-item"><span style="${bulletStyle}"></span>${ev}</span>`).join('');
 }
 
 // Fetch recent registrations from the API and inject them into the ticker
@@ -3198,22 +3199,27 @@ async function verifyAndSaveRank() {
   }
 }
 // ============================================================
+// ============================================================
 // THEME (DARK/LIGHT MODE)
 // ============================================================
 function initTheme() {
   const savedTheme = localStorage.getItem('pms_theme');
-  const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
   
-  // 1. If user previously chose a theme, use it
-  // 2. Otherwise, check system preference
-  if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+  // Default to light mode unless the user explicitly saved 'dark' previously
+  if (savedTheme === 'dark') {
     document.documentElement.classList.add('dark-theme');
     const btn = document.getElementById('themeToggleBtn');
-    if (btn) btn.textContent = '☀️';
+    if (btn) {
+      btn.innerHTML = '☀️';
+      btn.title = 'Switch to Light Mode';
+    }
   } else {
     document.documentElement.classList.remove('dark-theme');
     const btn = document.getElementById('themeToggleBtn');
-    if (btn) btn.textContent = '🌙';
+    if (btn) {
+      btn.innerHTML = '🌙';
+      btn.title = 'Switch to Dark Mode';
+    }
   }
 }
 
@@ -3224,10 +3230,16 @@ function toggleTheme() {
   
   if (isDark) {
     localStorage.setItem('pms_theme', 'dark');
-    if (btn) btn.textContent = '☀️';
+    if (btn) {
+      btn.innerHTML = '☀️';
+      btn.title = 'Switch to Light Mode';
+    }
   } else {
     localStorage.setItem('pms_theme', 'light');
-    if (btn) btn.textContent = '🌙';
+    if (btn) {
+      btn.innerHTML = '🌙';
+      btn.title = 'Switch to Dark Mode';
+    }
   }
 }
 
