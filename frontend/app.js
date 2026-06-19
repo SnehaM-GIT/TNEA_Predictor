@@ -24,6 +24,8 @@ const App = {
   simAllotment:    null,
   simFilter:       { college: '', branch: '', category: '' },
   simPage:         0,
+  simRankUsed:     null,   // actual rank used for last allotment (official or predicted)
+  simRankSource:   null,   // 'official' | 'predicted' | 'fallback'
 
   profile: {
     name:              '',
@@ -2487,8 +2489,11 @@ async function simFetchCutoffs(choices, community) {
       }
     });
     console.log('[SIM] _simCutoffCache after fetch:', JSON.stringify(_simCutoffCache));
+    // Return the ML-predicted rank so simRunAllotment can use it when no official rank is set
+    return data.student_rank || null;
   } catch(e) {
     console.error('[SIM] simFetchCutoffs error:', e);
+    return null;
   }
 }
 
@@ -2505,15 +2510,33 @@ function simGetSeats(collegeCode, branchCode) {
 }
 
 async function simRunAllotment() {
-  const rank = App.profile.rank || 99999;
-  const community = App.profile.category || 'OC';
-  console.log(`[SIM] simRunAllotment → rank=${rank} community="${community}" choices:`, JSON.stringify(App.simChoices.map(c=>({col:c.collegeCode,br:c.branchCode}))));
-  await simFetchCutoffs(App.simChoices, community);
+  const officialRank  = App.profile.rank || null;
+  const community     = App.profile.category || 'OC';
+
+  // Fetch cutoffs AND get the ML-predicted rank in one shot
+  const predictedRank = await simFetchCutoffs(App.simChoices, community);
+
+  // Rank precedence: verified official rank → ML-predicted rank → last-resort 99999
+  let rank, rankSource;
+  if (officialRank) {
+    rank = officialRank; rankSource = 'official';
+  } else if (predictedRank) {
+    rank = predictedRank; rankSource = 'predicted';
+  } else {
+    rank = 99999; rankSource = 'fallback';
+  }
+
+  // Persist so simRenderAllotment can show the correct note even when allotment is null
+  App.simRankUsed   = rank;
+  App.simRankSource = rankSource;
+
+  console.log(`[SIM] simRunAllotment → rank=${rank} source="${rankSource}" community="${community}" choices:`, JSON.stringify(App.simChoices.map(c=>({col:c.collegeCode,br:c.branchCode}))));
+
   for (const c of App.simChoices) {
     const key = `${parseInt(c.collegeCode)}_${c.branchCode}_${community}`;
     const cutoff = _simCutoffCache[key];
     console.log(`[SIM] simRunAllotment LOOKUP: key="${key}" cutoff=${cutoff} rank=${rank} → match=${cutoff != null && rank <= cutoff}`);
-    if (cutoff != null && rank <= cutoff) return { ...c, cutoff, community };
+    if (cutoff != null && rank <= cutoff) return { ...c, cutoff, community, rank, rankSource };
   }
   return null;
 }
@@ -2612,7 +2635,7 @@ function simRenderStatus() {
         <div class="sim-status-cell"><span>Certificate Verification Status</span><strong class="sim-ok">✅ Completed successfully</strong></div>
       </div>
     </div>
-    ${!p.rank ? '<div class="sim-warn">⚠️ Enter your rank in Profile for accurate simulation</div>' : ''}
+    ${!p.rank ? '<div class="sim-warn">ℹ️ Official rank not yet verified — simulation will use your <strong>predicted rank</strong> (based on marks). Enter your TNEA rank in Profile once released for exact results.</div>' : ''}
     <div class="sim-disclaimer">This is a simulation. Your actual status is on <a href="https://tneaonline.org" target="_blank">tneaonline.org ↗</a></div>
     <button class="btn-primary btn-glow btn-full" onclick="simGoToStep(1)" style="margin-top:20px">Proceed to Choice Filling →</button>
   </div>`;
@@ -2751,13 +2774,29 @@ async function simRenderChoiceFilling() {
 function simRenderAllotment() {
   const allot = App.simAllotment;
   const p = App.profile;
-  const rank = p.rank||'—';
+  const rankSource = App.simRankSource;
+  const rankUsed   = App.simRankUsed;
+  // Display rank: prefer official, else what was actually used in allotment
+  const rank  = p.rank || (rankUsed && rankSource !== 'fallback' ? rankUsed : '—');
   const cRank = p.rank ? Math.floor(p.rank*0.42) : '—';
-  const comm = p.category||'OC';
+  const comm  = p.category||'OC';
+
+  // Banner shown when allotment used a predicted (not official) rank
+  const rankBanner = (rankSource === 'predicted' && rankUsed)
+    ? `<div style="margin-bottom:14px;padding:10px 14px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:8px;font-size:13px;color:var(--text-muted)">
+        ⚠️ Using your <strong>predicted rank (${rankUsed})</strong> — official TNEA rank not yet verified.
+        Allotment result is an estimate. Enter your actual rank in Profile once the rank list is released.
+       </div>`
+    : rankSource === 'fallback'
+      ? `<div style="margin-bottom:14px;padding:10px 14px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:8px;font-size:13px;color:var(--text-muted)">
+          ⚠️ No rank or marks found. Add your marks in Profile so a predicted rank can be calculated.
+         </div>`
+      : '';
 
   if (!allot) return `
   <div class="sim-card">
     <div class="sim-gov-hdr"><div class="sim-gov-title">GOVERNMENT OF TAMIL NADU</div><div class="sim-gov-sub">TAMIL NADU ENGINEERING ADMISSIONS — 2026</div></div>
+    ${rankBanner}
     <div class="sim-no-allotment">
       <div style="font-size:48px;margin-bottom:12px">😔</div>
       <h3>No Seat Allotted in Round 1</h3>
@@ -2780,6 +2819,7 @@ function simRenderAllotment() {
   return `
   <div class="sim-card">
     <div class="sim-gov-hdr"><div class="sim-gov-title">GOVERNMENT OF TAMIL NADU</div><div class="sim-gov-sub">TAMIL NADU ENGINEERING ADMISSIONS — 2026</div></div>
+    ${rankBanner}
     <div class="sim-allot-grid">
       <div class="sim-allot-cell"><span>Community</span><strong>${comm}</strong></div>
       <div class="sim-allot-cell"><span>General Rank</span><strong>${rank}</strong></div>
@@ -2855,7 +2895,7 @@ function advanceCounselling() { App.simStep = Math.min(App.simStep+1,3); renderC
 function resetCounselling() {
   App.simStep=0; App.simChoices=[]; App.simAllotment=null;
   App.simFilter={ college:'', branch:'', category:'' };
-  App.simPage=0;
+  App.simPage=0; App.simRankUsed=null; App.simRankSource=null;
   renderCounsellingSimulation();
 }
 function downloadSimulationPDF() {
