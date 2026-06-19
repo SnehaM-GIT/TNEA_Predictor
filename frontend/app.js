@@ -36,6 +36,7 @@ const App = {
     physics:           null,
     chemistry:         null,
     marksLocked:       false,
+    categoryLocked:    false,
     rank:              null,
     rankPhase:         'pre',
     hasPaid:           false,
@@ -1384,6 +1385,11 @@ async function signupUser() {
     const data = await res.json();
     if (!res.ok) { showError(data.detail || 'Signup failed', res.status); return; }
     localStorage.setItem('token', data.token);
+    // Preserve signup category so profile page shows it and save doesn't overwrite with ''
+    if (category) {
+      App.profile.category       = category;
+      App.profile.categoryLocked = true;
+    }
     simulateLogin({ email, name: data.name, mobile, hasPaid: false });
   } catch(e) {
     showError('No connection. Check your internet and retry.');
@@ -1410,7 +1416,7 @@ function logout() {
   App.profile     = {
     name:'', email:'', mobile:'', category:'',
     maths:null, physics:null, chemistry:null,
-    marksLocked:false, rank:null, rankPhase:'pre',
+    marksLocked:false, categoryLocked:false, rank:null, rankPhase:'pre',
     hasPaid:false, preferredColleges:[], preferredCourses:[],
   };
   showToast('Logged out', 'info');
@@ -1428,7 +1434,14 @@ function renderProfile() {
   document.getElementById('profileMobile').value   = App.profile.mobile        || '';
   const appIdBasicEl = document.getElementById('profileApplicationId');
   if (appIdBasicEl) appIdBasicEl.value = App.profile.applicationId || '';
-  document.getElementById('profileCategory').value = App.profile.category || '';
+  const catEl = document.getElementById('profileCategory');
+  if (catEl) {
+    catEl.value    = App.profile.category || '';
+    catEl.disabled = App.profile.categoryLocked === true;
+    catEl.classList.toggle('locked', App.profile.categoryLocked === true);
+  }
+  const catNote = document.getElementById('categoryLockNote');
+  if (catNote) catNote.classList.toggle('hidden', !App.profile.categoryLocked);
 
   const locked = App.profile.marksLocked;
   // exactly one lock banner: Grade 1 gets "Update for ₹25", others "contact support"
@@ -1495,38 +1508,48 @@ function updateProfileAggregate() {
 
 function markProfileDirty() {}
 
-// Pre-fill marks/community inputs from App.profile, then lock them if
-// App.profile.marksLocked. Null-safe: no-ops when inputs aren't on the page.
+// Pre-fill marks/community inputs from App.profile and apply lock states.
+// Null-safe: no-ops when inputs aren't on the page.
 function prefillAndLockMarks() {
-  const fields = {
-    profileMath:     'maths',
-    profilePhysics:  'physics',
-    profileChemistry:'chemistry',
-    profileCategory: 'category',
+  // Marks fields — locked by marksLocked
+  const markFields = {
+    profileMath:      'maths',
+    profilePhysics:   'physics',
+    profileChemistry: 'chemistry',
   };
-  Object.entries(fields).forEach(([id, key]) => {
+  Object.entries(markFields).forEach(([id, key]) => {
     const el  = document.getElementById(id);
     const val = App.profile[key];
     if (el && val != null && val !== '') el.value = val;
   });
 
-  const locked = App.profile.marksLocked === true;
-  Object.keys(fields).forEach(id => {
+  const marksLocked = App.profile.marksLocked === true;
+  Object.keys(markFields).forEach(id => {
     const el = document.getElementById(id);
-    if (el) {
-      el.disabled = locked;
-      el.classList.toggle('locked', locked);
-    }
+    if (el) { el.disabled = marksLocked; el.classList.toggle('locked', marksLocked); }
   });
 
-  // exactly one lock banner: Grade 1 gets "Update for ₹25", others "contact support"
+  // Category field — locked independently by categoryLocked
+  const catEl = document.getElementById('profileCategory');
+  if (catEl) {
+    if (App.profile.category) catEl.value = App.profile.category;
+    const catLocked = App.profile.categoryLocked === true;
+    catEl.disabled = catLocked;
+    catEl.classList.toggle('locked', catLocked);
+  }
+
+  // Marks lock banners
   document.getElementById('marksLockedBanner')
-    ?.classList.toggle('hidden', !(locked && App.userGrade === 1));
+    ?.classList.toggle('hidden', !(marksLocked && App.userGrade === 1));
   const note = document.getElementById('marksLockNote');
   if (note) {
-    note.classList.toggle('hidden', !(locked && App.userGrade !== 1));
-    if (locked) note.textContent = '🔒 Marks locked — contact support to update';
+    note.classList.toggle('hidden', !(marksLocked && App.userGrade !== 1));
+    if (marksLocked) note.textContent = '🔒 Marks locked — contact support to update';
   }
+
+  // Category lock note
+  const catNote = document.getElementById('categoryLockNote');
+  if (catNote) catNote.classList.toggle('hidden', !App.profile.categoryLocked);
 }
 
 function setRankPhase(phase) {
@@ -1750,14 +1773,18 @@ async function saveProfile() {
 
 if (App.currentUser) {
     showLoader();
+    let saved = false;
     try {
       const body = {
         name: App.profile.name,
         mobile: App.profile.mobile,
-        community: App.profile.category,
         preferred_colleges: JSON.stringify(App.profile.preferredColleges),
         preferred_courses: JSON.stringify(App.profile.preferredCourses)
       };
+      // Only send community when not already locked and user selected a value
+      if (!App.profile.categoryLocked && App.profile.category) {
+        body.community = App.profile.category;
+      }
       // Marks are locked server-side after first save — sending them again gets a 403
       // that discards the whole update, including preferences.
       if (!marksWereLocked) {
@@ -1775,11 +1802,17 @@ if (App.currentUser) {
         hideLoader();
         return;
       }
+      const result = await res.json().catch(() => ({}));
+      if (result.category_locked) App.profile.categoryLocked = true;
+      if (result.marks_locked)    App.profile.marksLocked    = true;
+      saved = true;
     } catch(e) {
-      showToast('No connection — profile saved locally only', 'error');
+      showToast('No connection — changes not saved. Check your internet.', 'error');
+      return;   // do NOT navigate or show success on network failure
     } finally {
       hideLoader();
     }
+    if (!saved) return;
   }
   showToast('Profile saved ✅', 'success');
   setTimeout(() => navigateTo('dashboard'), 800);
@@ -3205,7 +3238,8 @@ async function restoreSessionFromToken() {
     App.profile.maths        = data.maths;
     App.profile.physics      = data.physics;
     App.profile.chemistry    = data.chemistry;
-    App.profile.marksLocked  = data.marks_locked || false;
+    App.profile.marksLocked     = data.marks_locked    || false;
+    App.profile.categoryLocked  = data.category_locked || false;
     App.profile.rank         = data.rank;
     App.profile.rankPhase    = data.rank_phase || 'pre';
     App.profile.hasPaid      = data.grade === '1';
