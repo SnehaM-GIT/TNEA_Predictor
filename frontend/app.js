@@ -2447,31 +2447,48 @@ const TFC_LIST = [
 // _simCutoffCache: key = `${collegeCode}_${branchCode}_${community}` → closing_rank from backend
 const _simCutoffCache = {};
 
+// Debounce timer for filter-input re-renders (prevents concurrent async renders on rapid keystrokes)
+let _simRenderTimer = null;
+function simDebouncedRender() {
+  clearTimeout(_simRenderTimer);
+  _simRenderTimer = setTimeout(() => renderCounsellingSimulation(), 250);
+}
+
 async function simFetchCutoffs(choices, community) {
   const collegeCodes = [...new Set(choices.map(c => parseInt(c.collegeCode)))];
   const branchCodes  = [...new Set(choices.map(c => c.branchCode))];
+  const reqBody = {
+    maths:    App.profile.maths    || 0,
+    physics:  App.profile.physics  || 0,
+    chemistry:App.profile.chemistry|| 0,
+    community,
+    top_n: 200,
+    preferred_colleges: collegeCodes,
+    preferred_branches: branchCodes
+  };
+  console.log('[SIM] simFetchCutoffs → request body:', JSON.stringify(reqBody));
   try {
     const res = await authenticatedFetch(`${API_BASE}/predict/colleges`, {
       method: 'POST',
-      body: JSON.stringify({
-        maths: App.profile.maths || 0,
-        physics: App.profile.physics || 0,
-        chemistry: App.profile.chemistry || 0,
-        community,
-        top_n: 200,
-        preferred_colleges: collegeCodes,
-        preferred_branches: branchCodes
-      })
+      body: JSON.stringify(reqBody)
     });
-    if (!res || !res.ok) return;
+    if (!res || !res.ok) {
+      console.warn('[SIM] simFetchCutoffs: API returned', res?.status, '— cache NOT populated');
+      showToast('Could not fetch cutoff data from server. Check network.', 'error');
+      return;
+    }
     const data = await res.json();
+    console.log('[SIM] simFetchCutoffs → full API response:', JSON.stringify(data));
     (data.recommendations || []).forEach(r => {
+      const storeKey = `${r.college_code}_${r.branch_code}_${community}`;
+      console.log(`[SIM] simFetchCutoffs STORE: key="${storeKey}" closing_rank=${r.closing_rank}`);
       if (r.closing_rank != null) {
-        _simCutoffCache[`${r.college_code}_${r.branch_code}_${community}`] = r.closing_rank;
+        _simCutoffCache[storeKey] = r.closing_rank;
       }
     });
+    console.log('[SIM] _simCutoffCache after fetch:', JSON.stringify(_simCutoffCache));
   } catch(e) {
-    console.error('simFetchCutoffs error:', e);
+    console.error('[SIM] simFetchCutoffs error:', e);
   }
 }
 
@@ -2490,10 +2507,12 @@ function simGetSeats(collegeCode, branchCode) {
 async function simRunAllotment() {
   const rank = App.profile.rank || 99999;
   const community = App.profile.category || 'OC';
+  console.log(`[SIM] simRunAllotment → rank=${rank} community="${community}" choices:`, JSON.stringify(App.simChoices.map(c=>({col:c.collegeCode,br:c.branchCode}))));
   await simFetchCutoffs(App.simChoices, community);
   for (const c of App.simChoices) {
     const key = `${parseInt(c.collegeCode)}_${c.branchCode}_${community}`;
     const cutoff = _simCutoffCache[key];
+    console.log(`[SIM] simRunAllotment LOOKUP: key="${key}" cutoff=${cutoff} rank=${rank} → match=${cutoff != null && rank <= cutoff}`);
     if (cutoff != null && rank <= cutoff) return { ...c, cutoff, community };
   }
   return null;
@@ -2607,7 +2626,11 @@ async function simRenderChoiceFilling() {
   const PAGE_SIZE = 20;
   const page = App.simPage || 0;
 
+  // Deduplicate COLLEGES by col.code before filtering — college_codes.csv may have duplicate rows
+  const _seenCodes = new Set();
   const allFiltered = COLLEGES.filter(col => {
+    if (_seenCodes.has(col.code)) return false;
+    _seenCodes.add(col.code);
     if (searchCol && !col.name.toLowerCase().includes(searchCol)) return false;
     if (searchCat) { const t = simCollegeType(col.code); if (t !== searchCat) return false; }
     return true;
@@ -2623,12 +2646,16 @@ async function simRenderChoiceFilling() {
   }
 
   let rows = '';
+  const _renderedRows = new Set(); // guard against any remaining duplicates
   visibleColleges.forEach(col => {
     const key = String(parseInt(col.code));
     const branches = (_collegeBranchCache[key] || []).filter(br =>
       !searchBr || br.name.toLowerCase().includes(searchBr)
     );
     branches.forEach(br => {
+      const rowKey = `${col.code}|${br.code}`;
+      if (_renderedRows.has(rowKey)) return;
+      _renderedRows.add(rowKey);
       const seats = simGetSeats(col.code, br.code);
       const sel = App.simChoices.find(c => c.collegeCode === col.code && c.branchCode === br.code);
       const safeColName = col.name.replace(/'/g,"\\'").replace(/"/g,'&quot;');
@@ -2672,8 +2699,8 @@ async function simRenderChoiceFilling() {
     <div class="sim-filter-box">
       <div class="sim-filter-title">Filter Colleges</div>
       <div class="sim-filter-grid">
-        <div><label>College Name:</label><input class="text-input" placeholder="e.g. Government College" value="${f.college||''}" oninput="App.simFilter.college=this.value;App.simPage=0;renderCounsellingSimulation()"/></div>
-        <div><label>Branch Name:</label><input class="text-input" placeholder="e.g. Computer Science" value="${f.branch||''}" oninput="App.simFilter.branch=this.value;App.simPage=0;renderCounsellingSimulation()"/></div>
+        <div><label>College Name:</label><input class="text-input" placeholder="e.g. Government College" value="${f.college||''}" oninput="App.simFilter.college=this.value;App.simPage=0;simDebouncedRender()"/></div>
+        <div><label>Branch Name:</label><input class="text-input" placeholder="e.g. Computer Science" value="${f.branch||''}" oninput="App.simFilter.branch=this.value;App.simPage=0;simDebouncedRender()"/></div>
         <div><label>Category:</label>
           <select class="select-input" onchange="App.simFilter.category=this.value;App.simPage=0;renderCounsellingSimulation()">
             <option value="" ${!searchCat?'selected':''}>All Types</option>
