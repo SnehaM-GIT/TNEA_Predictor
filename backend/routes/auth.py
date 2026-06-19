@@ -145,7 +145,7 @@ def send_reset_email(to_email: str, token: str):
     try:
         response = resend.Emails.send({
             "from": "PickMySeat <support@pickmyseat.in>",
-            "reply_to": "support.pickmyseat@gmail.com",
+            "reply_to": ["support.pickmyseat@gmail.com"],
             "to": [to_email],
             "subject": "Reset your PickMySeat password",
             "html": html,
