@@ -144,7 +144,8 @@ def send_reset_email(to_email: str, token: str):
     print(f"[Resend] sending to {to_email}")
     try:
         response = resend.Emails.send({
-            "from": "PickMySeat <onboarding@resend.dev>",
+            "from": "PickMySeat <support@pickmyseat.in>",
+            "reply_to": ["support.pickmyseat@gmail.com"],
             "to": [to_email],
             "subject": "Reset your PickMySeat password",
             "html": html,
@@ -166,6 +167,7 @@ def signup(data: SignupInput, db: Session = Depends(get_db)):
         name=data.name,
         mobile=data.mobile,
         community=data.community,
+        category_locked=bool(data.community),   # lock immediately if community provided at signup
         grade="2"
     )
     db.add(user)
@@ -206,6 +208,7 @@ def get_me(
             "grade": user.grade,
             "has_paid": user.has_paid,
             "marks_locked": user.marks_locked,
+            "category_locked": user.category_locked,
             "maths": user.maths,
             "physics": user.physics,
             "chemistry": user.chemistry,
@@ -236,9 +239,14 @@ def update_profile(
             raise HTTPException(status_code=404, detail="User not found")
         if user.marks_locked and (data.maths is not None or data.physics is not None or data.chemistry is not None):
             raise HTTPException(status_code=403, detail="Marks are locked after payment")
+        if user.category_locked and data.community is not None and data.community != '':
+            raise HTTPException(status_code=403, detail="Category is locked after first submission")
         if data.name is not None: user.name = data.name
         if data.mobile is not None: user.mobile = data.mobile
-        if data.community is not None: user.community = data.community
+        # Only update community when a real (non-empty) value is supplied
+        if data.community:
+            user.community = data.community
+            user.category_locked = True   # lock on first save
         if data.maths is not None: user.maths = data.maths
         if data.physics is not None: user.physics = data.physics
         if data.chemistry is not None: user.chemistry = data.chemistry
@@ -249,7 +257,7 @@ def update_profile(
         if data.preferred_courses is not None: user.preferred_courses = data.preferred_courses
         if data.application_id is not None: user.application_id = data.application_id
         db.commit()
-        return {"status": "profile updated", "marks_locked": user.marks_locked}
+        return {"status": "profile updated", "marks_locked": user.marks_locked, "category_locked": user.category_locked}
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired")
     except jwt.InvalidTokenError:

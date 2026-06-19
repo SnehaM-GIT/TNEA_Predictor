@@ -23,6 +23,9 @@ const App = {
   simChoices:      [],
   simAllotment:    null,
   simFilter:       { college: '', branch: '', category: '' },
+  simPage:         0,
+  simRankUsed:     null,   // actual rank used for last allotment (official or predicted)
+  simRankSource:   null,   // 'official' | 'predicted' | 'fallback'
 
   profile: {
     name:              '',
@@ -33,6 +36,7 @@ const App = {
     physics:           null,
     chemistry:         null,
     marksLocked:       false,
+    categoryLocked:    false,
     rank:              null,
     rankPhase:         'pre',
     hasPaid:           false,
@@ -1381,6 +1385,11 @@ async function signupUser() {
     const data = await res.json();
     if (!res.ok) { showError(data.detail || 'Signup failed', res.status); return; }
     localStorage.setItem('token', data.token);
+    // Preserve signup category so profile page shows it and save doesn't overwrite with ''
+    if (category) {
+      App.profile.category       = category;
+      App.profile.categoryLocked = true;
+    }
     simulateLogin({ email, name: data.name, mobile, hasPaid: false });
   } catch(e) {
     showError('No connection. Check your internet and retry.');
@@ -1407,7 +1416,7 @@ function logout() {
   App.profile     = {
     name:'', email:'', mobile:'', category:'',
     maths:null, physics:null, chemistry:null,
-    marksLocked:false, rank:null, rankPhase:'pre',
+    marksLocked:false, categoryLocked:false, rank:null, rankPhase:'pre',
     hasPaid:false, preferredColleges:[], preferredCourses:[],
   };
   showToast('Logged out', 'info');
@@ -1425,7 +1434,14 @@ function renderProfile() {
   document.getElementById('profileMobile').value   = App.profile.mobile        || '';
   const appIdBasicEl = document.getElementById('profileApplicationId');
   if (appIdBasicEl) appIdBasicEl.value = App.profile.applicationId || '';
-  document.getElementById('profileCategory').value = App.profile.category || '';
+  const catEl = document.getElementById('profileCategory');
+  if (catEl) {
+    catEl.value    = App.profile.category || '';
+    catEl.disabled = App.profile.categoryLocked === true;
+    catEl.classList.toggle('locked', App.profile.categoryLocked === true);
+  }
+  const catNote = document.getElementById('categoryLockNote');
+  if (catNote) catNote.classList.toggle('hidden', !App.profile.categoryLocked);
 
   const locked = App.profile.marksLocked;
   // exactly one lock banner: Grade 1 gets "Update for ₹25", others "contact support"
@@ -1492,38 +1508,48 @@ function updateProfileAggregate() {
 
 function markProfileDirty() {}
 
-// Pre-fill marks/community inputs from App.profile, then lock them if
-// App.profile.marksLocked. Null-safe: no-ops when inputs aren't on the page.
+// Pre-fill marks/community inputs from App.profile and apply lock states.
+// Null-safe: no-ops when inputs aren't on the page.
 function prefillAndLockMarks() {
-  const fields = {
-    profileMath:     'maths',
-    profilePhysics:  'physics',
-    profileChemistry:'chemistry',
-    profileCategory: 'category',
+  // Marks fields — locked by marksLocked
+  const markFields = {
+    profileMath:      'maths',
+    profilePhysics:   'physics',
+    profileChemistry: 'chemistry',
   };
-  Object.entries(fields).forEach(([id, key]) => {
+  Object.entries(markFields).forEach(([id, key]) => {
     const el  = document.getElementById(id);
     const val = App.profile[key];
     if (el && val != null && val !== '') el.value = val;
   });
 
-  const locked = App.profile.marksLocked === true;
-  Object.keys(fields).forEach(id => {
+  const marksLocked = App.profile.marksLocked === true;
+  Object.keys(markFields).forEach(id => {
     const el = document.getElementById(id);
-    if (el) {
-      el.disabled = locked;
-      el.classList.toggle('locked', locked);
-    }
+    if (el) { el.disabled = marksLocked; el.classList.toggle('locked', marksLocked); }
   });
 
-  // exactly one lock banner: Grade 1 gets "Update for ₹25", others "contact support"
+  // Category field — locked independently by categoryLocked
+  const catEl = document.getElementById('profileCategory');
+  if (catEl) {
+    if (App.profile.category) catEl.value = App.profile.category;
+    const catLocked = App.profile.categoryLocked === true;
+    catEl.disabled = catLocked;
+    catEl.classList.toggle('locked', catLocked);
+  }
+
+  // Marks lock banners
   document.getElementById('marksLockedBanner')
-    ?.classList.toggle('hidden', !(locked && App.userGrade === 1));
+    ?.classList.toggle('hidden', !(marksLocked && App.userGrade === 1));
   const note = document.getElementById('marksLockNote');
   if (note) {
-    note.classList.toggle('hidden', !(locked && App.userGrade !== 1));
-    if (locked) note.textContent = '🔒 Marks locked — contact support to update';
+    note.classList.toggle('hidden', !(marksLocked && App.userGrade !== 1));
+    if (marksLocked) note.textContent = '🔒 Marks locked — contact support to update';
   }
+
+  // Category lock note
+  const catNote = document.getElementById('categoryLockNote');
+  if (catNote) catNote.classList.toggle('hidden', !App.profile.categoryLocked);
 }
 
 function setRankPhase(phase) {
@@ -1747,14 +1773,18 @@ async function saveProfile() {
 
 if (App.currentUser) {
     showLoader();
+    let saved = false;
     try {
       const body = {
         name: App.profile.name,
         mobile: App.profile.mobile,
-        community: App.profile.category,
         preferred_colleges: JSON.stringify(App.profile.preferredColleges),
         preferred_courses: JSON.stringify(App.profile.preferredCourses)
       };
+      // Only send community when not already locked and user selected a value
+      if (!App.profile.categoryLocked && App.profile.category) {
+        body.community = App.profile.category;
+      }
       // Marks are locked server-side after first save — sending them again gets a 403
       // that discards the whole update, including preferences.
       if (!marksWereLocked) {
@@ -1772,11 +1802,17 @@ if (App.currentUser) {
         hideLoader();
         return;
       }
+      const result = await res.json().catch(() => ({}));
+      if (result.category_locked) App.profile.categoryLocked = true;
+      if (result.marks_locked)    App.profile.marksLocked    = true;
+      saved = true;
     } catch(e) {
-      showToast('No connection — profile saved locally only', 'error');
+      showToast('No connection — changes not saved. Check your internet.', 'error');
+      return;   // do NOT navigate or show success on network failure
     } finally {
       hideLoader();
     }
+    if (!saved) return;
   }
   showToast('Profile saved ✅', 'success');
   setTimeout(() => navigateTo('dashboard'), 800);
@@ -2443,18 +2479,56 @@ const TFC_LIST = [
   'University College of Engineering, Villupuram - 605103',
 ];
 
-const SIM_BRANCHES = [
-  { code:'CS',   name:'COMPUTER SCIENCE AND ENGINEERING' },
-  { code:'EC',   name:'ELECTRONICS AND COMMUNICATION ENGINEERING' },
-  { code:'EE',   name:'ELECTRICAL AND ELECTRONICS ENGINEERING' },
-  { code:'ME',   name:'MECHANICAL ENGINEERING' },
-  { code:'CE',   name:'CIVIL ENGINEERING' },
-  { code:'IT',   name:'INFORMATION TECHNOLOGY' },
-  { code:'AIDS', name:'ARTIFICIAL INTELLIGENCE AND DATA SCIENCE' },
-  { code:'CSBS', name:'COMPUTER SCIENCE AND BUSINESS SYSTEMS' },
-  { code:'MECH', name:'MECHATRONICS ENGINEERING' },
-  { code:'CHE',  name:'CHEMICAL ENGINEERING' },
-];
+// _simCutoffCache: key = `${collegeCode}_${branchCode}_${community}` → closing_rank from backend
+const _simCutoffCache = {};
+
+// Debounce timer for filter-input re-renders (prevents concurrent async renders on rapid keystrokes)
+let _simRenderTimer = null;
+function simDebouncedRender() {
+  clearTimeout(_simRenderTimer);
+  _simRenderTimer = setTimeout(() => renderCounsellingSimulation(), 250);
+}
+
+async function simFetchCutoffs(choices, community) {
+  const collegeCodes = [...new Set(choices.map(c => parseInt(c.collegeCode)))];
+  const branchCodes  = [...new Set(choices.map(c => c.branchCode))];
+  const reqBody = {
+    maths:    App.profile.maths    || 0,
+    physics:  App.profile.physics  || 0,
+    chemistry:App.profile.chemistry|| 0,
+    community,
+    top_n: 200,
+    preferred_colleges: collegeCodes,
+    preferred_branches: branchCodes
+  };
+  console.log('[SIM] simFetchCutoffs → request body:', JSON.stringify(reqBody));
+  try {
+    const res = await authenticatedFetch(`${API_BASE}/predict/colleges`, {
+      method: 'POST',
+      body: JSON.stringify(reqBody)
+    });
+    if (!res || !res.ok) {
+      console.warn('[SIM] simFetchCutoffs: API returned', res?.status, '— cache NOT populated');
+      showToast('Could not fetch cutoff data from server. Check network.', 'error');
+      return;
+    }
+    const data = await res.json();
+    console.log('[SIM] simFetchCutoffs → full API response:', JSON.stringify(data));
+    (data.recommendations || []).forEach(r => {
+      const storeKey = `${r.college_code}_${r.branch_code}_${community}`;
+      console.log(`[SIM] simFetchCutoffs STORE: key="${storeKey}" closing_rank=${r.closing_rank}`);
+      if (r.closing_rank != null) {
+        _simCutoffCache[storeKey] = r.closing_rank;
+      }
+    });
+    console.log('[SIM] _simCutoffCache after fetch:', JSON.stringify(_simCutoffCache));
+    // Return the ML-predicted rank so simRunAllotment can use it when no official rank is set
+    return data.student_rank || null;
+  } catch(e) {
+    console.error('[SIM] simFetchCutoffs error:', e);
+    return null;
+  }
+}
 
 function simCollegeType(code) {
   const govtCodes = ['0001','0002','0003','0004','0005','1516','2005','2369','2603','2615','2709','3464','3465','4974','5009','5901','1013','1014','1015','1026','3011','3016','3018','3019','3021','4020','4023','4024','5010','5017'];
@@ -2468,24 +2542,39 @@ function simGetSeats(collegeCode, branchCode) {
   return { oc: base + (h % 15), comm: Math.floor((base + (h%15)) * 0.3) + (h%7) };
 }
 
-function simGetCutoff(collegeCode, branchCode, community) {
-  const h = (collegeCode+branchCode+community).split('').reduce((a,c)=>a+c.charCodeAt(0),0);
-  const type = simCollegeType(collegeCode);
-  const base = type==='Govt' ? 8000 : type==='Aided' ? 25000 : 80000;
-  return base + (h % (type==='Govt' ? 15000 : 40000));
-}
+async function simRunAllotment() {
+  const officialRank  = App.profile.rank || null;
+  const community     = App.profile.category || 'OC';
 
-function simRunAllotment() {
-  const rank = App.profile.rank || 99999;
-  const community = App.profile.category || 'OC';
+  // Fetch cutoffs AND get the ML-predicted rank in one shot
+  const predictedRank = await simFetchCutoffs(App.simChoices, community);
+
+  // Rank precedence: verified official rank → ML-predicted rank → last-resort 99999
+  let rank, rankSource;
+  if (officialRank) {
+    rank = officialRank; rankSource = 'official';
+  } else if (predictedRank) {
+    rank = predictedRank; rankSource = 'predicted';
+  } else {
+    rank = 99999; rankSource = 'fallback';
+  }
+
+  // Persist so simRenderAllotment can show the correct note even when allotment is null
+  App.simRankUsed   = rank;
+  App.simRankSource = rankSource;
+
+  console.log(`[SIM] simRunAllotment → rank=${rank} source="${rankSource}" community="${community}" choices:`, JSON.stringify(App.simChoices.map(c=>({col:c.collegeCode,br:c.branchCode}))));
+
   for (const c of App.simChoices) {
-    const cutoff = simGetCutoff(c.collegeCode, c.branchCode, community);
-    if (rank <= cutoff) return { ...c, cutoff, community };
+    const key = `${parseInt(c.collegeCode)}_${c.branchCode}_${community}`;
+    const cutoff = _simCutoffCache[key];
+    console.log(`[SIM] simRunAllotment LOOKUP: key="${key}" cutoff=${cutoff} rank=${rank} → match=${cutoff != null && rank <= cutoff}`);
+    if (cutoff != null && rank <= cutoff) return { ...c, cutoff, community, rank, rankSource };
   }
   return null;
 }
 
-function simGoToStep(n) { App.simStep = n; renderCounsellingSimulation(); }
+function simGoToStep(n) { App.simStep = n; if (n === 1) App.simPage = 0; renderCounsellingSimulation(); }
 
 function simToggleChoice(collegeCode, branchCode, branchName, collegeName) {
   const idx = App.simChoices.findIndex(c=>c.collegeCode===collegeCode&&c.branchCode===branchCode);
@@ -2500,9 +2589,11 @@ function simToggleChoice(collegeCode, branchCode, branchName, collegeName) {
 
 function simClearChoices() { App.simChoices=[]; renderCounsellingSimulation(); }
 
-function simLockAndAllot() {
+async function simLockAndAllot() {
   if (App.simChoices.length===0) { showToast('Add at least one choice first','error'); return; }
-  App.simAllotment = simRunAllotment();
+  showLoader();
+  App.simAllotment = await simRunAllotment();
+  hideLoader();
   simGoToStep(2);
 }
 
@@ -2520,7 +2611,7 @@ function simConfirmAllotment() {
   simGoToStep(3);
 }
 
-function renderCounsellingSimulation() {
+async function renderCounsellingSimulation() {
   const sim = document.getElementById('counsellingSim');
   if (!sim) return;
 
@@ -2536,7 +2627,7 @@ function renderCounsellingSimulation() {
 
   let body = '';
   if (App.simStep===0) body = simRenderStatus();
-  else if (App.simStep===1) body = simRenderChoiceFilling();
+  else if (App.simStep===1) body = await simRenderChoiceFilling();
   else if (App.simStep===2) body = simRenderAllotment();
   else body = simRenderProvisionalOrder();
 
@@ -2577,30 +2668,52 @@ function simRenderStatus() {
         <div class="sim-status-cell"><span>Certificate Verification Status</span><strong class="sim-ok">✅ Completed successfully</strong></div>
       </div>
     </div>
-    ${!p.rank ? '<div class="sim-warn">⚠️ Enter your rank in Profile for accurate simulation</div>' : ''}
+    ${!p.rank ? '<div class="sim-warn">ℹ️ Official rank not yet verified — simulation will use your <strong>predicted rank</strong> (based on marks). Enter your TNEA rank in Profile once released for exact results.</div>' : ''}
     <div class="sim-disclaimer">This is a simulation. Your actual status is on <a href="https://tneaonline.org" target="_blank">tneaonline.org ↗</a></div>
     <button class="btn-primary btn-glow btn-full" onclick="simGoToStep(1)" style="margin-top:20px">Proceed to Choice Filling →</button>
   </div>`;
 }
 
-function simRenderChoiceFilling() {
+async function simRenderChoiceFilling() {
   const f = App.simFilter;
   const searchCol = (f.college||'').toLowerCase();
   const searchBr  = (f.branch||'').toLowerCase();
   const searchCat = f.category||'';
+  const PAGE_SIZE = 20;
+  const page = App.simPage || 0;
 
-  const filtered = COLLEGES.filter(col => {
+  // Deduplicate COLLEGES by col.code before filtering — college_codes.csv may have duplicate rows
+  const _seenCodes = new Set();
+  const allFiltered = COLLEGES.filter(col => {
+    if (_seenCodes.has(col.code)) return false;
+    _seenCodes.add(col.code);
     if (searchCol && !col.name.toLowerCase().includes(searchCol)) return false;
-    if (searchCat) { const t=simCollegeType(col.code); if(t!==searchCat) return false; }
+    if (searchCat) { const t = simCollegeType(col.code); if (t !== searchCat) return false; }
     return true;
-  }).slice(0,10);
+  });
+
+  const totalColleges = allFiltered.length;
+  const visibleColleges = allFiltered.slice(0, (page + 1) * PAGE_SIZE);
+
+  // Fetch branches for all visible colleges (uses _collegeBranchCache)
+  const toFetch = visibleColleges.filter(col => !_collegeBranchCache[String(parseInt(col.code))]);
+  if (toFetch.length > 0) {
+    await getBranchesForColleges(toFetch.map(c => c.code));
+  }
 
   let rows = '';
-  filtered.forEach(col => {
-    SIM_BRANCHES.forEach(br => {
-      if (searchBr && !br.name.toLowerCase().includes(searchBr)) return;
+  const _renderedRows = new Set(); // guard against any remaining duplicates
+  visibleColleges.forEach(col => {
+    const key = String(parseInt(col.code));
+    const branches = (_collegeBranchCache[key] || []).filter(br =>
+      !searchBr || br.name.toLowerCase().includes(searchBr)
+    );
+    branches.forEach(br => {
+      const rowKey = `${col.code}|${br.code}`;
+      if (_renderedRows.has(rowKey)) return;
+      _renderedRows.add(rowKey);
       const seats = simGetSeats(col.code, br.code);
-      const sel = App.simChoices.find(c=>c.collegeCode===col.code&&c.branchCode===br.code);
+      const sel = App.simChoices.find(c => c.collegeCode === col.code && c.branchCode === br.code);
       const safeColName = col.name.replace(/'/g,"\\'").replace(/"/g,'&quot;');
       const safeBrName  = br.name.replace(/'/g,"\\'");
       rows += `<tr class="${sel?'sim-row-sel':''}" onclick="simToggleChoice('${col.code}','${br.code}','${safeBrName}','${safeColName}')">
@@ -2609,11 +2722,22 @@ function simRenderChoiceFilling() {
         <td>${col.code}</td>
         <td class="sim-col-name">${col.name}</td>
         <td>${br.name}</td>
-        <td class="${seats.oc===0?'sim-seat-zero':'sim-seat-ok'}">${seats.oc}</td>
-        <td class="${seats.comm===0?'sim-seat-zero':'sim-seat-ok'}">${seats.comm}</td>
+        <td class="${seats.oc===0?'sim-seat-zero':'sim-seat-ok'}">${seats.oc}<span style="font-size:10px;opacity:0.6"> est.</span></td>
+        <td class="${seats.comm===0?'sim-seat-zero':'sim-seat-ok'}">${seats.comm}<span style="font-size:10px;opacity:0.6"> est.</span></td>
       </tr>`;
     });
   });
+
+  const hasMore = totalColleges > (page + 1) * PAGE_SIZE;
+  const paginationHtml = hasMore
+    ? `<div style="text-align:center;margin-top:12px">
+        <button class="btn-ghost" onclick="App.simPage=(App.simPage||0)+1;renderCounsellingSimulation()">
+          Show more colleges (${totalColleges - (page + 1) * PAGE_SIZE} remaining)
+        </button>
+       </div>`
+    : totalColleges > PAGE_SIZE
+      ? `<div style="text-align:center;margin-top:8px;font-size:12px;color:var(--text-muted)">All ${totalColleges} matching colleges shown</div>`
+      : '';
 
   const myChoicesHtml = App.simChoices.length>0 ? `
     <div class="sim-my-choices-list">
@@ -2631,10 +2755,10 @@ function simRenderChoiceFilling() {
     <div class="sim-filter-box">
       <div class="sim-filter-title">Filter Colleges</div>
       <div class="sim-filter-grid">
-        <div><label>College Name:</label><input class="text-input" placeholder="e.g. Government College" value="${f.college||''}" oninput="App.simFilter.college=this.value;renderCounsellingSimulation()"/></div>
-        <div><label>Branch Name:</label><input class="text-input" placeholder="e.g. Computer Science" value="${f.branch||''}" oninput="App.simFilter.branch=this.value;renderCounsellingSimulation()"/></div>
+        <div><label>College Name:</label><input class="text-input" placeholder="e.g. Government College" value="${f.college||''}" oninput="App.simFilter.college=this.value;App.simPage=0;simDebouncedRender()"/></div>
+        <div><label>Branch Name:</label><input class="text-input" placeholder="e.g. Computer Science" value="${f.branch||''}" oninput="App.simFilter.branch=this.value;App.simPage=0;simDebouncedRender()"/></div>
         <div><label>Category:</label>
-          <select class="select-input" onchange="App.simFilter.category=this.value;renderCounsellingSimulation()">
+          <select class="select-input" onchange="App.simFilter.category=this.value;App.simPage=0;renderCounsellingSimulation()">
             <option value="" ${!searchCat?'selected':''}>All Types</option>
             <option value="Govt" ${searchCat==='Govt'?'selected':''}>Government</option>
             <option value="Aided" ${searchCat==='Aided'?'selected':''}>Government Aided</option>
@@ -2663,6 +2787,7 @@ function simRenderChoiceFilling() {
         <tbody>${rows||'<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-muted)">No results — try a different filter</td></tr>'}</tbody>
       </table>
     </div>
+    ${paginationHtml}
     <div class="sim-my-choices-section">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <strong>My Choices List</strong>
@@ -2682,13 +2807,29 @@ function simRenderChoiceFilling() {
 function simRenderAllotment() {
   const allot = App.simAllotment;
   const p = App.profile;
-  const rank = p.rank||'—';
+  const rankSource = App.simRankSource;
+  const rankUsed   = App.simRankUsed;
+  // Display rank: prefer official, else what was actually used in allotment
+  const rank  = p.rank || (rankUsed && rankSource !== 'fallback' ? rankUsed : '—');
   const cRank = p.rank ? Math.floor(p.rank*0.42) : '—';
-  const comm = p.category||'OC';
+  const comm  = p.category||'OC';
+
+  // Banner shown when allotment used a predicted (not official) rank
+  const rankBanner = (rankSource === 'predicted' && rankUsed)
+    ? `<div style="margin-bottom:14px;padding:10px 14px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:8px;font-size:13px;color:var(--text-muted)">
+        ⚠️ Using your <strong>predicted rank (${rankUsed})</strong> — official TNEA rank not yet verified.
+        Allotment result is an estimate. Enter your actual rank in Profile once the rank list is released.
+       </div>`
+    : rankSource === 'fallback'
+      ? `<div style="margin-bottom:14px;padding:10px 14px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:8px;font-size:13px;color:var(--text-muted)">
+          ⚠️ No rank or marks found. Add your marks in Profile so a predicted rank can be calculated.
+         </div>`
+      : '';
 
   if (!allot) return `
   <div class="sim-card">
     <div class="sim-gov-hdr"><div class="sim-gov-title">GOVERNMENT OF TAMIL NADU</div><div class="sim-gov-sub">TAMIL NADU ENGINEERING ADMISSIONS — 2026</div></div>
+    ${rankBanner}
     <div class="sim-no-allotment">
       <div style="font-size:48px;margin-bottom:12px">😔</div>
       <h3>No Seat Allotted in Round 1</h3>
@@ -2711,6 +2852,7 @@ function simRenderAllotment() {
   return `
   <div class="sim-card">
     <div class="sim-gov-hdr"><div class="sim-gov-title">GOVERNMENT OF TAMIL NADU</div><div class="sim-gov-sub">TAMIL NADU ENGINEERING ADMISSIONS — 2026</div></div>
+    ${rankBanner}
     <div class="sim-allot-grid">
       <div class="sim-allot-cell"><span>Community</span><strong>${comm}</strong></div>
       <div class="sim-allot-cell"><span>General Rank</span><strong>${rank}</strong></div>
@@ -2786,6 +2928,7 @@ function advanceCounselling() { App.simStep = Math.min(App.simStep+1,3); renderC
 function resetCounselling() {
   App.simStep=0; App.simChoices=[]; App.simAllotment=null;
   App.simFilter={ college:'', branch:'', category:'' };
+  App.simPage=0; App.simRankUsed=null; App.simRankSource=null;
   renderCounsellingSimulation();
 }
 function downloadSimulationPDF() {
@@ -3095,7 +3238,8 @@ async function restoreSessionFromToken() {
     App.profile.maths        = data.maths;
     App.profile.physics      = data.physics;
     App.profile.chemistry    = data.chemistry;
-    App.profile.marksLocked  = data.marks_locked || false;
+    App.profile.marksLocked     = data.marks_locked    || false;
+    App.profile.categoryLocked  = data.category_locked || false;
     App.profile.rank         = data.rank;
     App.profile.rankPhase    = data.rank_phase || 'pre';
     App.profile.hasPaid      = data.grade === '1';

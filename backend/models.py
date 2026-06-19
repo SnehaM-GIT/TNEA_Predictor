@@ -25,7 +25,8 @@ class User(Base):
     physics       = Column(Float, nullable=True)
     chemistry     = Column(Float, nullable=True)
     aggregate     = Column(Float, nullable=True)         # cutoff formula score
-    marks_locked  = Column(Boolean, default=False)       # locked after payment
+    marks_locked     = Column(Boolean, default=False)     # locked after payment
+    category_locked  = Column(Boolean, default=False)     # locked after first category save
     rank          = Column(Integer, nullable=True)
     rank_phase    = Column(String, nullable=True)        # "pre" or "post"
     has_paid      = Column(Boolean, default=False)
