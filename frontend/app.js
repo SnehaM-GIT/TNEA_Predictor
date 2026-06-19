@@ -23,6 +23,7 @@ const App = {
   simChoices:      [],
   simAllotment:    null,
   simFilter:       { college: '', branch: '', category: '' },
+  simPage:         0,
 
   profile: {
     name:              '',
@@ -2443,18 +2444,36 @@ const TFC_LIST = [
   'University College of Engineering, Villupuram - 605103',
 ];
 
-const SIM_BRANCHES = [
-  { code:'CS',   name:'COMPUTER SCIENCE AND ENGINEERING' },
-  { code:'EC',   name:'ELECTRONICS AND COMMUNICATION ENGINEERING' },
-  { code:'EE',   name:'ELECTRICAL AND ELECTRONICS ENGINEERING' },
-  { code:'ME',   name:'MECHANICAL ENGINEERING' },
-  { code:'CE',   name:'CIVIL ENGINEERING' },
-  { code:'IT',   name:'INFORMATION TECHNOLOGY' },
-  { code:'AIDS', name:'ARTIFICIAL INTELLIGENCE AND DATA SCIENCE' },
-  { code:'CSBS', name:'COMPUTER SCIENCE AND BUSINESS SYSTEMS' },
-  { code:'MECH', name:'MECHATRONICS ENGINEERING' },
-  { code:'CHE',  name:'CHEMICAL ENGINEERING' },
-];
+// _simCutoffCache: key = `${collegeCode}_${branchCode}_${community}` → closing_rank from backend
+const _simCutoffCache = {};
+
+async function simFetchCutoffs(choices, community) {
+  const collegeCodes = [...new Set(choices.map(c => parseInt(c.collegeCode)))];
+  const branchCodes  = [...new Set(choices.map(c => c.branchCode))];
+  try {
+    const res = await authenticatedFetch(`${API_BASE}/predict/colleges`, {
+      method: 'POST',
+      body: JSON.stringify({
+        maths: App.profile.maths || 0,
+        physics: App.profile.physics || 0,
+        chemistry: App.profile.chemistry || 0,
+        community,
+        top_n: 200,
+        preferred_colleges: collegeCodes,
+        preferred_branches: branchCodes
+      })
+    });
+    if (!res || !res.ok) return;
+    const data = await res.json();
+    (data.recommendations || []).forEach(r => {
+      if (r.closing_rank != null) {
+        _simCutoffCache[`${r.college_code}_${r.branch_code}_${community}`] = r.closing_rank;
+      }
+    });
+  } catch(e) {
+    console.error('simFetchCutoffs error:', e);
+  }
+}
 
 function simCollegeType(code) {
   const govtCodes = ['0001','0002','0003','0004','0005','1516','2005','2369','2603','2615','2709','3464','3465','4974','5009','5901','1013','1014','1015','1026','3011','3016','3018','3019','3021','4020','4023','4024','5010','5017'];
@@ -2468,24 +2487,19 @@ function simGetSeats(collegeCode, branchCode) {
   return { oc: base + (h % 15), comm: Math.floor((base + (h%15)) * 0.3) + (h%7) };
 }
 
-function simGetCutoff(collegeCode, branchCode, community) {
-  const h = (collegeCode+branchCode+community).split('').reduce((a,c)=>a+c.charCodeAt(0),0);
-  const type = simCollegeType(collegeCode);
-  const base = type==='Govt' ? 8000 : type==='Aided' ? 25000 : 80000;
-  return base + (h % (type==='Govt' ? 15000 : 40000));
-}
-
-function simRunAllotment() {
+async function simRunAllotment() {
   const rank = App.profile.rank || 99999;
   const community = App.profile.category || 'OC';
+  await simFetchCutoffs(App.simChoices, community);
   for (const c of App.simChoices) {
-    const cutoff = simGetCutoff(c.collegeCode, c.branchCode, community);
-    if (rank <= cutoff) return { ...c, cutoff, community };
+    const key = `${parseInt(c.collegeCode)}_${c.branchCode}_${community}`;
+    const cutoff = _simCutoffCache[key];
+    if (cutoff != null && rank <= cutoff) return { ...c, cutoff, community };
   }
   return null;
 }
 
-function simGoToStep(n) { App.simStep = n; renderCounsellingSimulation(); }
+function simGoToStep(n) { App.simStep = n; if (n === 1) App.simPage = 0; renderCounsellingSimulation(); }
 
 function simToggleChoice(collegeCode, branchCode, branchName, collegeName) {
   const idx = App.simChoices.findIndex(c=>c.collegeCode===collegeCode&&c.branchCode===branchCode);
@@ -2500,9 +2514,11 @@ function simToggleChoice(collegeCode, branchCode, branchName, collegeName) {
 
 function simClearChoices() { App.simChoices=[]; renderCounsellingSimulation(); }
 
-function simLockAndAllot() {
+async function simLockAndAllot() {
   if (App.simChoices.length===0) { showToast('Add at least one choice first','error'); return; }
-  App.simAllotment = simRunAllotment();
+  showLoader();
+  App.simAllotment = await simRunAllotment();
+  hideLoader();
   simGoToStep(2);
 }
 
@@ -2520,7 +2536,7 @@ function simConfirmAllotment() {
   simGoToStep(3);
 }
 
-function renderCounsellingSimulation() {
+async function renderCounsellingSimulation() {
   const sim = document.getElementById('counsellingSim');
   if (!sim) return;
 
@@ -2536,7 +2552,7 @@ function renderCounsellingSimulation() {
 
   let body = '';
   if (App.simStep===0) body = simRenderStatus();
-  else if (App.simStep===1) body = simRenderChoiceFilling();
+  else if (App.simStep===1) body = await simRenderChoiceFilling();
   else if (App.simStep===2) body = simRenderAllotment();
   else body = simRenderProvisionalOrder();
 
@@ -2583,24 +2599,38 @@ function simRenderStatus() {
   </div>`;
 }
 
-function simRenderChoiceFilling() {
+async function simRenderChoiceFilling() {
   const f = App.simFilter;
   const searchCol = (f.college||'').toLowerCase();
   const searchBr  = (f.branch||'').toLowerCase();
   const searchCat = f.category||'';
+  const PAGE_SIZE = 20;
+  const page = App.simPage || 0;
 
-  const filtered = COLLEGES.filter(col => {
+  const allFiltered = COLLEGES.filter(col => {
     if (searchCol && !col.name.toLowerCase().includes(searchCol)) return false;
-    if (searchCat) { const t=simCollegeType(col.code); if(t!==searchCat) return false; }
+    if (searchCat) { const t = simCollegeType(col.code); if (t !== searchCat) return false; }
     return true;
-  }).slice(0,10);
+  });
+
+  const totalColleges = allFiltered.length;
+  const visibleColleges = allFiltered.slice(0, (page + 1) * PAGE_SIZE);
+
+  // Fetch branches for all visible colleges (uses _collegeBranchCache)
+  const toFetch = visibleColleges.filter(col => !_collegeBranchCache[String(parseInt(col.code))]);
+  if (toFetch.length > 0) {
+    await getBranchesForColleges(toFetch.map(c => c.code));
+  }
 
   let rows = '';
-  filtered.forEach(col => {
-    SIM_BRANCHES.forEach(br => {
-      if (searchBr && !br.name.toLowerCase().includes(searchBr)) return;
+  visibleColleges.forEach(col => {
+    const key = String(parseInt(col.code));
+    const branches = (_collegeBranchCache[key] || []).filter(br =>
+      !searchBr || br.name.toLowerCase().includes(searchBr)
+    );
+    branches.forEach(br => {
       const seats = simGetSeats(col.code, br.code);
-      const sel = App.simChoices.find(c=>c.collegeCode===col.code&&c.branchCode===br.code);
+      const sel = App.simChoices.find(c => c.collegeCode === col.code && c.branchCode === br.code);
       const safeColName = col.name.replace(/'/g,"\\'").replace(/"/g,'&quot;');
       const safeBrName  = br.name.replace(/'/g,"\\'");
       rows += `<tr class="${sel?'sim-row-sel':''}" onclick="simToggleChoice('${col.code}','${br.code}','${safeBrName}','${safeColName}')">
@@ -2609,11 +2639,22 @@ function simRenderChoiceFilling() {
         <td>${col.code}</td>
         <td class="sim-col-name">${col.name}</td>
         <td>${br.name}</td>
-        <td class="${seats.oc===0?'sim-seat-zero':'sim-seat-ok'}">${seats.oc}</td>
-        <td class="${seats.comm===0?'sim-seat-zero':'sim-seat-ok'}">${seats.comm}</td>
+        <td class="${seats.oc===0?'sim-seat-zero':'sim-seat-ok'}">${seats.oc}<span style="font-size:10px;opacity:0.6"> est.</span></td>
+        <td class="${seats.comm===0?'sim-seat-zero':'sim-seat-ok'}">${seats.comm}<span style="font-size:10px;opacity:0.6"> est.</span></td>
       </tr>`;
     });
   });
+
+  const hasMore = totalColleges > (page + 1) * PAGE_SIZE;
+  const paginationHtml = hasMore
+    ? `<div style="text-align:center;margin-top:12px">
+        <button class="btn-ghost" onclick="App.simPage=(App.simPage||0)+1;renderCounsellingSimulation()">
+          Show more colleges (${totalColleges - (page + 1) * PAGE_SIZE} remaining)
+        </button>
+       </div>`
+    : totalColleges > PAGE_SIZE
+      ? `<div style="text-align:center;margin-top:8px;font-size:12px;color:var(--text-muted)">All ${totalColleges} matching colleges shown</div>`
+      : '';
 
   const myChoicesHtml = App.simChoices.length>0 ? `
     <div class="sim-my-choices-list">
@@ -2631,10 +2672,10 @@ function simRenderChoiceFilling() {
     <div class="sim-filter-box">
       <div class="sim-filter-title">Filter Colleges</div>
       <div class="sim-filter-grid">
-        <div><label>College Name:</label><input class="text-input" placeholder="e.g. Government College" value="${f.college||''}" oninput="App.simFilter.college=this.value;renderCounsellingSimulation()"/></div>
-        <div><label>Branch Name:</label><input class="text-input" placeholder="e.g. Computer Science" value="${f.branch||''}" oninput="App.simFilter.branch=this.value;renderCounsellingSimulation()"/></div>
+        <div><label>College Name:</label><input class="text-input" placeholder="e.g. Government College" value="${f.college||''}" oninput="App.simFilter.college=this.value;App.simPage=0;renderCounsellingSimulation()"/></div>
+        <div><label>Branch Name:</label><input class="text-input" placeholder="e.g. Computer Science" value="${f.branch||''}" oninput="App.simFilter.branch=this.value;App.simPage=0;renderCounsellingSimulation()"/></div>
         <div><label>Category:</label>
-          <select class="select-input" onchange="App.simFilter.category=this.value;renderCounsellingSimulation()">
+          <select class="select-input" onchange="App.simFilter.category=this.value;App.simPage=0;renderCounsellingSimulation()">
             <option value="" ${!searchCat?'selected':''}>All Types</option>
             <option value="Govt" ${searchCat==='Govt'?'selected':''}>Government</option>
             <option value="Aided" ${searchCat==='Aided'?'selected':''}>Government Aided</option>
@@ -2663,6 +2704,7 @@ function simRenderChoiceFilling() {
         <tbody>${rows||'<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-muted)">No results — try a different filter</td></tr>'}</tbody>
       </table>
     </div>
+    ${paginationHtml}
     <div class="sim-my-choices-section">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <strong>My Choices List</strong>
@@ -2786,6 +2828,7 @@ function advanceCounselling() { App.simStep = Math.min(App.simStep+1,3); renderC
 function resetCounselling() {
   App.simStep=0; App.simChoices=[]; App.simAllotment=null;
   App.simFilter={ college:'', branch:'', category:'' };
+  App.simPage=0;
   renderCounsellingSimulation();
 }
 function downloadSimulationPDF() {
