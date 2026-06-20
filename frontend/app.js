@@ -1107,7 +1107,7 @@ function updateFreeAggregate() {
   const c   = document.getElementById('freeChemistry')?.value|| 0;
   const agg = calculateAggregate(m, p, c);
   const el  = document.getElementById('freeAggValue');
-  if (el) el.textContent = agg > 0 ? `${agg} / 200` : '— / 200';
+  if (el) el.innerHTML = agg > 0 ? `${agg} / 200` : '<span class="agg-dash">—</span> / 200';
   updateBar('mathBar',    m, 100);
   updateBar('physicsBar', p, 100);
   updateBar('chemBar',    c, 100);
@@ -1503,7 +1503,7 @@ function updateProfileAggregate() {
   const c   = document.getElementById('profileChemistry')?.value|| 0;
   const agg = calculateAggregate(m, p, c);
   const el  = document.getElementById('profileAggValue');
-  if (el) el.textContent = agg > 0 ? `${agg} / 200` : '— / 200';
+  if (el) el.innerHTML = agg > 0 ? `${agg} / 200` : '<span class="agg-dash">—</span> / 200';
 }
 
 function markProfileDirty() {}

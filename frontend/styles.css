@@ -1751,6 +1751,10 @@ html.dark-theme .brand-logo-dark { display: inline-block; }
   background-clip: text;
 }
 
+.agg-dash {
+  font-size: 18px;
+}
+
 /* ============================================
    FILTERS & SEARCH
    ============================================ */
