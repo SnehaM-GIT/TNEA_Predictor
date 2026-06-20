@@ -638,8 +638,8 @@ button {
 }
 
 html.dark-theme .navbar {
-  background: rgba(20, 44, 88, 0.92);
-  border-bottom-color: rgba(59, 130, 246, 0.18);
+  background: rgba(30, 64, 128, 0.92);
+  border-bottom-color: rgba(59, 130, 246, 0.25);
 }
 
 html.dark-theme .nav-links {
