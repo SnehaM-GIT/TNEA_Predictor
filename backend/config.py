@@ -5,7 +5,6 @@ Load and manage environment variables from .env file.
 
 Usage:
     from backend.config import config
-    jwt_key = config.JWT_SECRET_KEY
     db_url = config.DATABASE_URL
 """
 
@@ -24,8 +23,7 @@ class Config:
     ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
     DEBUG = os.getenv("DEBUG", "True").lower() == "true"
 
-    # JWT Security
-    JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+    # JWT Security (signing key is SECRET_KEY, read directly in auth routes)
     JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
     JWT_EXPIRATION_HOURS = int(os.getenv("JWT_EXPIRATION_HOURS", "24"))
 
