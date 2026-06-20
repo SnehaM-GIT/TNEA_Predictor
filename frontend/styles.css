@@ -637,6 +637,25 @@ button {
   transition: all 0.3s ease;
 }
 
+html.dark-theme .navbar {
+  background: rgba(20, 44, 88, 0.92);
+  border-bottom-color: rgba(59, 130, 246, 0.18);
+}
+
+html.dark-theme .nav-links {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+html.dark-theme .nav-link.active {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+/* Logo theme switching */
+.brand-logo-dark { display: none; }
+html.dark-theme .brand-logo-light { display: none; }
+html.dark-theme .brand-logo-dark { display: inline-block; }
+
 
 .nav-container {
   max-width: 1280px;
