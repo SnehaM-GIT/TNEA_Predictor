@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends, Header
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr, validator
 from sqlalchemy.orm import Session
 from database import get_db
 from models import User, PasswordResetToken
@@ -9,6 +9,7 @@ import os
 import secrets
 import resend
 import traceback
+import concurrent.futures
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -18,7 +19,7 @@ if not SECRET_KEY:
     raise RuntimeError("SECRET_KEY environment variable is not set")
 
 class SignupInput(BaseModel):
-    email: str
+    email: EmailStr
     password: str
     name: str
     mobile: str
@@ -38,6 +39,12 @@ class UpdateProfileInput(BaseModel):
     preferred_colleges: Optional[str] = None
     preferred_courses: Optional[str] = None
     application_id: Optional[str] = None
+
+    @validator('maths', 'physics', 'chemistry', pre=True, always=False)
+    def validate_marks_range(cls, v):
+        if v is not None and not (0 <= v <= 100):
+            raise ValueError('Marks must be between 0 and 100')
+        return v
 
 class ForgotPasswordInput(BaseModel):
     email: str
@@ -142,15 +149,23 @@ def send_reset_email(to_email: str, token: str):
         raise RuntimeError("RESEND_API_KEY environment variable is not set")
 
     print(f"[Resend] sending to {to_email}")
-    try:
-        response = resend.Emails.send({
+    def _send():
+        return resend.Emails.send({
             "from": "PickMySeat <support@pickmyseat.in>",
             "reply_to": ["support.pickmyseat@gmail.com"],
             "to": [to_email],
             "subject": "Reset your PickMySeat password",
             "html": html,
         })
-        print(f"[Resend] ok — id={response.get('id') if isinstance(response, dict) else getattr(response, 'id', response)}")
+
+    try:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(_send)
+            response = future.result(timeout=8)
+        print(f"[Resend] ok -- id={response.get('id') if isinstance(response, dict) else getattr(response, 'id', response)}")
+    except concurrent.futures.TimeoutError:
+        print(f"[Resend] TIMEOUT after 8s for {to_email}")
+        raise TimeoutError("Resend API timed out")
     except Exception as e:
         print(f"[Resend] FAILED: {type(e).__name__}: {e}\n{traceback.format_exc()}")
         raise
@@ -263,13 +278,16 @@ def update_profile(
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
+GENERIC_RESET_MSG = {"message": "If that email is registered, a reset link has been sent."}
+
 @router.post("/forgot-password")
 def forgot_password(data: ForgotPasswordInput, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == data.email.strip().lower()).first()
     if not user:
-        raise HTTPException(status_code=404, detail="Email address not found. Please check and try again.")
-        
-    # delete any existing unused tokens for this user
+        # Return identical response regardless -- do not reveal email existence
+        return GENERIC_RESET_MSG
+
+    # Delete any existing unused tokens for this user
     db.query(PasswordResetToken).filter(
         PasswordResetToken.user_id == user.id,
         PasswordResetToken.used == False
@@ -291,7 +309,7 @@ def forgot_password(data: ForgotPasswordInput, db: Session = Depends(get_db)):
         print(f"[forgot-password] send failed for {user.email}: {type(e).__name__}: {e}")
         raise HTTPException(status_code=500, detail="Failed to send reset email. Please try again later.")
 
-    return {"message": "A reset link has been sent to your email."}
+    return GENERIC_RESET_MSG
 
 @router.post("/validate-reset-token")
 def validate_reset_token(data: ValidateTokenInput, db: Session = Depends(get_db)):

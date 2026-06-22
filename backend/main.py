@@ -2,6 +2,7 @@ import os
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -10,6 +11,14 @@ from routes import predict, auth, payment
 limiter = Limiter(key_func=get_remote_address)
 
 app = FastAPI(title="PickMySeat API")
+
+
+class MaxBodySizeMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        content_length = request.headers.get("content-length")
+        if content_length and int(content_length) > 1_000_000:  # 1 MB
+            return Response("Payload too large", status_code=413)
+        return await call_next(request)
 
 ALLOWED_ORIGINS = [
     "http://localhost:5500",
@@ -23,6 +32,8 @@ ALLOWED_ORIGINS = [
     "https://pickmyseat.in",
     "https://www.pickmyseat.in",
 ]
+
+app.add_middleware(MaxBodySizeMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
