@@ -3340,7 +3340,7 @@ async function checkRankListStatus() {
     if (banner && data.rank_list_released) {
       banner.classList.remove('hidden');
       banner.innerHTML = `
-        <div style="background:linear-gradient(135deg,#6C63FF,#8B5CF6);color:white;padding:14px 24px;text-align:center;font-weight:600;font-size:14px;position:relative;z-index:100">
+        <div style="background:linear-gradient(135deg,#6C63FF,#8B5CF6);color:white;padding:14px 24px;text-align:center;font-weight:600;font-size:14px">
           🏆 2026 TNEA Rank List is out! Enter your Application ID and Rank for accurate predictions.
           <button onclick="navigateTo('profile')" style="margin-left:12px;background:white;color:#6C63FF;border:none;padding:6px 14px;border-radius:6px;font-weight:700;cursor:pointer">
             Update Now →
