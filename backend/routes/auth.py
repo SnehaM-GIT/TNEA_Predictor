@@ -232,6 +232,7 @@ def get_me(
             "preferred_colleges": user.preferred_colleges,
             "preferred_courses": user.preferred_courses,
             "application_id": user.application_id,
+            "verified_aggregate": user.verified_aggregate,
         }
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired")

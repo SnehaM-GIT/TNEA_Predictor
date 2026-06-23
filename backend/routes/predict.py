@@ -97,9 +97,20 @@ def predict_colleges(
     authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db)
 ):
-    if not authorization:
+    rank_list_released = os.getenv("RANK_LIST_RELEASED", "false").lower() == "true"
+    user = _get_optional_user(authorization, db)
+
+    if rank_list_released:
+        if not user or not user.rank:
+            raise HTTPException(
+                status_code=403,
+                detail="verification_required"
+            )
+
+    if not rank_list_released and not authorization:
         _check_guest_ip_limit(get_remote_address(request))
 
+    forced_rank = user.rank if (user and user.rank) else None
     marks = data.maths + data.physics / 2 + data.chemistry / 2
     try:
         result = get_college_predictions_filtered(
@@ -107,11 +118,11 @@ def predict_colleges(
             community=data.community,
             top_n=data.top_n,
             preferred_colleges=data.preferred_colleges,
-            preferred_branches=data.preferred_branches
+            preferred_branches=data.preferred_branches,
+            forced_rank=forced_rank,
         )
 
         try:
-            user = _get_optional_user(authorization, db)
             if user and result.get("recommendations"):
                 for rec in result["recommendations"]:
                     if rec.get("not_offered") or rec.get("match_confidence") is None:
@@ -266,8 +277,10 @@ def verify_rank(
     if not rank_file.exists():
         raise HTTPException(status_code=503, detail="Rank list file not uploaded yet")
 
+    submitted_app_id = data.application_id.strip().upper()
+
     rank_df = pd.read_csv(rank_file).fillna("")
-    match = rank_df[rank_df["application_id"].astype(str) == str(data.application_id)]
+    match = rank_df[rank_df["application_id"].astype(str).str.strip().str.upper() == submitted_app_id]
 
     if match.empty:
         raise HTTPException(status_code=404, detail="Application ID not found in rank list")
@@ -282,14 +295,27 @@ def verify_rank(
         )
 
     user = _get_optional_user(authorization, db)
+    verified_agg = None
     if user:
         user.rank = official_rank
-        user.application_id = data.application_id
+        user.application_id = submitted_app_id
+        no_marks = (
+            (user.maths is None or user.maths == 0) and
+            (user.physics is None or user.physics == 0) and
+            (user.chemistry is None or user.chemistry == 0)
+        )
+        if no_marks:
+            try:
+                verified_agg = float(row["aggregate"])
+                user.verified_aggregate = verified_agg
+            except (KeyError, ValueError, TypeError):
+                pass
         db.commit()
 
     return {
         "verified": True,
         "rank": official_rank,
         "name": str(row.get("name", "")),
-        "community": str(row.get("community", ""))
+        "community": str(row.get("community", "")),
+        "verified_aggregate": verified_agg,
     }

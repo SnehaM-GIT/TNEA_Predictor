@@ -76,7 +76,7 @@ def _match_confidence(rank_conf, status, safety_margin=0, closing_rank=1):
     return max(48, min(95, prob))
 
 
-def predict_colleges(marks, community, top_n=5):
+def predict_colleges(marks, community, top_n=5, forced_rank=None):
     if community == "BCM":
         community = "BC"
     lookup, colleges, branches = _load()
@@ -87,12 +87,17 @@ def predict_colleges(marks, community, top_n=5):
         key = (int(row['college_code']), str(row['branch_code']))
         comm_rank_map.setdefault(key, {})[str(row['community'])] = int(row['predicted_closing_rank_2026'])
 
-    rk = predict_rank(marks, community)
-    if "error" in rk:
-        return rk
-    pred_rank = int(rk["predicted_rank"])
-    rmin, rmax = int(rk["range_min"]), int(rk["range_max"])
-    rank_conf = int(rk["confidence"])
+    if forced_rank is not None:
+        pred_rank = forced_rank
+        rmin = rmax = forced_rank
+        rank_conf = 100
+    else:
+        rk = predict_rank(marks, community)
+        if "error" in rk:
+            return rk
+        pred_rank = int(rk["predicted_rank"])
+        rmin, rmax = int(rk["range_min"]), int(rk["range_max"])
+        rank_conf = int(rk["confidence"])
 
     df = lookup[lookup["community"] == community].copy()
     # attainable: predicted closing rank is at/after the student's rank
@@ -138,6 +143,7 @@ def predict_colleges(marks, community, top_n=5):
         "rank_confidence": rank_conf,
         "community": community,
         "recommendations": recs,
+        "verified_rank": forced_rank is not None,
     }
 
 

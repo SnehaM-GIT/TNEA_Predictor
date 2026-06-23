@@ -70,7 +70,8 @@ def get_college_predictions_filtered(
     community: str,
     top_n: int = 5,
     preferred_colleges: Optional[List[int]] = None,
-    preferred_branches: Optional[List[str]] = None
+    preferred_branches: Optional[List[str]] = None,
+    forced_rank: Optional[int] = None,
 ):
     # ------------------------------------------------------------------ #
     # PATH 1 — Both preferred_colleges AND preferred_branches given        #
@@ -83,13 +84,17 @@ def get_college_predictions_filtered(
         if community == "BCM":
             community = "BC"
 
-        rk = predict_rank(marks, community)
-        if "error" in rk:
-            raise ValueError(rk["error"])
-
-        pred_rank = int(rk["predicted_rank"])
-        rank_conf = int(rk["confidence"])
-        rmin, rmax = int(rk["range_min"]), int(rk["range_max"])
+        if forced_rank is not None:
+            pred_rank = forced_rank
+            rank_conf = 100
+            rmin = rmax = forced_rank
+        else:
+            rk = predict_rank(marks, community)
+            if "error" in rk:
+                raise ValueError(rk["error"])
+            pred_rank = int(rk["predicted_rank"])
+            rank_conf = int(rk["confidence"])
+            rmin, rmax = int(rk["range_min"]), int(rk["range_max"])
 
         _, colleges, branches = _load()
         offered, combo_closing = _load_combo_caches()
@@ -168,6 +173,7 @@ def get_college_predictions_filtered(
             "community":          community,
             "recommendations":    recs,
             "message":            None,
+            "verified_rank":      forced_rank is not None,
         })
 
     # ------------------------------------------------------------------ #
@@ -181,12 +187,17 @@ def get_college_predictions_filtered(
         if community == "BCM":
             community = "BC"
 
-        rk = predict_rank(marks, community)
-        if "error" in rk:
-            raise ValueError(rk["error"])
-
-        pred_rank = int(rk["predicted_rank"])
-        rank_conf = int(rk["confidence"])
+        if forced_rank is not None:
+            pred_rank = forced_rank
+            rank_conf = 100
+            rmin2, rmax2 = forced_rank, forced_rank
+        else:
+            rk = predict_rank(marks, community)
+            if "error" in rk:
+                raise ValueError(rk["error"])
+            pred_rank = int(rk["predicted_rank"])
+            rank_conf = int(rk["confidence"])
+            rmin2, rmax2 = int(rk["range_min"]), int(rk["range_max"])
 
         lookup, colleges, branches = _load()
 
@@ -233,18 +244,18 @@ def get_college_predictions_filtered(
 
         return _json_safe({
             "student_rank":       pred_rank,
-            "student_rank_range": [int(rk["range_min"]), int(rk["range_max"])],
+            "student_rank_range": [rmin2, rmax2],
             "rank_confidence":    rank_conf,
             "community":          community,
             "recommendations":    recs,
-            "message":            "No matches found. Try broadening your filters." if not recs else None
+            "message":            "No matches found. Try broadening your filters." if not recs else None,
+            "verified_rank":      forced_rank is not None,
         })
 
     # ------------------------------------------------------------------ #
     # PATH 3 — No preferences — Grade 3 free predict                      #
-    # Untouched: returns top-N via original predict_colleges logic.        #
     # ------------------------------------------------------------------ #
-    result = predict_colleges(marks, community, top_n=top_n)
+    result = predict_colleges(marks, community, top_n=top_n, forced_rank=forced_rank)
     if "error" in result:
         raise ValueError(result["error"])
     return _json_safe(result)

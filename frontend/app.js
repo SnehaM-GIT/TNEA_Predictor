@@ -1167,6 +1167,10 @@ async function runFreePrediction() {
       return;
     }
     const data = await res.json();
+    if (res.status === 403 && data.detail === 'verification_required') {
+      showVerificationRequiredModal(true);
+      return;
+    }
     console.log('[freePredict] status:', res.status, 'body:', data);
     if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
     recs       = data.recommendations || [];
@@ -1503,7 +1507,15 @@ function updateProfileAggregate() {
   const c   = document.getElementById('profileChemistry')?.value|| 0;
   const agg = calculateAggregate(m, p, c);
   const el  = document.getElementById('profileAggValue');
-  if (el) el.innerHTML = agg > 0 ? `${agg} / 200` : '<span class="agg-dash">—</span> / 200';
+  if (el) {
+    if (agg > 0) {
+      el.innerHTML = `${agg} / 200`;
+    } else if (App.profile.verifiedAggregate) {
+      el.innerHTML = `${App.profile.verifiedAggregate} / 200 <span style="font-size:11px;color:var(--text-muted)">Official — from rank list</span>`;
+    } else {
+      el.innerHTML = '<span class="agg-dash">—</span> / 200';
+    }
+  }
 }
 
 function markProfileDirty() {}
@@ -1953,9 +1965,11 @@ function renderDashInfoCard() {
 function renderDashAggCard() {
   const card = document.getElementById('dashAggCard');
   if (!card) return;
-  const agg = calculateAggregate(
+  const calcAgg = calculateAggregate(
     App.profile.maths||0, App.profile.physics||0, App.profile.chemistry||0
   );
+  const agg = calcAgg > 0 ? calcAgg : (App.profile.verifiedAggregate || 0);
+  const aggLabel = calcAgg > 0 ? '' : (App.profile.verifiedAggregate ? ' <span style="font-size:12px;font-weight:500;color:var(--text-muted)">Official</span>' : '');
   const lockNote = App.profile.marksLocked
     ? `<div class="agg-lock-row">🔒 Marks locked ·
         ${App.userGrade === 1
@@ -1966,7 +1980,7 @@ function renderDashAggCard() {
 
   card.innerHTML = `
     <div class="agg-banner-label">TNEA Aggregate</div>
-    <div class="agg-banner-value">${agg > 0 ? agg : '—'} <span style="font-size:18px;font-weight:500;color:var(--text-muted)">/ 200</span></div>
+    <div class="agg-banner-value">${agg > 0 ? agg + aggLabel : '—'} <span style="font-size:18px;font-weight:500;color:var(--text-muted)">/ 200</span></div>
     <div class="agg-banner-sub">Maths + Physics/2 + Chemistry/2</div>
     ${lockNote}`;
   // Make card clickable only if marks have not been entered yet
@@ -2031,7 +2045,7 @@ async function renderComboProbCards() {
   // fetch once; per-combo evaluation happens below, OUTSIDE the try block —
   // an exception mid-loop used to jump to catch and stamp EVERY pair noData
   // on top of combos already pushed, so one failure bled into all cards
-  let recs = [], rankLow = 0, rankHigh = 0;
+  let recs = [], rankLow = 0, rankHigh = 0, isVerifiedRankPrediction = false;
 
   showLoader();
   try {
@@ -2049,18 +2063,23 @@ async function renderComboProbCards() {
         preferred_branches: branchCodes
       })
     });
+    const data = await res.json();
     if (res.status === 429) {
       showError('Too many predictions today. Come back tomorrow.', 429);
       return;
     }
-    const data = await res.json();
+    if (res.status === 403 && data.detail === 'verification_required') {
+      showVerificationRequiredModal(false);
+      return;
+    }
     console.log('API response:', JSON.stringify(data, null, 2));
     if (!res.ok) {
       console.error('predict/colleges failed:', res.status, data);
     } else {
-      recs     = data.recommendations || [];
-      rankLow  = data.student_rank_range?.[0] || 0;
-      rankHigh = data.student_rank_range?.[1] || 0;
+      recs                    = data.recommendations || [];
+      rankLow                 = data.student_rank_range?.[0] || 0;
+      rankHigh                = data.student_rank_range?.[1] || 0;
+      isVerifiedRankPrediction = data.verified_rank || false;
       incrementPredictionCount();
     }
   } catch(e) {
@@ -2094,7 +2113,8 @@ async function renderComboProbCards() {
             closingRank: match.closing_rank,
             communityRanks: match.community_closing_ranks || {},
             estimated: !!match.no_community_data,
-            rankLow, rankHigh
+            rankLow, rankHigh,
+            verifiedRank: isVerifiedRankPrediction,
           };
         }
       } catch(e) {
@@ -2138,7 +2158,10 @@ async function renderComboProbCards() {
               ${combo.prob}%
             </div>
           <div class="combo-prob-label">${App.profile.category || 'OC'} Closing Rank: ${combo.closingRank ? combo.closingRank.toLocaleString() : '—'}</div>
-           <div class="combo-prob-label" style="font-size:11px;color:var(--text-muted)">Rank Band: <span style="font-size:15px;font-weight:600;color:var(--text-secondary)">${combo.rankLow ? combo.rankLow.toLocaleString() + '–' + combo.rankHigh.toLocaleString() : '—'}</span></div>
+           ${combo.verifiedRank
+             ? `<div class="combo-prob-label" style="font-size:11px;color:var(--text-muted)">Your Rank: <span style="font-size:15px;font-weight:600;color:var(--text-secondary)">${combo.rankLow ? combo.rankLow.toLocaleString() : '—'}</span></div>`
+             : `<div class="combo-prob-label" style="font-size:11px;color:var(--text-muted)">Rank Band: <span style="font-size:15px;font-weight:600;color:var(--text-secondary)">${combo.rankLow ? combo.rankLow.toLocaleString() + '–' + combo.rankHigh.toLocaleString() : '—'}</span></div>`
+           }
            ${combo.communityRanks && Object.keys(combo.communityRanks).length > 0 ? `
            <div style="margin-top:6px;font-size:11px;color:var(--text-muted)">
              ${(()=>{const cat=App.profile.category||'OC';const cols=cat==='OC'?['OC']:['OC',cat];return cols.filter(c=>combo.communityRanks[c]).map(c=>`<span style="margin-right:8px"><strong>${c==='OC'?'General':c}:</strong> ${combo.communityRanks[c].toLocaleString()}</span>`).join('');})()}
@@ -2220,6 +2243,10 @@ async function runPremiumQuickPredict() {
       })
     });
     const data = await res.json();
+    if (res.status === 403 && data.detail === 'verification_required') {
+      showVerificationRequiredModal(false);
+      return;
+    }
     if (!res.ok) { showError(data.detail || 'Prediction failed', res.status); return; }
 
     const rec    = data.recommendations?.[0];
@@ -3033,6 +3060,35 @@ function downloadSimulationExcel() {
 }
 
 // ============================================================
+// VERIFICATION REQUIRED MODAL
+// ============================================================
+function showVerificationRequiredModal(isGuest = false) {
+  document.getElementById('verificationRequiredModal')?.remove();
+  const modal = document.createElement('div');
+  modal.id = 'verificationRequiredModal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px';
+  modal.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:32px;max-width:420px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+      <div style="font-size:40px;margin-bottom:12px">🔐</div>
+      <h3 style="margin:0 0 10px;font-size:18px;color:var(--text-primary)">Verification Required</h3>
+      <p style="color:var(--text-muted);font-size:14px;margin:0 0 24px;line-height:1.5">
+        ${isGuest
+          ? 'The 2026 TNEA rank list is out. Please sign up and verify your Application ID + rank to view predictions.'
+          : 'Please verify your Application ID and rank before viewing predictions.'}
+      </p>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        ${isGuest
+          ? `<button class="btn-primary" onclick="document.getElementById('verificationRequiredModal').remove();navigateTo('auth')">Sign Up / Login →</button>`
+          : `<button class="btn-primary" onclick="document.getElementById('verificationRequiredModal').remove();navigateTo('profile')">Verify My Rank →</button>`
+        }
+        <button style="background:transparent;border:1px solid var(--border2);color:var(--text-muted);padding:10px 16px;border-radius:var(--radius);cursor:pointer;font-size:14px" onclick="document.getElementById('verificationRequiredModal').remove()">Dismiss</button>
+      </div>
+    </div>`;
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
+}
+
+// ============================================================
 // UPGRADE MODAL
 // ============================================================
 function showUpgradeModal(source) {
@@ -3246,7 +3302,8 @@ async function restoreSessionFromToken() {
     App.userGrade            = data.grade === '1' ? 1 : 2;
 App.profile.preferredColleges = data.preferred_colleges ? JSON.parse(data.preferred_colleges) : [];
     App.profile.preferredCourses  = data.preferred_courses  ? JSON.parse(data.preferred_courses)  : [];
-    App.profile.applicationId = data.application_id || '';
+    App.profile.applicationId     = data.application_id || '';
+    App.profile.verifiedAggregate = data.verified_aggregate || null;
 
     // Auto-clear stale course codes from pre-fix data
     if (App.profile.preferredCourses.length > 0 && BRANCHES.length > 0) {
@@ -3323,8 +3380,11 @@ async function verifyAndSaveRank() {
       return;
     }
 
-    App.profile.applicationId = appId;
-    App.profile.rank          = data.rank;
+    App.profile.applicationId     = appId;
+    App.profile.rank              = data.rank;
+    if (data.verified_aggregate != null) {
+      App.profile.verifiedAggregate = data.verified_aggregate;
+    }
 
     if (statusEl) {
       statusEl.classList.remove('hidden');

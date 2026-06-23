@@ -1,0 +1,12 @@
+Method,Name,Error,Occurrences,First Seen,Last Seen
+POST,/predict/colleges [guest],HTTPError('429 Client Error: Too Many Requests for url: /predict/colleges [guest]'),21823,2026-06-20T15:40:36Z,2026-06-20T16:34:15Z
+POST,/predict/colleges [auth],HTTPError('429 Client Error: Too Many Requests for url: /predict/colleges [auth]'),46551,2026-06-20T15:40:36Z,2026-06-20T16:34:15Z
+POST,/predict/rank [auth],HTTPError('429 Client Error: Too Many Requests for url: /predict/rank [auth]'),7721,2026-06-20T15:40:36Z,2026-06-20T16:34:15Z
+POST,/auth/update-profile,HTTPError('401 Client Error: Unauthorized for url: /auth/update-profile'),33195,2026-06-20T15:40:36Z,2026-06-20T16:34:15Z
+POST,/predict/colleges [premium],HTTPError('429 Client Error: Too Many Requests for url: /predict/colleges [premium]'),72286,2026-06-20T15:40:36Z,2026-06-20T16:34:15Z
+POST,/predict/colleges [guest],HTTPError('502 Server Error: Bad Gateway for url: /predict/colleges [guest]'),38,2026-06-20T15:39:16Z,2026-06-20T15:39:40Z
+POST,/auth/login [setup],HTTPError('502 Server Error: Bad Gateway for url: /auth/login [setup]'),435,2026-06-20T15:39:16Z,2026-06-20T15:39:40Z
+POST,/payment/create-order,HTTPError('401 Client Error: Unauthorized for url: /payment/create-order'),36152,2026-06-20T15:40:36Z,2026-06-20T16:34:15Z
+POST,/predict/rank [guest],HTTPError('502 Server Error: Bad Gateway for url: /predict/rank [guest]'),16,2026-06-20T15:39:16Z,2026-06-20T15:39:38Z
+GET,/auth/me,HTTPError('401 Client Error: Unauthorized for url: /auth/me'),77570,2026-06-20T15:40:36Z,2026-06-20T16:34:15Z
+POST,/predict/rank [guest],HTTPError('429 Client Error: Too Many Requests for url: /predict/rank [guest]'),8835,2026-06-20T15:40:36Z,2026-06-20T16:34:15Z
