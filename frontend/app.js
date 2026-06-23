@@ -1331,6 +1331,7 @@ async function submitForgotPassword() {
       return;
     }
     localStorage.setItem('pms_reset_email', email);
+    console.log('Email stored in localStorage:', email);
     document.getElementById('forgotSuccessMsg')?.classList.remove('hidden');
   } catch(e) {
     showError('No connection. Check your internet and retry.');
