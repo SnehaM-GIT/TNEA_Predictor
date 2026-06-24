@@ -5,11 +5,14 @@ from database import get_db
 from models import User, Payment
 from auth_middleware import require_grade
 from typing import Optional
+from datetime import datetime, timedelta
 import razorpay
 import hmac
 import hashlib
 import os
 import jwt
+
+ORDER_TTL_MINUTES = 15
 
 router = APIRouter()
 
@@ -49,6 +52,25 @@ def create_order(
         raise HTTPException(status_code=401, detail="Login required")
     if user.has_paid:
         raise HTTPException(status_code=400, detail="Already purchased")
+
+    # Return existing pending order if within TTL — avoids duplicate Razorpay API calls and DB rows
+    ttl_cutoff = datetime.utcnow() - timedelta(minutes=ORDER_TTL_MINUTES)
+    existing = db.query(Payment).filter(
+        Payment.user_id == user.id,
+        Payment.status == "created",
+        Payment.amount == 14900,
+        Payment.created_at >= ttl_cutoff
+    ).order_by(Payment.created_at.desc()).first()
+
+    if existing:
+        return {
+            "order_id":   existing.razorpay_order_id,
+            "amount":     14900,
+            "currency":   "INR",
+            "key_id":     RAZORPAY_KEY_ID,
+            "user_name":  user.name,
+            "user_email": user.email
+        }
 
     try:
         client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))

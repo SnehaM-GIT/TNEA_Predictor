@@ -7,6 +7,16 @@
 
 'use strict';
 const API_BASE = 'https://tneapredictor-production.up.railway.app';
+
+function escapeHTML(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 // ============================================================
 // STATE
 // ============================================================
@@ -1936,22 +1946,23 @@ function renderDashInfoCard() {
     ? App.profile.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)
     : (App.profile.email||'S')[0].toUpperCase();
 
+  // escapeHTML used for all user-controlled strings to prevent XSS via innerHTML
   card.innerHTML = `
     <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
-      <div class="dash-avatar">${initials}</div>
+      <div class="dash-avatar">${escapeHTML(initials)}</div>
       <div class="dash-user-info">
-        <div class="dash-user-name">${App.profile.name || 'Student'}</div>
+        <div class="dash-user-name">${escapeHTML(App.profile.name) || 'Student'}</div>
         <div class="dash-user-meta">
-          ${App.profile.email || ''}
-          ${App.profile.mobile   ? ' · ' + App.profile.mobile   : ''}
-          ${App.profile.category ? ' · ' + App.profile.category : ''}
+          ${escapeHTML(App.profile.email)}
+          ${App.profile.mobile   ? ' · ' + escapeHTML(App.profile.mobile)   : ''}
+          ${App.profile.category ? ' · ' + escapeHTML(App.profile.category) : ''}
         </div>
       </div>
     </div>
     <div class="dash-marks-chips">
-      ${App.profile.maths     != null ? `<span class="mark-chip">Maths: ${App.profile.maths}</span>`     : ''}
-      ${App.profile.physics   != null ? `<span class="mark-chip">Physics: ${App.profile.physics}</span>` : ''}
-      ${App.profile.chemistry != null ? `<span class="mark-chip">Chem: ${App.profile.chemistry}</span>`  : ''}
+      ${App.profile.maths     != null ? `<span class="mark-chip">Maths: ${escapeHTML(App.profile.maths)}</span>`     : ''}
+      ${App.profile.physics   != null ? `<span class="mark-chip">Physics: ${escapeHTML(App.profile.physics)}</span>` : ''}
+      ${App.profile.chemistry != null ? `<span class="mark-chip">Chem: ${escapeHTML(App.profile.chemistry)}</span>`  : ''}
       ${App.profile.maths == null
         ? `<span class="mark-chip" style="color:var(--warning)">⚠️ Add marks in Profile</span>` : ''}
       ${App.profile.marksLocked
@@ -2159,14 +2170,14 @@ async function renderComboProbCards() {
             <div class="combo-prob-pct" style="color:${pc.cls==='high'?'var(--success)':pc.cls==='mid'?'var(--warning)':'var(--danger)'}">
               ${combo.prob}%
             </div>
-          <div class="combo-prob-label">${App.profile.category || 'OC'} Closing Rank: ${combo.closingRank ? combo.closingRank.toLocaleString() : '—'}</div>
+          <div class="combo-prob-label">${escapeHTML(App.profile.category || 'OC')} Closing Rank: ${combo.closingRank ? combo.closingRank.toLocaleString() : '—'}</div>
            ${combo.verifiedRank
              ? `<div class="combo-prob-label" style="font-size:11px;color:var(--text-muted)">Your Rank: <span style="font-size:15px;font-weight:600;color:var(--text-secondary)">${combo.rankLow ? combo.rankLow.toLocaleString() : '—'}</span></div>`
              : `<div class="combo-prob-label" style="font-size:11px;color:var(--text-muted)">Rank Band: <span style="font-size:15px;font-weight:600;color:var(--text-secondary)">${combo.rankLow ? combo.rankLow.toLocaleString() + '–' + combo.rankHigh.toLocaleString() : '—'}</span></div>`
            }
            ${combo.communityRanks && Object.keys(combo.communityRanks).length > 0 ? `
            <div style="margin-top:6px;font-size:11px;color:var(--text-muted)">
-             ${(()=>{const cat=App.profile.category||'OC';const cols=cat==='OC'?['OC']:['OC',cat];return cols.filter(c=>combo.communityRanks[c]).map(c=>`<span style="margin-right:8px"><strong>${c==='OC'?'General':c}:</strong> ${combo.communityRanks[c].toLocaleString()}</span>`).join('');})()}
+             ${(()=>{const cat=App.profile.category||'OC';const cols=cat==='OC'?['OC']:['OC',cat];return cols.filter(c=>combo.communityRanks[c]).map(c=>`<span style="margin-right:8px"><strong>${c==='OC'?'General':escapeHTML(c)}:</strong> ${combo.communityRanks[c].toLocaleString()}</span>`).join('');})()}
            </div>` : ''}
            ${combo.estimated ? `<div class="combo-prob-label" style="font-size:11px;color:var(--text-muted)">⚠️ No historic data for your community — estimate based on overall cutoff</div>` : ''}
           </div>
@@ -3124,9 +3135,9 @@ function initiatePayment() {
     content.innerHTML = `
       <table style="width:100%;border-collapse:collapse;font-size:14px">
         <tr><td style="padding:10px 0;color:var(--text-muted);border-bottom:1px solid var(--border)">Name</td>
-            <td style="padding:10px 0;font-weight:600;text-align:right;border-bottom:1px solid var(--border)">${App.profile.name||'—'}</td></tr>
+            <td style="padding:10px 0;font-weight:600;text-align:right;border-bottom:1px solid var(--border)">${escapeHTML(App.profile.name)||'—'}</td></tr>
         <tr><td style="padding:10px 0;color:var(--text-muted);border-bottom:1px solid var(--border)">Email</td>
-            <td style="padding:10px 0;font-weight:600;text-align:right;border-bottom:1px solid var(--border)">${App.profile.email||'—'}</td></tr>
+            <td style="padding:10px 0;font-weight:600;text-align:right;border-bottom:1px solid var(--border)">${escapeHTML(App.profile.email)||'—'}</td></tr>
         <tr><td style="padding:10px 0;color:var(--text-muted);border-bottom:1px solid var(--border)">Mathematics</td>
             <td style="padding:10px 0;font-weight:600;text-align:right;border-bottom:1px solid var(--border)">${App.profile.maths??'—'} / 100</td></tr>
         <tr><td style="padding:10px 0;color:var(--text-muted);border-bottom:1px solid var(--border)">Physics</td>
