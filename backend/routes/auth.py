@@ -172,12 +172,13 @@ def send_reset_email(to_email: str, token: str):
 
 @router.post("/signup")
 def signup(data: SignupInput, db: Session = Depends(get_db)):
-    existing = db.query(User).filter(User.email == data.email).first()
+    email = data.email.strip().lower()
+    existing = db.query(User).filter(User.email == email).first()
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
     hashed = bcrypt.hashpw(data.password.encode(), bcrypt.gensalt()).decode()
     user = User(
-        email=data.email,
+        email=email,
         password_hash=hashed,
         name=data.name,
         mobile=data.mobile,
@@ -193,7 +194,7 @@ def signup(data: SignupInput, db: Session = Depends(get_db)):
 
 @router.post("/login")
 def login(data: LoginInput, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == data.email).first()
+    user = db.query(User).filter(User.email == data.email.strip().lower()).first()
     if not user:
         raise HTTPException(status_code=400, detail="Invalid email or password")
     if not bcrypt.checkpw(data.password.encode(), user.password_hash.encode()):
