@@ -880,7 +880,22 @@ function initLanding() {
   loadDynamicTicker();     // then replace with real user names from API
   updateLiveCounts();
   observeScrollAnimations();
+  updateLandingHero();
   updateLandingForPremium();
+}
+
+// Hero CTA buttons depend on login state. Guests see "Try Free Prediction"
+// + "Get Full Access". Logged-in users get a single "Try a Prediction Now"
+// button that runs the full profile-based prediction on the dashboard (not
+// the limited guest free-predict flow), so the hero never sits empty.
+function updateLandingHero() {
+  const freeBtn    = document.getElementById('heroTryFreeBtn');
+  const accessBtn  = document.getElementById('heroGetAccessBtn');
+  const predictBtn = document.getElementById('heroTryPredictionBtn');
+  const loggedIn   = !!App.currentUser;
+  if (freeBtn)    freeBtn.style.display    = loggedIn ? 'none' : '';
+  if (accessBtn)  accessBtn.style.display  = loggedIn ? 'none' : '';
+  if (predictBtn) predictBtn.classList.toggle('hidden', !loggedIn);
 }
 
 function renderTicker(extraEvents = []) {
@@ -1422,6 +1437,16 @@ function simulateLogin(userData) {
   App.profile.hasPaid = userData.hasPaid || false;
   App.userGrade       = userData.hasPaid ? 1 : 2;
   showToast(`Welcome${userData.name ? ', ' + userData.name.split(' ')[0] : ''}! 🎉`, 'success');
+  // Resume an interrupted "Get Full Access" purchase: the guest started
+  // checkout, hit the login gate, and just authenticated — send them
+  // straight back into payment instead of the profile page.
+  if (sessionStorage.getItem('pendingUpgrade') && !userData.hasPaid) {
+    sessionStorage.removeItem('pendingUpgrade');
+    navigateTo('profile');
+    initiatePayment();
+    return;
+  }
+  sessionStorage.removeItem('pendingUpgrade');
   navigateTo('profile');
 }
 
@@ -3115,6 +3140,7 @@ function showUpgradeModal(source) {
     'cta':          'Students with Premium made 3x better college choices.',
     'marks-update': '📝 Marks update after board results requires Premium access.',
     'colleges':     '🏛️ Add unlimited colleges with Premium. Search all 550+ colleges.',
+    'hero':         '🚀 Unlock rank prediction, AI Choice List and full counselling simulation for ₹149.',
   };
   const el = document.getElementById('upgradeReason');
   const sl = document.getElementById('slotsLeft');
@@ -3127,7 +3153,23 @@ function closeUpgradeModal() {
   document.getElementById('upgradeModal')?.classList.add('hidden');
 }
 
+// Hero "Get Full Access" — show the same pricing/features modal that
+// "Get Premium" shows, instead of dropping guests on a bare login page.
+// Login is only required later, at the actual Pay step (see initiatePayment).
+function getFullAccess() {
+  showUpgradeModal('hero');
+}
+
 function initiatePayment() {
+  // Gate the actual payment action behind login. Guests resume payment
+  // automatically after login via the pendingUpgrade flag (see simulateLogin).
+  if (!App.currentUser) {
+    sessionStorage.setItem('pendingUpgrade', '1');
+    closeUpgradeModal();
+    showToast('Log in to complete your purchase', 'info');
+    navigateTo('auth');
+    return;
+  }
   closeUpgradeModal();
   const agg     = calculateAggregate(App.profile.maths||0, App.profile.physics||0, App.profile.chemistry||0);
   const content = document.getElementById('payConfirmContent');
