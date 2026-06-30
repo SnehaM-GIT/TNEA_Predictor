@@ -304,10 +304,15 @@ def forgot_password(data: ForgotPasswordInput, db: Session = Depends(get_db)):
     ))
     db.commit()
 
+    # Release DB connection before the slow external API call (up to 8s timeout).
+    # get_db()'s finally block still runs safely after; Session.close() is idempotent.
+    recipient = user.email
+    db.close()
+
     try:
-        send_reset_email(user.email, token)
+        send_reset_email(recipient, token)
     except Exception as e:
-        print(f"[forgot-password] send failed for {user.email}: {type(e).__name__}: {e}")
+        print(f"[forgot-password] send failed for {recipient}: {type(e).__name__}: {e}")
         raise HTTPException(status_code=500, detail="Failed to send reset email. Please try again later.")
 
     return GENERIC_RESET_MSG
