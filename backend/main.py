@@ -87,6 +87,9 @@ async def preflight_handler(rest_of_path: str, request: Request):
 
 @app.on_event("startup")
 async def startup_checks():
+    import anyio
+    anyio.to_thread.current_default_thread_limiter().total_tokens = 20
+
     missing = []
     for var in ["RAZORPAY_KEY_ID", "RAZORPAY_KEY_SECRET", "SECRET_KEY", "DATABASE_URL",
                 "RESEND_API_KEY"]:
