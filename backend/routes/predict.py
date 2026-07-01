@@ -15,7 +15,14 @@ import jwt, os
 from collections import defaultdict
 
 router = APIRouter()
-limiter = Limiter(key_func=get_remote_address)
+
+def _rate_limit_key(request: Request) -> str:
+    auth = request.headers.get("Authorization", "")
+    if auth.startswith("Bearer "):
+        return f"user:{auth.split(' ')[1][:20]}"
+    return get_remote_address(request)
+
+limiter = Limiter(key_func=_rate_limit_key)
 
 VALID_COMMUNITIES = {"OC", "BC", "BCM", "MBC", "SC", "ST", "SCA"}
 DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "cleaned"
