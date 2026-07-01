@@ -172,12 +172,13 @@ def send_reset_email(to_email: str, token: str):
 
 @router.post("/signup")
 def signup(data: SignupInput, db: Session = Depends(get_db)):
-    existing = db.query(User).filter(User.email == data.email).first()
+    email = data.email.strip().lower()
+    existing = db.query(User).filter(User.email == email).first()
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
     hashed = bcrypt.hashpw(data.password.encode(), bcrypt.gensalt()).decode()
     user = User(
-        email=data.email,
+        email=email,
         password_hash=hashed,
         name=data.name,
         mobile=data.mobile,
@@ -193,7 +194,7 @@ def signup(data: SignupInput, db: Session = Depends(get_db)):
 
 @router.post("/login")
 def login(data: LoginInput, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == data.email).first()
+    user = db.query(User).filter(User.email == data.email.strip().lower()).first()
     if not user:
         raise HTTPException(status_code=400, detail="Invalid email or password")
     if not bcrypt.checkpw(data.password.encode(), user.password_hash.encode()):
@@ -268,7 +269,6 @@ def update_profile(
         if data.chemistry is not None: user.chemistry = data.chemistry
         if data.maths and data.physics and data.chemistry:
             user.aggregate = data.maths + data.physics / 2 + data.chemistry / 2
-            user.marks_locked = True
         if data.preferred_colleges is not None: user.preferred_colleges = data.preferred_colleges
         if data.preferred_courses is not None: user.preferred_courses = data.preferred_courses
         if data.application_id is not None: user.application_id = data.application_id
@@ -304,10 +304,15 @@ def forgot_password(data: ForgotPasswordInput, db: Session = Depends(get_db)):
     ))
     db.commit()
 
+    # Release DB connection before the slow external API call (up to 8s timeout).
+    # get_db()'s finally block still runs safely after; Session.close() is idempotent.
+    recipient = user.email
+    db.close()
+
     try:
-        send_reset_email(user.email, token)
+        send_reset_email(recipient, token)
     except Exception as e:
-        print(f"[forgot-password] send failed for {user.email}: {type(e).__name__}: {e}")
+        print(f"[forgot-password] send failed for {recipient}: {type(e).__name__}: {e}")
         raise HTTPException(status_code=500, detail="Failed to send reset email. Please try again later.")
 
     return GENERIC_RESET_MSG
