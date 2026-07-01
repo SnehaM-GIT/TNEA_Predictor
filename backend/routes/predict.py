@@ -6,7 +6,7 @@ from database import get_db
 from ml_service import get_rank_prediction, get_college_predictions_filtered
 from auth_middleware import get_current_user, require_grade
 from models import User, Prediction, RankInput
-from slowapi import Limiter
+from rate_limiter import limiter
 from slowapi.util import get_remote_address
 from datetime import datetime, date as _date
 import pandas as pd
@@ -15,14 +15,6 @@ import jwt, os
 from collections import defaultdict
 
 router = APIRouter()
-
-def _rate_limit_key(request: Request) -> str:
-    auth = request.headers.get("Authorization", "")
-    if auth.startswith("Bearer "):
-        return f"user:{auth.split(' ')[1][:20]}"
-    return get_remote_address(request)
-
-limiter = Limiter(key_func=_rate_limit_key)
 
 VALID_COMMUNITIES = {"OC", "BC", "BCM", "MBC", "SC", "ST", "SCA"}
 DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "cleaned"
