@@ -1,0 +1,8 @@
+Method,Name,Error,Occurrences,First Seen,Last Seen
+POST,/predict/colleges [guest],HTTPError('429 Client Error: Too Many Requests for url: /predict/colleges [guest]'),6393,2026-06-30T12:57:27Z,2026-06-30T13:00:28Z
+POST,/predict/colleges [auth],HTTPError('429 Client Error: Too Many Requests for url: /predict/colleges [auth]'),10060,2026-06-30T12:57:29Z,2026-06-30T13:00:31Z
+POST,/predict/rank [auth],HTTPError('429 Client Error: Too Many Requests for url: /predict/rank [auth]'),1366,2026-06-30T12:57:29Z,2026-06-30T13:00:30Z
+POST,/predict/colleges [premium],HTTPError('429 Client Error: Too Many Requests for url: /predict/colleges [premium]'),19281,2026-06-30T12:57:28Z,2026-06-30T13:00:43Z
+POST,/predict/colleges [premium],"ConnectionResetError(10054, 'An existing connection was forcibly closed by the remote host', None, 10054, None)",1,2026-06-30T12:58:58Z,2026-06-30T12:58:58Z
+POST,/auth/update-profile,"ConnectionResetError(10054, 'An existing connection was forcibly closed by the remote host', None, 10054, None)",1,2026-06-30T12:58:56Z,2026-06-30T12:58:56Z
+POST,/predict/rank [guest],HTTPError('429 Client Error: Too Many Requests for url: /predict/rank [guest]'),1997,2026-06-30T12:57:27Z,2026-06-30T13:00:28Z

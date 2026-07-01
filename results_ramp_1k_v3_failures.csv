@@ -1,0 +1,6 @@
+Method,Name,Error,Occurrences,First Seen,Last Seen
+POST,/predict/colleges [guest],HTTPError('429 Client Error: Too Many Requests for url: /predict/colleges [guest]'),3650,2026-06-30T12:48:55Z,2026-06-30T12:53:41Z
+POST,/predict/colleges [auth],HTTPError('429 Client Error: Too Many Requests for url: /predict/colleges [auth]'),7541,2026-06-30T12:48:54Z,2026-06-30T12:53:41Z
+POST,/predict/rank [auth],HTTPError('429 Client Error: Too Many Requests for url: /predict/rank [auth]'),293,2026-06-30T12:50:24Z,2026-06-30T12:53:41Z
+POST,/predict/colleges [premium],HTTPError('429 Client Error: Too Many Requests for url: /predict/colleges [premium]'),11739,2026-06-30T12:48:54Z,2026-06-30T12:53:41Z
+POST,/predict/rank [guest],HTTPError('429 Client Error: Too Many Requests for url: /predict/rank [guest]'),336,2026-06-30T12:50:23Z,2026-06-30T12:53:41Z
