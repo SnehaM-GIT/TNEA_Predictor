@@ -2258,7 +2258,7 @@ async function runPremiumQuickPredict() {
   const agg = calculateAggregate(
     App.profile.maths||0, App.profile.physics||0, App.profile.chemistry||0
   );
-  if (agg === 0) { showToast('Please add your marks in Profile first', 'error'); return; }
+  if (agg === 0 && !App.profile.rank) { showToast('Please add your marks in Profile first', 'error'); return; }
 
   const branchObj  = BRANCHES.find(b => b.name === course || b.code === course);
   const branchCode = branchObj ? branchObj.code : course;
@@ -2348,59 +2348,54 @@ function renderLockedSections() {
 async function renderRankCard() {
   const card = document.getElementById('dashRankCard');
   if (!card) return;
-  const agg      = calculateAggregate(App.profile.maths||0, App.profile.physics||0, App.profile.chemistry||0);
-let rankBand = { low: 0, high: 0 };
-showLoader();
-try {
-  const res = await authenticatedFetch(`${API_BASE}/predict/rank`, {
-    method: 'POST',
-    body: JSON.stringify({
-      maths: App.profile.maths || 0,
-      physics: App.profile.physics || 0,
-      chemistry: App.profile.chemistry || 0,
-      community: App.profile.category || 'OC'
-    })
-  });
-  if (res.status === 429) {
-    showError('Too many predictions today. Come back tomorrow.', 429);
+
+  // Verified official rank (from rank-list verification) always takes
+  // priority over a marks-based band — it's not an estimate, skip the
+  // /predict/rank call entirely.
+  if (App.profile.rank) {
+    card.innerHTML = `
+      <div style="display:flex;gap:32px;flex-wrap:wrap;align-items:flex-start">
+        <div>
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:6px">🏆 Your Verified Rank</div>
+          <div style="font-size:36px;font-weight:900;color:var(--accent)">#${App.profile.rank.toLocaleString()}</div>
+        </div>
+      </div>`;
     return;
   }
-  const data = await res.json();
-  rankBand = { low: data.range_min, high: data.range_max };
-} catch(e) {
-  rankBand = predictRankBand(agg);
-} finally {
-  hideLoader();
-}
-  const phase    = App.profile.rankPhase || 'pre';
-  let verifyHtml = '';
-  if (phase === 'post' && App.profile.rank) {
-    const within = App.profile.rank >= rankBand.low && App.profile.rank <= rankBand.high;
-    verifyHtml = within
-      ? `<div style="margin-top:12px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2);color:var(--success);padding:12px 16px;border-radius:8px;font-size:13px;font-weight:500">
-           ✅ Rank #${App.profile.rank.toLocaleString()} verified — within predicted band
-         </div>`
-      : `<div style="margin-top:12px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:var(--danger);padding:12px 16px;border-radius:8px;font-size:13px;font-weight:500">
-           ⚠️ Rank #${App.profile.rank.toLocaleString()} is outside predicted band
-           (${rankBand.low.toLocaleString()}–${rankBand.high.toLocaleString()}). Model updating.
-         </div>`;
+
+  const agg      = calculateAggregate(App.profile.maths||0, App.profile.physics||0, App.profile.chemistry||0);
+  let rankBand = { low: 0, high: 0 };
+  showLoader();
+  try {
+    const res = await authenticatedFetch(`${API_BASE}/predict/rank`, {
+      method: 'POST',
+      body: JSON.stringify({
+        maths: App.profile.maths || 0,
+        physics: App.profile.physics || 0,
+        chemistry: App.profile.chemistry || 0,
+        community: App.profile.category || 'OC'
+      })
+    });
+    if (res.status === 429) {
+      showError('Too many predictions today. Come back tomorrow.', 429);
+      return;
+    }
+    const data = await res.json();
+    rankBand = { low: data.range_min, high: data.range_max };
+  } catch(e) {
+    rankBand = predictRankBand(agg);
+  } finally {
+    hideLoader();
   }
   card.innerHTML = `
     <div style="display:flex;gap:32px;flex-wrap:wrap;align-items:flex-start">
       <div>
-        <div style="font-size:13px;color:var(--text-muted);margin-bottom:6px">
-          ${phase==='post' ? '🏆 Your Actual Rank' : '📊 Predicted Rank Band'}
-        </div>
+        <div style="font-size:13px;color:var(--text-muted);margin-bottom:6px">📊 Predicted Rank Band</div>
         <div style="font-size:36px;font-weight:900;color:var(--accent)">
-          ${phase==='post' && App.profile.rank
-            ? `#${App.profile.rank.toLocaleString()}`
-            : agg > 0
-              ? `${rankBand.low.toLocaleString()} – ${rankBand.high.toLocaleString()}`
-              : 'Enter marks first'}
+          ${agg > 0
+            ? `${rankBand.low.toLocaleString()} – ${rankBand.high.toLocaleString()}`
+            : 'Enter marks first'}
         </div>
-      </div>
-      <div style="flex:1">
-        ${verifyHtml}
       </div>
     </div>`;
 }
@@ -3333,9 +3328,16 @@ async function restoreSessionFromToken() {
     const res = await authenticatedFetch(`${API_BASE}/auth/me`);
     if (res.status === 401) {
       localStorage.removeItem('token');
+      App.currentUser = null;
+      App.userGrade = 3;
+      updateNav();
       return;
     }
-    if (!res.ok) return;
+    if (!res.ok) {
+      // Server error or network issue - keep token, show toast, retry once
+      showToast("Couldn't restore your session — tap to refresh", 'warning');
+      return;
+    }
     const data = await res.json();
     App.currentUser = {
       email: data.email,
