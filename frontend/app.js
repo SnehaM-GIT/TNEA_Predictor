@@ -767,10 +767,14 @@ function updateNav() {
     document.getElementById('dropdownInfo').textContent = App.profile.email || '';
     navUpgrade.classList.toggle('hidden', App.userGrade === 1);
     if (tierBadge) {
-      tierBadge.textContent = App.userGrade === 1 ? '👑 Premium' : '🎓 Student';
-      if (App.userGrade === 1) tierBadge.classList.add('premium-active');
-      else tierBadge.classList.remove('premium-active');
-      tierBadge.classList.remove('hidden');
+      if (App.userGrade === 1) {
+        tierBadge.textContent = '👑 Premium';
+        tierBadge.classList.add('premium-active');
+        tierBadge.classList.remove('hidden');
+      } else {
+        // Non-premium student bubble removed from logo area
+        tierBadge.classList.add('hidden');
+      }
     }
   } else {
     navUser.classList.add('hidden');
@@ -3391,22 +3395,23 @@ async function checkRankListStatus() {
   try {
     const res  = await fetch(`${API_BASE}/config`);
     const data = await res.json();
-    App.rankListReleased = data.rank_list_released || false;
+    App.rankListReleased = false; // Temporarily disabled - reactivate for next rank list release
     const banner = document.getElementById('rankListBanner');
-    if (banner && data.rank_list_released) {
-      banner.classList.remove('hidden');
-      banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:999;width:100%';
-      banner.innerHTML = `
-        <div style="background:linear-gradient(135deg,#6C63FF,#8B5CF6);color:white;padding:14px 24px;text-align:center;font-weight:600;font-size:14px">
-          🏆 2026 TNEA Rank List is out! Enter your Application ID and Rank for accurate predictions.
-          <button onclick="navigateTo('profile')" style="margin-left:12px;background:white;color:#6C63FF;border:none;padding:6px 14px;border-radius:6px;font-weight:700;cursor:pointer">
-            Update Now →
-          </button>
-        </div>`;
-      document.body.style.paddingTop = '60px';
-      const navbar = document.querySelector('.navbar');
-      if (navbar) navbar.style.top = '50px';
-    }
+    // Temporarily disabled - reactivate for next rank list release
+    // if (banner && data.rank_list_released) {
+    //   banner.classList.remove('hidden');
+    //   banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:999;width:100%';
+    //   banner.innerHTML = `
+    //     <div style="background:linear-gradient(135deg,#6C63FF,#8B5CF6);color:white;padding:14px 24px;text-align:center;font-weight:600;font-size:14px">
+    //       🏆 2026 TNEA Rank List is out! Enter your Application ID and Rank for accurate predictions.
+    //       <button onclick="navigateTo('profile')" style="margin-left:12px;background:white;color:#6C63FF;border:none;padding:6px 14px;border-radius:6px;font-weight:700;cursor:pointer">
+    //         Update Now →
+    //       </button>
+    //     </div>`;
+    //   document.body.style.paddingTop = '60px';
+    //   const navbar = document.querySelector('.navbar');
+    //   if (navbar) navbar.style.top = '50px';
+    // }
   } catch(e) {
     App.rankListReleased = false;
   }
