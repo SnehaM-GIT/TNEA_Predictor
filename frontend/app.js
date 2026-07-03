@@ -749,6 +749,9 @@ function updateNav() {
   const navProf    = document.getElementById('navProfile');
   const tierBadge  = document.getElementById('navTierBadge');
 
+  document.querySelector('.hero-actions .btn-primary.btn-glow.btn-large')
+    ?.classList.toggle('hidden', !!App.currentUser);
+    
   // active nav link highlight (Task 8)
   document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
   const activeNavMap = { landing: 'navHome', dashboard: 'navDashboard', profile: 'navProfile' };
