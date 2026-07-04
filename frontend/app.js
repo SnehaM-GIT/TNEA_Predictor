@@ -749,11 +749,22 @@ function updateNav() {
   const navProf    = document.getElementById('navProfile');
   const tierBadge  = document.getElementById('navTierBadge');
 
-  // Free predict button — show for guests (3) and premium (1), hide for grade 2
-const freePredictBtn = document.getElementById('heroTryPredictionBtn');
-const getAccessBtn   = document.getElementById('heroGetAccessBtn');
-if (freePredictBtn) freePredictBtn.classList.toggle('hidden', !!App.currentUser);
-if (getAccessBtn)   getAccessBtn.classList.toggle('hidden', !!App.currentUser);
+  const freePredictBtn = document.getElementById('heroTryPredictionBtn');
+  const getAccessBtn   = document.getElementById('heroGetAccessBtn');
+
+  if (!App.currentUser) {
+    // Not logged in — show Try Free Prediction, hide Get Full Access
+    if (freePredictBtn) freePredictBtn.classList.remove('hidden');
+    if (getAccessBtn)   getAccessBtn.classList.add('hidden');
+  } else if (App.userGrade === 1) {
+    // Premium — hide both
+    if (freePredictBtn) freePredictBtn.classList.add('hidden');
+    if (getAccessBtn)   getAccessBtn.classList.add('hidden');
+  } else {
+    // Grade 2 logged in — hide Try Free, show Get Full Access
+    if (freePredictBtn) freePredictBtn.classList.add('hidden');
+    if (getAccessBtn)   getAccessBtn.classList.remove('hidden');
+  }
 
   // active nav link highlight
   document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
