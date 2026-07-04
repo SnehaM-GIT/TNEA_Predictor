@@ -749,14 +749,13 @@ function updateNav() {
   const navProf    = document.getElementById('navProfile');
   const tierBadge  = document.getElementById('navTierBadge');
 
-  document.querySelector('.hero-actions .btn-primary.btn-glow.btn-large')
-    ?.classList.toggle('hidden', !!App.currentUser);
-    
-    const freePredictBtn = document.querySelector('.hero-actions .btn-primary.btn-glow.btn-large');
-if (freePredictBtn) {
-    freePredictBtn.classList.toggle('hidden', App.userGrade === 1);
-}
-  // active nav link highlight (Task 8)
+  // Free predict button — show for guests (3) and premium (1), hide for grade 2
+  const freePredictBtn = document.querySelector('.hero-actions .btn-primary.btn-glow.btn-large');
+  if (freePredictBtn) {
+    freePredictBtn.classList.toggle('hidden', App.userGrade === 2);
+  }
+
+  // active nav link highlight
   document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
   const activeNavMap = { landing: 'navHome', dashboard: 'navDashboard', profile: 'navProfile' };
   const activeId = activeNavMap[App.currentPage];
@@ -779,7 +778,6 @@ if (freePredictBtn) {
         tierBadge.classList.add('premium-active');
         tierBadge.classList.remove('hidden');
       } else {
-        // Non-premium student bubble removed from logo area
         tierBadge.classList.add('hidden');
       }
     }

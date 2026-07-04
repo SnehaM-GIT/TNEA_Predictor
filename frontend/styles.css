@@ -655,7 +655,9 @@ html.dark-theme .nav-link.active {
   background: rgba(255, 255, 255, 0.14);
 }
 
-
+html.dark-theme .brand-icon-img {
+  filter: none !important;
+}
 
 .nav-container {
   max-width: 1280px;
