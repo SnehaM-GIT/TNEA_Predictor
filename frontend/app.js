@@ -750,10 +750,10 @@ function updateNav() {
   const tierBadge  = document.getElementById('navTierBadge');
 
   // Free predict button — show for guests (3) and premium (1), hide for grade 2
-  const freePredictBtn = document.getElementById('heroFreePredictBtn');
-if (freePredictBtn) {
-    freePredictBtn.classList.toggle('hidden', !!App.currentUser);
-}
+const freePredictBtn = document.getElementById('heroTryPredictionBtn');
+const getAccessBtn   = document.getElementById('heroGetAccessBtn');
+if (freePredictBtn) freePredictBtn.classList.toggle('hidden', !!App.currentUser);
+if (getAccessBtn)   getAccessBtn.classList.toggle('hidden', !!App.currentUser);
 
   // active nav link highlight
   document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
