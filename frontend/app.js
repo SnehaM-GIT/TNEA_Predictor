@@ -749,6 +749,9 @@ function updateNav() {
   const navProf    = document.getElementById('navProfile');
   const tierBadge  = document.getElementById('navTierBadge');
 
+  document.querySelector('.hero-actions .btn-primary.btn-glow.btn-large')
+    ?.classList.toggle('hidden', !!App.currentUser);
+    
   // active nav link highlight (Task 8)
   document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
   const activeNavMap = { landing: 'navHome', dashboard: 'navDashboard', profile: 'navProfile' };
@@ -1521,8 +1524,8 @@ function renderProfile() {
 
   updateProfileAggregate();
 
-  document.getElementById('profileRankSection')
-    ?.classList.toggle('hidden', App.userGrade !== 1);
+document.getElementById('profileRankSection')
+    ?.classList.add('hidden');
 
     if (App.rankListReleased) {
   const appIdSection = document.getElementById('profileAppIdSection');
@@ -2803,14 +2806,22 @@ async function simRenderChoiceFilling() {
       ? `<div style="text-align:center;margin-top:8px;font-size:12px;color:var(--text-muted)">All ${totalColleges} matching colleges shown</div>`
       : '';
 
-  const myChoicesHtml = App.simChoices.length>0 ? `
-    <div class="sim-my-choices-list">
-      ${App.simChoices.map(c=>`
-        <div class="sim-choice-chip">
-          <span>${c.order}. [${c.collegeCode}] ${c.collegeName.substring(0,28)}… — ${c.branchName.substring(0,20)}…</span>
-          <button onclick="event.stopPropagation();simToggleChoice('${c.collegeCode}','${c.branchCode}','${c.branchName.replace(/'/g,"\\'")}','${c.collegeName.replace(/'/g,"\\'")}')">×</button>
+ const myChoicesHtml = App.simChoices.length>0 ? `
+    <div class="sim-my-choices-list" id="simChoicesList">
+      ${App.simChoices.map((c,idx)=>`
+        <div class="sim-choice-chip" draggable="true" data-idx="${idx}" 
+             ondragstart="simDragStart(event,${idx})" 
+             ondragover="simDragOver(event)" 
+             ondrop="simDrop(event,${idx})">
+          <span style="cursor:grab;margin-right:6px;color:var(--text-muted)">⠿</span>
+          <span>${c.order}. [${c.collegeCode}] ${c.collegeName.substring(0,25)}… — ${c.branchName.substring(0,18)}…</span>
+          <div style="display:flex;gap:4px;align-items:center;margin-left:auto">
+            ${idx > 0 ? `<button onclick="event.stopPropagation();simMoveChoice(${idx},-1)" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:14px;padding:0 4px">▲</button>` : '<span style="width:22px"></span>'}
+            ${idx < App.simChoices.length-1 ? `<button onclick="event.stopPropagation();simMoveChoice(${idx},1)" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:14px;padding:0 4px">▼</button>` : '<span style="width:22px"></span>'}
+            <button onclick="event.stopPropagation();simToggleChoice('${c.collegeCode}','${c.branchCode}','${c.branchName.replace(/'/g,"\\'")}','${c.collegeName.replace(/'/g,"\\'")}')">×</button>
+          </div>
         </div>`).join('')}
-    </div>` : '<p style="font-size:13px;color:var(--text-muted);margin-top:8px">No choices selected yet. Check rows in the table below.</p>';
+    </div>`  : '<p style="font-size:13px;color:var(--text-muted);margin-top:8px">No choices selected yet. Check rows in the table below.</p>';
 
   return `
   <div class="sim-card">
@@ -2943,7 +2954,10 @@ function simRenderAllotment() {
         ${TFC_LIST.map(t=>`<option>${t}</option>`).join('')}
       </select>
     </div>
-    <div class="sim-confirm-note">⚠️ In the real portal, this action cannot be reversed. Here it's a simulation.</div>
+<div class="sim-confirm-note">⚠️ In the real portal, this action cannot be reversed. Here it's a simulation.</div>
+<div id="simMoveUpwardNote" class="hidden" style="margin-top:10px;padding:10px 14px;background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.3);border-radius:8px;font-size:12px;color:var(--text-muted)">
+  ℹ️ <strong>Note:</strong> Selecting "Move Upward" means in real TNEA counselling, you may get a seat in a higher-priority college from your choices list. The probability of getting into those colleges can be checked using the <strong>Seat Predictions</strong> feature on your dashboard.
+</div>
     <div style="display:flex;gap:12px;margin-top:16px;flex-wrap:wrap">
       <button class="btn-ghost" onclick="simGoToStep(1)">← Back</button>
       <button class="btn-primary btn-glow" onclick="simConfirmAllotment()">Save →</button>
@@ -2980,13 +2994,23 @@ function simRenderProvisionalOrder() {
 <div style="display:flex;gap:12px;margin-top:20px;justify-content:center;flex-wrap:wrap">
       <button class="btn-outline" onclick="resetCounselling()">🔄 Restart Simulation</button>
       <button class="btn-outline" onclick="downloadSimulationPDF()">📄 Download PDF</button>
-      <button class="btn-outline" onclick="downloadSimulationExcel()">📊 Download Excel</button>
+      
     </div>
     <div style="margin-top:16px;padding:12px 16px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:8px;font-size:12px;color:var(--text-muted);line-height:1.6">
       ⚠️ <strong>Disclaimer:</strong> This simulation is for reference purposes only. Predictions are based on historical TNEA data (2021–2025) and may not reflect actual 2026 counselling outcomes. Actual allotments depend on rank, availability of seats, and counselling rounds. PickMySeat is not responsible for any decisions made based on this simulation.
     </div>
   </div>`;
 }
+setTimeout(() => {
+    document.querySelectorAll('input[name="simOption"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+            const note = document.getElementById('simMoveUpwardNote');
+            if (!note) return;
+            const val = document.querySelector('input[name="simOption"]:checked')?.value;
+            note.classList.toggle('hidden', !val?.includes('upward'));
+        });
+    });
+}, 100);
 
 function advanceCounselling() { App.simStep = Math.min(App.simStep+1,3); renderCounsellingSimulation(); }
 function resetCounselling() {
@@ -3016,8 +3040,11 @@ function downloadSimulationPDF() {
     .cell strong { font-size: 14px; color: #333; }
     .disclaimer { margin-top: 32px; padding: 12px 16px; background: #fff8e1; border: 1px solid #ffe082; border-radius: 6px; font-size: 12px; color: #555; }
     .choices { margin-top: 20px; }
+    .watermark { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) rotate(-35deg); font-size:72px; color:rgba(108,99,255,0.08); font-weight:900; white-space:nowrap; z-index:0; pointer-events:none; }
+.sim-prov-wrap { position:relative; z-index:1; }
   </style></head>
   <body>
+  <div class="watermark">PickMySeat — Simulation Only</div>
     <h1>TAMIL NADU ENGINEERING ADMISSIONS — 2026</h1>
     <h2 style="font-size:15px;margin-top:4px">PROVISIONAL ALLOTMENT ORDER (SIMULATION)</h2>
     <div class="sub">Generated by PickMySeat on ${today}</div>
@@ -3123,6 +3150,29 @@ function showVerificationRequiredModal(isGuest = false) {
     </div>`;
   modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
   document.body.appendChild(modal);
+}
+
+function simMoveChoice(idx, dir) {
+    const arr = App.simChoices;
+    const newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= arr.length) return;
+    [arr[idx], arr[newIdx]] = [arr[newIdx], arr[idx]];
+    arr.forEach((c,i) => c.order = i+1);
+    renderCounsellingSimulation();
+}
+
+let _simDragIdx = null;
+function simDragStart(e, idx) { _simDragIdx = idx; e.dataTransfer.effectAllowed = 'move'; }
+function simDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
+function simDrop(e, idx) {
+    e.preventDefault();
+    if (_simDragIdx === null || _simDragIdx === idx) return;
+    const arr = App.simChoices;
+    const [moved] = arr.splice(_simDragIdx, 1);
+    arr.splice(idx, 0, moved);
+    arr.forEach((c,i) => c.order = i+1);
+    _simDragIdx = null;
+    renderCounsellingSimulation();
 }
 
 // ============================================================

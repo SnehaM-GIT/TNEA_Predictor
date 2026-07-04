@@ -630,9 +630,9 @@ button {
   top: 0;
   left: 0;
   right: 0;
-  background: rgba(250, 248, 245, 0.85);
+  background: #ffffff !important;
   backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border1);
+  border-bottom: 1px solid #e5e7eb;
   z-index: 1000;
   transition: all 0.3s ease;
 }
@@ -669,9 +669,14 @@ html.dark-theme .brand-logo-dark { display: inline-block; }
 .nav-brand {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   cursor: pointer;
   user-select: none;
+}
+.brand-name {
+    font-size: 20px;
+    font-weight: 800;
+    color: #1a1a2e !important;
 }
 
 .brand-icon {
@@ -683,14 +688,14 @@ html.dark-theme .brand-logo-dark { display: inline-block; }
 }
 
 .brand-icon-img {
-  height: 48px;
-  width: 48px;
+  height: 96px;
+  width: 96px;
   object-fit: contain;
 }
 
 .brand-icon-img.large {
-  height: 64px;
-  width: 64px;
+  height: 96px;
+  width: 96px;
 }
 
 
