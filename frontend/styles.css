@@ -711,10 +711,15 @@ html.dark-theme #navUpgradeBtn {
 .nav-container {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 16px 24px;
+  padding: 8px 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+.nav-brand .brand-icon-img {
+  height: 40px;
+  width: 40px;
 }
 
 .nav-brand {
@@ -928,7 +933,7 @@ html.dark-theme #navUpgradeBtn {
 .page {
   display: none;
   min-height: 100vh;
-  padding-top: 72px;
+  padding-top: 64px;
 }
 
 .page.active {
@@ -949,7 +954,7 @@ html.dark-theme #navUpgradeBtn {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: calc(100vh - 72px);
+  min-height: calc(100vh - 64px);
 }
 
 .hidden {
@@ -3062,7 +3067,7 @@ html.dark-theme #navUpgradeBtn {
 
 @media (max-width: 768px) {
   .nav-container {
-    padding: 12px 16px;
+    padding: 6px 16px;
   }
 
   .nav-links {
