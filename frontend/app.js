@@ -752,7 +752,7 @@ function updateNav() {
   // Free predict button — show for guests (3) and premium (1), hide for grade 2
   const freePredictBtn = document.querySelector('.hero-actions .btn-primary.btn-glow.btn-large');
   if (freePredictBtn) {
-    freePredictBtn.classList.toggle('hidden', App.userGrade === 2);
+    freePredictBtn.classList.toggle('hidden', App.userGrade === 3);
   }
 
   // active nav link highlight

@@ -639,20 +639,15 @@ button {
 
 html.dark-theme .navbar {
   background: #ffffff !important;
-  border-bottom-color: #e5e7eb;
+  border-bottom-color: #e5e7eb !important;
 }
 
 html.dark-theme .nav-link {
   color: #1a1a2e !important;
 }
 
-html.dark-theme .nav-links {
-  background: rgba(255, 255, 255, 0.07);
-  border-color: rgba(255, 255, 255, 0.1);
-}
-
-html.dark-theme .nav-link.active {
-  background: rgba(255, 255, 255, 0.14);
+html.dark-theme .brand-name {
+  color: #1a1a2e !important;
 }
 
 html.dark-theme .brand-icon-img {
