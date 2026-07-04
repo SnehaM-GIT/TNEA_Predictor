@@ -1575,6 +1575,15 @@ html.dark-theme #navUpgradeBtn {
 
 .footer-brand {
   margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.footer-brand-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .footer-brand p {
@@ -1585,9 +1594,9 @@ html.dark-theme #navUpgradeBtn {
 
 .footer-links {
   display: flex;
-  gap: 12px;
-  justify-content: center;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
   font-size: 13px;
   color: var(--text-muted);
 }
