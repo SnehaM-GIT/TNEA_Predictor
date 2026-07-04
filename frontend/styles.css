@@ -642,9 +642,8 @@ html.dark-theme .navbar {
   border-bottom: 1px solid #e5e7eb !important;
 }
 
-html.dark-theme .nav-links {
-  background: rgba(255, 255, 255, 0.07);
-  border-color: rgba(255, 255, 255, 0.1);
+html.dark-theme .brand-name {
+  color: #1a1a2e !important;
 }
 
 html.dark-theme .nav-link {
@@ -659,12 +658,11 @@ html.dark-theme .nav-link.active {
   color: #1a1a2e !important;
 }
 
-/* Logo theme switching */
-.brand-logo-dark { display: none; }
-html.dark-theme .brand-logo-light { display: none; }
-html.dark-theme .brand-logo-dark { display: inline-block; }
-
-
+html.dark-theme #navLoginBtn {
+  color: #2563EB !important;
+  border-color: #2563EB !important;
+  background: transparent !important;
+}
 .nav-container {
   max-width: 1280px;
   margin: 0 auto;
@@ -3094,10 +3092,10 @@ html.dark-theme #navUserName {
     font-size: 16px;
   }
 
-  .brand-icon-img {
-    height: 38px;
-    width: 38px;
-  }
+.brand-icon-img {
+    height: 72px;
+    width: 72px;
+}
 
   .preferred-grid {
     gap: 16px;
