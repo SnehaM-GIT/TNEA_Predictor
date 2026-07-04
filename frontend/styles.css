@@ -639,11 +639,7 @@ button {
 
 html.dark-theme .navbar {
   background: #ffffff !important;
-  border-bottom-color: #e5e7eb !important;
-}
-
-html.dark-theme .nav-link {
-  color: #1a1a2e !important;
+  border-bottom: 1px solid #e5e7eb !important;
 }
 
 html.dark-theme .brand-name {
@@ -654,6 +650,23 @@ html.dark-theme .brand-icon-img {
   filter: none !important;
 }
 
+html.dark-theme .nav-link {
+  color: #1a1a2e !important;
+  background: transparent !important;
+  border-color: rgba(0,0,0,0.15) !important;
+}
+
+html.dark-theme .nav-link:hover,
+html.dark-theme .nav-link.active {
+  background: rgba(0,0,0,0.08) !important;
+  color: #1a1a2e !important;
+}
+
+html.dark-theme #navLoginBtn {
+  color: #2563EB !important;
+  border-color: #2563EB !important;
+  background: transparent !important;
+}
 .nav-container {
   max-width: 1280px;
   margin: 0 auto;
