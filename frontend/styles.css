@@ -646,6 +646,10 @@ html.dark-theme .brand-name {
   color: #1a1a2e !important;
 }
 
+html.dark-theme .brand-icon-img {
+  filter: none !important;
+}
+
 html.dark-theme .nav-link {
   color: #1a1a2e !important;
   background: transparent !important;
@@ -662,6 +666,47 @@ html.dark-theme #navLoginBtn {
   color: #2563EB !important;
   border-color: #2563EB !important;
   background: transparent !important;
+}
+
+html.dark-theme .nav-user {
+  background: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+}
+
+html.dark-theme #navUserName {
+  color: #1a1a2e !important;
+}
+
+html.dark-theme .nav-avatar {
+  background: linear-gradient(135deg, #6C63FF, #4F46E5) !important;
+  color: #ffffff !important;
+}
+
+html.dark-theme .nav-chevron {
+  color: #1a1a2e !important;
+}
+
+html.dark-theme .nav-dropdown {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12) !important;
+}
+
+html.dark-theme .dropdown-item {
+  color: #1a1a2e !important;
+}
+
+html.dark-theme .dropdown-item:hover {
+  background: #f1f5f9 !important;
+}
+
+html.dark-theme #dropdownInfo {
+  color: #64748b !important;
+}
+
+html.dark-theme #navUpgradeBtn {
+  background: linear-gradient(135deg, #6C63FF, #4F46E5) !important;
+  color: #ffffff !important;
 }
 .nav-container {
   max-width: 1280px;
@@ -709,14 +754,6 @@ html.dark-theme #navLoginBtn {
   font-size: 20px;
   font-weight: 800;
   color: var(--text-primary);
-}
-
-html.dark-theme .brand-name {
-  color: #1a1a2e !important;
-}
-
-html.dark-theme .brand-icon-img {
-  filter: none !important;
 }
 
 .brand-ai {
@@ -797,17 +834,6 @@ html.dark-theme .brand-icon-img {
   border-color: var(--border3);
 }
 
-html.dark-theme #navLoginBtn {
-  color: #2563EB !important;
-  border-color: #2563EB !important;
-  background: transparent !important;
-}
-
-html.dark-theme .nav-user {
-  background: #f1f5f9 !important;
-  border-color: #e2e8f0 !important;
-}
-
 .nav-avatar {
   width: 32px;
   height: 32px;
@@ -821,18 +847,10 @@ html.dark-theme .nav-user {
   font-size: 14px;
 }
 
-html.dark-theme .nav-avatar {
-  background: linear-gradient(135deg, #3B82F6, #2563EB) !important;
-}
-
 #navUserName {
   font-weight: 600;
   color: var(--text-primary);
   font-size: 14px;
-}
-
-html.dark-theme #navUserName {
-  color: #1a1a2e !important;
 }
 
 .nav-chevron {
