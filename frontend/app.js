@@ -752,6 +752,10 @@ function updateNav() {
   document.querySelector('.hero-actions .btn-primary.btn-glow.btn-large')
     ?.classList.toggle('hidden', !!App.currentUser);
     
+    const freePredictBtn = document.querySelector('.hero-actions .btn-primary.btn-glow.btn-large');
+if (freePredictBtn) {
+    freePredictBtn.classList.toggle('hidden', App.userGrade === 1);
+}
   // active nav link highlight (Task 8)
   document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
   const activeNavMap = { landing: 'navHome', dashboard: 'navDashboard', profile: 'navProfile' };

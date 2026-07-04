@@ -638,8 +638,12 @@ button {
 }
 
 html.dark-theme .navbar {
-  background: rgba(30, 64, 128, 0.92);
-  border-bottom-color: rgba(59, 130, 246, 0.25);
+  background: #ffffff !important;
+  border-bottom-color: #e5e7eb;
+}
+
+html.dark-theme .nav-link {
+  color: #1a1a2e !important;
 }
 
 html.dark-theme .nav-links {
@@ -651,10 +655,6 @@ html.dark-theme .nav-link.active {
   background: rgba(255, 255, 255, 0.14);
 }
 
-/* Logo theme switching */
-.brand-logo-dark { display: none; }
-html.dark-theme .brand-logo-light { display: none; }
-html.dark-theme .brand-logo-dark { display: inline-block; }
 
 
 .nav-container {
@@ -3059,10 +3059,10 @@ html.dark-theme .brand-logo-dark { display: inline-block; }
     font-size: 16px;
   }
 
-  .brand-icon-img {
-    height: 38px;
-    width: 38px;
-  }
+.brand-icon-img {
+    height: 72px;
+    width: 72px;
+}
 
   .preferred-grid {
     gap: 16px;
