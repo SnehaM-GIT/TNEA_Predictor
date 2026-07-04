@@ -900,22 +900,7 @@ function initLanding() {
   loadDynamicTicker();     // then replace with real user names from API
   updateLiveCounts();
   observeScrollAnimations();
-  updateLandingHero();
   updateLandingForPremium();
-}
-
-// Hero CTA buttons depend on login state. Guests see "Try Free Prediction"
-// + "Get Full Access". Logged-in users get a single "Try a Prediction Now"
-// button that runs the full profile-based prediction on the dashboard (not
-// the limited guest free-predict flow), so the hero never sits empty.
-function updateLandingHero() {
-  const freeBtn    = document.getElementById('heroTryFreeBtn');
-  const accessBtn  = document.getElementById('heroGetAccessBtn');
-  const predictBtn = document.getElementById('heroTryPredictionBtn');
-  const loggedIn   = !!App.currentUser;
-  if (freeBtn)    freeBtn.style.display    = loggedIn ? 'none' : '';
-  if (accessBtn)  accessBtn.style.display  = loggedIn ? 'none' : '';
-  if (predictBtn) predictBtn.classList.toggle('hidden', !loggedIn);
 }
 
 function renderTicker(extraEvents = []) {
