@@ -632,14 +632,14 @@ button {
   right: 0;
   background: #ffffff !important;
   backdrop-filter: blur(12px);
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb !important;
   z-index: 1000;
   transition: all 0.3s ease;
 }
 
 html.dark-theme .navbar {
-  background: rgba(30, 64, 128, 0.92);
-  border-bottom-color: rgba(59, 130, 246, 0.25);
+  background: #ffffff !important;
+  border-bottom: 1px solid #e5e7eb !important;
 }
 
 html.dark-theme .nav-links {
@@ -647,8 +647,16 @@ html.dark-theme .nav-links {
   border-color: rgba(255, 255, 255, 0.1);
 }
 
+html.dark-theme .nav-link {
+  color: #1a1a2e !important;
+  background: transparent !important;
+  border-color: rgba(0,0,0,0.15) !important;
+}
+
+html.dark-theme .nav-link:hover,
 html.dark-theme .nav-link.active {
-  background: rgba(255, 255, 255, 0.14);
+  background: rgba(0,0,0,0.08) !important;
+  color: #1a1a2e !important;
 }
 
 /* Logo theme switching */
@@ -703,6 +711,14 @@ html.dark-theme .brand-logo-dark { display: inline-block; }
   font-size: 20px;
   font-weight: 800;
   color: var(--text-primary);
+}
+
+html.dark-theme .brand-name {
+  color: #1a1a2e !important;
+}
+
+html.dark-theme .brand-icon-img {
+  filter: none !important;
 }
 
 .brand-ai {
@@ -783,6 +799,17 @@ html.dark-theme .brand-logo-dark { display: inline-block; }
   border-color: var(--border3);
 }
 
+html.dark-theme #navLoginBtn {
+  color: #2563EB !important;
+  border-color: #2563EB !important;
+  background: transparent !important;
+}
+
+html.dark-theme .nav-user {
+  background: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+}
+
 .nav-avatar {
   width: 32px;
   height: 32px;
@@ -796,10 +823,18 @@ html.dark-theme .brand-logo-dark { display: inline-block; }
   font-size: 14px;
 }
 
+html.dark-theme .nav-avatar {
+  background: linear-gradient(135deg, #3B82F6, #2563EB) !important;
+}
+
 #navUserName {
   font-weight: 600;
   color: var(--text-primary);
   font-size: 14px;
+}
+
+html.dark-theme #navUserName {
+  color: #1a1a2e !important;
 }
 
 .nav-chevron {
