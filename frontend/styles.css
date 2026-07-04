@@ -650,6 +650,11 @@ html.dark-theme .brand-icon-img {
   filter: none !important;
 }
 
+html.dark-theme .nav-links {
+  background: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+}
+
 html.dark-theme .nav-link {
   color: #1a1a2e !important;
   background: transparent !important;
