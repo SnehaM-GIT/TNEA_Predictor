@@ -3520,18 +3520,12 @@ async function verifyAndSaveRank() {
 // ============================================================
 // THEME (DARK/LIGHT MODE)
 // ============================================================
-function applyLogoTheme(isDark) {
-  const src = isDark ? 'logo-dark.png' : 'logo-light.png';
-  document.querySelectorAll('.brand-icon-img').forEach(img => { img.src = src; });
-}
-
 function initTheme() {
   const savedTheme = localStorage.getItem('pms_theme');
 
   // Default to light mode unless the user explicitly saved 'dark' previously
   if (savedTheme === 'dark') {
     document.documentElement.classList.add('dark-theme');
-    applyLogoTheme(true);
     const btn = document.getElementById('themeToggleBtn');
     if (btn) {
       btn.innerHTML = '☀️';
@@ -3539,7 +3533,6 @@ function initTheme() {
     }
   } else {
     document.documentElement.classList.remove('dark-theme');
-    applyLogoTheme(false);
     const btn = document.getElementById('themeToggleBtn');
     if (btn) {
       btn.innerHTML = '🌙';
@@ -3551,7 +3544,6 @@ function initTheme() {
 function toggleTheme() {
   const html = document.documentElement;
   const isDark = html.classList.toggle('dark-theme');
-  applyLogoTheme(isDark);
   const btn = document.getElementById('themeToggleBtn');
 
   if (isDark) {
