@@ -5,15 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Privacy Policy — PickMySeat</title>
   <link rel="stylesheet" href="styles.css">
-  <script>if (localStorage.getItem('pms_theme') === 'dark') document.documentElement.classList.add('dark-theme');</script>
 </head>
 <body>
 
   <nav class="navbar">
     <div class="nav-container">
       <div class="nav-brand">
-        <img class="brand-icon-img brand-logo-light" src="logo-light.png" alt="PickMySeat" style="width:32px;height:32px"/>
-        <img class="brand-icon-img brand-logo-dark" src="logo-dark.png" alt="PickMySeat" style="width:32px;height:32px"/>
+        <img class="brand-icon-img" src="logo-light.png" alt="PickMySeat" style="width:32px;height:32px"/>
         <span class="brand-name">PickMySeat</span>
       </div>
     </div>
@@ -24,53 +22,115 @@
   <div style="max-width:900px;margin:0 auto;padding:60px 24px;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
 
     <h1 style="font-size:48px;font-weight:800;margin-bottom:8px;color:var(--text-primary,#1a1a1a)">Privacy Policy</h1>
-    <p style="font-size:14px;color:var(--text-muted,#666);margin-bottom:40px">Last updated: June 2026</p>
+    <p style="font-size:14px;color:var(--text-muted,#666);margin-bottom:40px">Last updated: July 2026</p>
 
-    <h2 style="font-size:24px;font-weight:700;margin-top:32px;margin-bottom:16px;color:var(--text-primary,#1a1a1a)">1. Information We Collect</h2>
+    <h2 style="font-size:24px;font-weight:700;margin-top:32px;margin-bottom:16px;color:var(--text-primary,#1a1a1a)">1. Introduction</h2>
     <ul style="margin-bottom:24px;padding-left:20px">
-      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">Account information: name, email address, password (hashed)</li>
-      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">Academic data: maths, physics, chemistry marks, community category</li>
-      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">Usage data: prediction history, payment status</li>
-      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">Device data: browser type, IP address (for rate limiting only)</li>
+      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">This Privacy Policy explains how PickMySeat ("we", "us", "our") collects, uses, discloses, and protects personal data of users ("you") of pickmyseat.in (the "Service"), in accordance with the Information Technology Act, 2000, the Information Technology (Reasonable Security Practices and Procedures and Sensitive Personal Data or Information) Rules, 2011, and the Digital Personal Data Protection Act, 2023 ("DPDP Act"), to the extent applicable.</li>
+      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">By using the Service, you consent to the data practices described in this Policy. If you do not agree, do not use the Service.</li>
     </ul>
 
-    <h2 style="font-size:24px;font-weight:700;margin-top:32px;margin-bottom:16px;color:var(--text-primary,#1a1a1a)">2. How We Use Your Information</h2>
+    <h2 style="font-size:24px;font-weight:700;margin-top:32px;margin-bottom:16px;color:var(--text-primary,#1a1a1a)">2. Information We Collect</h2>
     <ul style="margin-bottom:24px;padding-left:20px">
-      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">To generate college seat predictions personalised to you</li>
-      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">To manage your account and payment status</li>
-      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">To improve prediction accuracy using anonymised data</li>
-      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">We do not sell, rent, or share your data with third parties</li>
+      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">Account information: full name, email address, mobile number, and password (stored in hashed form only — we never store passwords in plain text).</li>
+      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">Academic data: Mathematics, Physics, and Chemistry marks, cut-off/aggregate scores, and optionally your TNEA rank.</li>
+      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">Community/reservation category: this is treated as <strong>sensitive personal data</strong> under this Policy because of its association with caste-based reservation status. It is collected solely to generate accurate, category-specific admission predictions and is processed with additional safeguards described in Section 4.</li>
+      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">Usage data: prediction history, feature usage, and payment/subscription status (Grade 1/2/3).</li>
+      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">Technical data: browser type, device type, and IP address, collected solely for rate limiting, fraud prevention, and security purposes.</li>
+      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">Payment metadata: transaction ID, payment status, and amount (via Razorpay). We do not collect or store card numbers, UPI IDs, or bank account details.</li>
     </ul>
 
-    <h2 style="font-size:24px;font-weight:700;margin-top:32px;margin-bottom:16px;color:var(--text-primary,#1a1a1a)">3. Payments</h2>
+    <h2 style="font-size:24px;font-weight:700;margin-top:32px;margin-bottom:16px;color:var(--text-primary,#1a1a1a)">3. Legal Basis and Consent</h2>
     <ul style="margin-bottom:24px;padding-left:20px">
-      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">Payments are processed by Razorpay</li>
-      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">We do not store your card or bank details</li>
-      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">Payment records are kept for billing and support purposes</li>
+      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">We process your personal data on the basis of your explicit, informed consent, given at the time of registration via an affirmative checkbox action, and for the specific purposes stated in this Policy.</li>
+      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">You may withdraw consent at any time by requesting account deletion (Section 8), though this will mean you can no longer use the Service.</li>
+      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">We collect only the data necessary for the purposes described (data minimisation) and do not use your academic or community data for any purpose beyond generating your predictions and improving model accuracy (in anonymised, aggregated form).</li>
     </ul>
 
-    <h2 style="font-size:24px;font-weight:700;margin-top:32px;margin-bottom:16px;color:var(--text-primary,#1a1a1a)">4. Data Retention</h2>
+    <h2 style="font-size:24px;font-weight:700;margin-top:32px;margin-bottom:16px;color:var(--text-primary,#1a1a1a)">4. Sensitive Personal Data Safeguards</h2>
     <ul style="margin-bottom:24px;padding-left:20px">
-      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">Your account and prediction data is retained as long as your account is active</li>
-      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">You can request deletion of your account by contacting us</li>
+      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">Community/category data is stored encrypted at rest and in transit, and access is restricted to the minimum systems and personnel required to generate predictions.</li>
+      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">We do not use community/category data for advertising, profiling for marketing purposes, or any purpose unrelated to seat prediction.</li>
+      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">We do not disclose your community/category data to any third party except processors strictly necessary to operate the Service (Section 7), and never for commercial resale.</li>
     </ul>
 
-    <h2 style="font-size:24px;font-weight:700;margin-top:32px;margin-bottom:16px;color:var(--text-primary,#1a1a1a)">5. Cookies</h2>
+    <h2 style="font-size:24px;font-weight:700;margin-top:32px;margin-bottom:16px;color:var(--text-primary,#1a1a1a)">5. Minors and Parental Consent</h2>
     <ul style="margin-bottom:24px;padding-left:20px">
-      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">We use localStorage to store your login session token</li>
-      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">No third-party tracking cookies are used</li>
+      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">We recognise that many users of the Service are under 18 years of age. Where a user is a minor, use of the Service and provision of personal data must be authorised and consented to by a parent or lawful guardian.</li>
+      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">We do not knowingly carry out tracking, behavioural monitoring, or targeted advertising directed at children, and we do not process minors' data in any manner likely to cause harm to them.</li>
+      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">A parent or guardian may contact us at <a href="mailto:support.pickmyseat@gmail.com">support.pickmyseat@gmail.com</a> to review, correct, or request deletion of a minor's data at any time.</li>
     </ul>
 
-    <h2 style="font-size:24px;font-weight:700;margin-top:32px;margin-bottom:16px;color:var(--text-primary,#1a1a1a)">6. Contact Us</h2>
-    <p style="margin-bottom:24px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">For privacy concerns, email: <a href="mailto:support.pickmyseat@gmail.com">support.pickmyseat@gmail.com</a></p>
+    <h2 style="font-size:24px;font-weight:700;margin-top:32px;margin-bottom:16px;color:var(--text-primary,#1a1a1a)">6. How We Use Your Information</h2>
+    <ul style="margin-bottom:24px;padding-left:20px">
+      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">To generate personalised college and branch seat predictions for TNEA counselling.</li>
+      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">To create and manage your account, authenticate logins, and track payment/subscription status.</li>
+      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">To send essential transactional communications (e.g., account verification, password resets, payment confirmations) via email.</li>
+      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">To detect, prevent, and investigate fraud, abuse, or security incidents.</li>
+      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">To improve prediction model accuracy using anonymised and aggregated data that cannot reasonably be used to re-identify you.</li>
+      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">We do not sell, rent, or trade your personal data to third parties for their marketing purposes.</li>
+    </ul>
+
+    <h2 style="font-size:24px;font-weight:700;margin-top:32px;margin-bottom:16px;color:var(--text-primary,#1a1a1a)">7. Data Sharing and Third-Party Processors</h2>
+    <ul style="margin-bottom:24px;padding-left:20px">
+      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">Razorpay — for processing one-time premium payments. Razorpay receives only the data necessary to complete a transaction and is bound by its own privacy and security policies.</li>
+      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">Resend — for delivering transactional emails (verification, password reset, receipts). Resend processes your email address solely to deliver these messages.</li>
+      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">Railway (hosting/infrastructure provider) — for hosting our backend application and database. Data may be stored on servers located outside India; by using the Service you consent to this transfer, which is protected by industry-standard security controls.</li>
+      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">We may disclose personal data if required to do so by law, court order, or a valid request from a government or regulatory authority.</li>
+      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">In the event of a merger, acquisition, or sale of assets, personal data may be transferred as part of that transaction, subject to equivalent privacy protections.</li>
+    </ul>
+
+    <h2 style="font-size:24px;font-weight:700;margin-top:32px;margin-bottom:16px;color:var(--text-primary,#1a1a1a)">8. Data Retention and Deletion</h2>
+    <ul style="margin-bottom:24px;padding-left:20px">
+      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">Your account and prediction data is retained for as long as your account remains active, and for a reasonable period thereafter to comply with legal, tax, and accounting obligations (typically up to 8 years for payment records, as required under Indian law).</li>
+      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">You may request deletion of your account and associated personal data at any time by emailing <a href="mailto:support.pickmyseat@gmail.com">support.pickmyseat@gmail.com</a>. We will act on verified deletion requests within 30 days, except for data we are legally required to retain.</li>
+      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">Anonymised, aggregated data used for model training is not personally identifiable and is not subject to deletion requests.</li>
+    </ul>
+
+    <h2 style="font-size:24px;font-weight:700;margin-top:32px;margin-bottom:16px;color:var(--text-primary,#1a1a1a)">9. Your Rights</h2>
+    <ul style="margin-bottom:24px;padding-left:20px">
+      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">Subject to applicable law, you have the right to: access the personal data we hold about you; correct inaccurate or incomplete data; withdraw consent; request erasure of your data; and lodge a grievance regarding our handling of your data.</li>
+      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">To exercise any of these rights, email <a href="mailto:support.pickmyseat@gmail.com">support.pickmyseat@gmail.com</a>. We will respond within 30 days.</li>
+    </ul>
+
+    <h2 style="font-size:24px;font-weight:700;margin-top:32px;margin-bottom:16px;color:var(--text-primary,#1a1a1a)">10. Grievance Officer / Data Protection Contact</h2>
+    <ul style="margin-bottom:24px;padding-left:20px">
+      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">In accordance with the IT Act, 2000, IT Rules, 2011, and DPDP Act, 2023, grievances relating to your personal data may be addressed to:</li>
+      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">Name: <strong>[Insert Grievance Officer Name]</strong><br/>Email: <a href="mailto:support.pickmyseat@gmail.com">support.pickmyseat@gmail.com</a><br/>We will acknowledge your grievance within 24 hours and aim to resolve it within 15 days.</li>
+    </ul>
+
+    <h2 style="font-size:24px;font-weight:700;margin-top:32px;margin-bottom:16px;color:var(--text-primary,#1a1a1a)">11. Data Security</h2>
+    <ul style="margin-bottom:24px;padding-left:20px">
+      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">We implement reasonable technical and organisational measures, including password hashing, encrypted database connections, and access controls, to protect your personal data against unauthorised access, alteration, disclosure, or destruction.</li>
+      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">No method of transmission or storage is 100% secure. We cannot guarantee absolute security, but we continuously work to strengthen our safeguards.</li>
+    </ul>
+
+    <h2 style="font-size:24px;font-weight:700;margin-top:32px;margin-bottom:16px;color:var(--text-primary,#1a1a1a)">12. Data Breach Notification</h2>
+    <ul style="margin-bottom:24px;padding-left:20px">
+      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">In the event of a data breach that is likely to result in a risk to your rights, we will notify affected users and the relevant regulatory authority (as applicable) without undue delay and in accordance with applicable law.</li>
+    </ul>
+
+    <h2 style="font-size:24px;font-weight:700;margin-top:32px;margin-bottom:16px;color:var(--text-primary,#1a1a1a)">13. Cookies and Local Storage</h2>
+    <ul style="margin-bottom:24px;padding-left:20px">
+      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">We use browser localStorage to store your login session token so you remain signed in between visits.</li>
+      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">We do not use third-party advertising or tracking cookies.</li>
+    </ul>
+
+    <h2 style="font-size:24px;font-weight:700;margin-top:32px;margin-bottom:16px;color:var(--text-primary,#1a1a1a)">14. Changes to This Policy</h2>
+    <ul style="margin-bottom:24px;padding-left:20px">
+      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">We may update this Privacy Policy from time to time. Material changes will be notified via a banner on the Service or by email at least 7 days before taking effect.</li>
+      <li style="margin-bottom:12px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">Continued use of the Service after changes take effect constitutes acceptance of the revised Policy.</li>
+    </ul>
+
+    <h2 style="font-size:24px;font-weight:700;margin-top:32px;margin-bottom:16px;color:var(--text-primary,#1a1a1a)">15. Contact Us</h2>
+    <p style="margin-bottom:24px;font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">For privacy concerns or to exercise your rights, email: <a href="mailto:support.pickmyseat@gmail.com">support.pickmyseat@gmail.com</a></p>
 
   </div>
 
   <footer class="footer" style="margin-top:60px;border-top:1px solid var(--border2)">
     <div class="footer-container">
       <div class="footer-brand">
-        <img class="brand-icon-img brand-logo-light" src="logo-light.png" alt="PickMySeat" style="width:32px;height:32px"/>
-        <img class="brand-icon-img brand-logo-dark" src="logo-dark.png" alt="PickMySeat" style="width:32px;height:32px"/>
+        <img class="brand-icon-img" src="logo-light.png" alt="PickMySeat" style="width:32px;height:32px"/>
         <span class="brand-name">PickMySeat</span>
         <p style="font-size:13px;color:var(--text-muted,#666);margin-top:8px">AI-powered TNEA seat predictor</p>
       </div>
