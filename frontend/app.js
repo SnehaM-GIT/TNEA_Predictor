@@ -1399,7 +1399,11 @@ async function signupUser() {
   const email    = document.getElementById('signupEmail')?.value?.trim();
   const mobile   = document.getElementById('signupMobile')?.value?.trim();
   const password = document.getElementById('signupPassword')?.value;
-  const category = document.getElementById('signupCategory')?.value || 'OC';
+  const category = document.getElementById('signupCategory')?.value;
+  if (!category) {
+    showToast('Please select your community category', 'error');
+    return;
+  }
   const termsAccepted = document.getElementById('signupTermsCheckbox')?.checked;
   if (!termsAccepted) {
     showError('Please accept the Terms of Service and Privacy Policy to continue.');
@@ -3130,7 +3134,7 @@ function showVerificationRequiredModal(isGuest = false) {
   modal.id = 'verificationRequiredModal';
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px';
   modal.innerHTML = `
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:32px;max-width:420px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+    <div style="background:var(--surface1) !important;border:1px solid var(--border2);border-radius:var(--radius-lg);padding:32px;max-width:420px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);color:var(--text-primary) !important">
       <div style="font-size:40px;margin-bottom:12px">🔐</div>
       <h3 style="margin:0 0 10px;font-size:18px;color:var(--text-primary)">Verification Required</h3>
       <p style="color:var(--text-muted);font-size:14px;margin:0 0 24px;line-height:1.5">

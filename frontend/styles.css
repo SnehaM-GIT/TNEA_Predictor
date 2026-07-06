@@ -692,21 +692,26 @@ html.dark-theme .nav-chevron {
 }
 
 html.dark-theme .nav-dropdown {
-  background: #ffffff !important;
-  border-color: #e2e8f0 !important;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.12) !important;
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4) !important;
 }
 
 html.dark-theme .dropdown-item {
-  color: #1a1a2e !important;
+  color: #f8fafc !important;
 }
 
 html.dark-theme .dropdown-item:hover {
-  background: #f1f5f9 !important;
+  background: #334155 !important;
+  color: #ffffff !important;
 }
 
 html.dark-theme #dropdownInfo {
-  color: #64748b !important;
+  color: #94a3b8 !important;
+}
+
+html.dark-theme .dropdown-divider {
+  border-color: #334155 !important;
 }
 
 html.dark-theme #navUpgradeBtn {
