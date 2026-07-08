@@ -96,8 +96,7 @@ def predict_colleges(
     authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db)
 ):
-
-rank_list_released = os.getenv("RANK_LIST_RELEASED", "false").lower() == "true"
+    rank_list_released = os.getenv("RANK_LIST_RELEASED", "false").lower() == "true"
     user = _get_optional_user(authorization, db)
     if not rank_list_released and not authorization:
         _check_guest_ip_limit(get_remote_address(request))
