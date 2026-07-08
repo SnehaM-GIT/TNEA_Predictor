@@ -1201,10 +1201,11 @@ async function runFreePrediction() {
       return;
     }
     const data = await res.json();
-    if (res.status === 403 && data.detail === 'verification_required') {
-      showVerificationRequiredModal(true);
-      return;
-    }
+    // Rank verification is optional — do not block predictions if not verified
+    // if (res.status === 403 && data.detail === 'verification_required') {
+    //   showVerificationRequiredModal(true);
+    //   return;
+    // }
     console.log('[freePredict] status:', res.status, 'body:', data);
     if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
     recs       = data.recommendations || [];
@@ -1529,14 +1530,13 @@ function renderProfile() {
 document.getElementById('profileRankSection')
     ?.classList.add('hidden');
 
-    if (App.rankListReleased) {
+  // Always show the rank verification section (optional feature — not gated by rankListReleased)
   const appIdSection = document.getElementById('profileAppIdSection');
   if (appIdSection) {
     appIdSection.classList.remove('hidden');
     const appIdInput = document.getElementById('profileAppId');
     if (appIdInput) appIdInput.value = App.profile.applicationId || '';
   }
-}
 
   if (App.userGrade === 1 && App.profile.rank) {
     const rankEl = document.getElementById('profileRank');
@@ -2115,10 +2115,11 @@ async function renderComboProbCards() {
       showError('Too many predictions today. Come back tomorrow.', 429);
       return;
     }
-    if (res.status === 403 && data.detail === 'verification_required') {
-      showVerificationRequiredModal(false);
-      return;
-    }
+    // Rank verification is optional — do not block predictions if not verified
+    // if (res.status === 403 && data.detail === 'verification_required') {
+    //   showVerificationRequiredModal(false);
+    //   return;
+    // }
     console.log('API response:', JSON.stringify(data, null, 2));
     if (!res.ok) {
       console.error('predict/colleges failed:', res.status, data);
@@ -2290,10 +2291,11 @@ async function runPremiumQuickPredict() {
       })
     });
     const data = await res.json();
-    if (res.status === 403 && data.detail === 'verification_required') {
-      showVerificationRequiredModal(false);
-      return;
-    }
+    // Rank verification is optional — do not block predictions if not verified
+    // if (res.status === 403 && data.detail === 'verification_required') {
+    //   showVerificationRequiredModal(false);
+    //   return;
+    // }
     if (!res.ok) { showError(data.detail || 'Prediction failed', res.status); return; }
 
     const rec    = data.recommendations?.[0];
@@ -3455,9 +3457,9 @@ async function checkRankListStatus() {
     //   banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:999;width:100%';
     //   banner.innerHTML = `
     //     <div style="background:linear-gradient(135deg,#6C63FF,#8B5CF6);color:white;padding:14px 24px;text-align:center;font-weight:600;font-size:14px">
-    //       🏆 2026 TNEA Rank List is out! Enter your Application ID and Rank for accurate predictions.
+    //       🏆 2026 TNEA Rank List is out! Enter your Application ID and Rank in Profile for more accurate predictions (optional).
     //       <button onclick="navigateTo('profile')" style="margin-left:12px;background:white;color:#6C63FF;border:none;padding:6px 14px;border-radius:6px;font-weight:700;cursor:pointer">
-    //         Update Now →
+    //         Improve Accuracy →
     //       </button>
     //     </div>`;
     //   document.body.style.paddingTop = '60px';
@@ -3476,6 +3478,7 @@ async function verifyAndSaveRank() {
 
   if (!appId) { showToast('Please enter your Application ID', 'error'); return; }
   if (!rank)  { showToast('Please enter your rank', 'error'); return; }
+  // Note: rank verification is optional — users can access all features without verifying
 
   const btn = document.querySelector('#profileAppIdSection .btn-primary');
   if (btn) { btn.disabled = true; btn.textContent = 'Verifying...'; }
