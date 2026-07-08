@@ -96,18 +96,12 @@ def predict_colleges(
     authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db)
 ):
-    rank_list_released = os.getenv("RANK_LIST_RELEASED", "false").lower() == "true"
+
+rank_list_released = os.getenv("RANK_LIST_RELEASED", "false").lower() == "true"
     user = _get_optional_user(authorization, db)
-
-    if rank_list_released:
-        if not user or not user.rank:
-            raise HTTPException(
-                status_code=403,
-                detail="verification_required"
-            )
-
     if not rank_list_released and not authorization:
         _check_guest_ip_limit(get_remote_address(request))
+
 
     forced_rank = user.rank if (user and user.rank) else None
     marks = data.maths + data.physics / 2 + data.chemistry / 2
