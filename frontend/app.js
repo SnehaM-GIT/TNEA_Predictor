@@ -1628,13 +1628,14 @@ function setRankPhase(phase) {
 // PREFERRED COLLEGES — Grade 2: max 5, Grade 1: unlimited search
 // ============================================================
 async function renderPreferredColleges() {
+  const maxColleges = App.userGrade === 1 ? 999 : 5;
   if (COLLEGES.length === 0) await loadCollegesAndBranches();
   const grid = document.getElementById('preferredCollegesGrid');
   if (!grid) return;
   grid.innerHTML = '';
 
   const isPremium = App.userGrade === 1;
-  const max       = isPremium ? Infinity : 5;
+  const max       = isPremium ? Infinity : maxColleges;
   const current   = App.profile.preferredColleges;
 
   // Show added colleges
@@ -1653,13 +1654,13 @@ async function renderPreferredColleges() {
   });
 
   // Add slot — Grade 2: max 5, Grade 1: always show add
-  const canAdd = isPremium ? true : current.length < 5;
+  const canAdd = isPremium ? true : current.length < maxColleges;
   if (canAdd) {
     const addId = `addCollegeSearch_${Date.now()}`;
     grid.innerHTML += `
       <div class="preferred-slot add-slot" style="flex-direction:column;align-items:stretch;gap:8px;height:auto;padding:12px">
         <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">
-          ${isPremium ? '+ Add any college (Premium — unlimited)' : `+ Add College ${current.length+1} of 5`}
+          ${isPremium ? '+ Add any college (Premium — unlimited)' : `+ Add College ${current.length+1} of ${maxColleges}`}
         </div>
         <div id="${addId}"></div>
       </div>`;
@@ -1672,10 +1673,10 @@ async function renderPreferredColleges() {
     }, 0);
   }
 
-  if (!isPremium && current.length >= 5) {
+  if (App.userGrade !== 1 && current.length >= maxColleges) {
     grid.innerHTML += `
       <div style="grid-column:1/-1;font-size:13px;color:var(--text-muted);padding:8px 0">
-        Maximum 5 colleges for Student plan.
+        Maximum ${maxColleges} colleges for Student plan.
         <button class="link-btn" onclick="showUpgradeModal('colleges')">
           Upgrade to Premium for unlimited →
         </button>
@@ -1684,15 +1685,15 @@ async function renderPreferredColleges() {
 }
 
 async function renderPreferredCourses() {
+  const maxCourses = App.userGrade === 1 ? 999 : 3;
   if (BRANCHES.length === 0) await loadCollegesAndBranches();
   const collegeCodes = App.profile.preferredColleges.map(c => c.code);
   const availableBranches = await getBranchesForColleges(collegeCodes);
   const grid = document.getElementById('preferredCoursesGrid');
   if (!grid) return;
   grid.innerHTML = '';
-  const max = 3;
 
-  for (let i = 0; i < max; i++) {
+  for (let i = 0; i < maxCourses; i++) {
     const course = App.profile.preferredCourses[i];
     if (course) {
       grid.innerHTML += `
@@ -1758,8 +1759,9 @@ function addPreferredCourse(code) {
   if (App.profile.preferredCourses.find(c => c.code === code)) {
     showToast('Course already added','error'); renderPreferredCourses(); return;
   }
-  if (App.profile.preferredCourses.length >= 3) {
-    showToast('Maximum 3 courses','error'); return;
+  const maxCourses = App.userGrade === 1 ? 999 : 3;
+  if (App.profile.preferredCourses.length >= maxCourses) {
+    showToast(`Maximum ${maxCourses} courses`,'error'); return;
   }
   App.profile.preferredCourses.push(course);
   renderPreferredCourses();
@@ -1940,9 +1942,19 @@ async function confirmMarksUpdate() {
         App.profile.physics   = p;
         App.profile.chemistry = c;
         App.profile.marksLocked = true;
+        App.profile.aggregate = calculateAggregate(App.profile.maths, App.profile.physics, App.profile.chemistry);
         closeMarksUpdate();
-        showToast('Marks updated successfully ✅', 'success');
-        renderDashboard();
+        if (App.currentPage === 'dashboard') {
+          await renderDashboard();
+          setTimeout(async () => {
+            await renderComboProbCards();
+            await renderChoiceList();
+          }, 300);
+        }
+        if (App.currentPage === 'profile') {
+          renderProfile();
+        }
+        showToast('Marks updated! Predictions are refreshing...', 'success');
       },
       modal: {
         ondismiss: function() { showToast('Payment cancelled', 'error'); }
@@ -2653,7 +2665,13 @@ function simToggleChoice(collegeCode, branchCode, branchName, collegeName) {
   } else {
     App.simChoices.push({ collegeCode, branchCode, branchName, collegeName, order: App.simChoices.length+1 });
   }
+  const simCollegeListEl = document.getElementById('simCollegeList');
+  const savedScrollTop = simCollegeListEl ? simCollegeListEl.scrollTop : 0;
   renderCounsellingSimulation();
+  setTimeout(() => {
+    const newSimCollegeListEl = document.getElementById('simCollegeList');
+    if (newSimCollegeListEl && savedScrollTop) newSimCollegeListEl.scrollTop = savedScrollTop;
+  }, 50);
 }
 
 function simClearChoices() { App.simChoices=[]; renderCounsellingSimulation(); }
@@ -3222,7 +3240,10 @@ function initiatePayment() {
     return;
   }
   closeUpgradeModal();
-  const agg     = calculateAggregate(App.profile.maths||0, App.profile.physics||0, App.profile.chemistry||0);
+  const maths     = App.profile.maths || parseFloat(document.getElementById('profileMaths')?.value) || null;
+  const physics   = App.profile.physics || parseFloat(document.getElementById('profilePhysics')?.value) || null;
+  const chemistry = App.profile.chemistry || parseFloat(document.getElementById('profileChemistry')?.value) || null;
+  const agg       = (maths && physics && chemistry) ? calculateAggregate(maths, physics, chemistry) : null;
   const content = document.getElementById('payConfirmContent');
   if (content) {
     content.innerHTML = `
@@ -3232,13 +3253,13 @@ function initiatePayment() {
         <tr><td style="padding:10px 0;color:var(--text-muted);border-bottom:1px solid var(--border)">Email</td>
             <td style="padding:10px 0;font-weight:600;text-align:right;border-bottom:1px solid var(--border)">${escapeHTML(App.profile.email)||'—'}</td></tr>
         <tr><td style="padding:10px 0;color:var(--text-muted);border-bottom:1px solid var(--border)">Mathematics</td>
-            <td style="padding:10px 0;font-weight:600;text-align:right;border-bottom:1px solid var(--border)">${App.profile.maths??'—'} / 100</td></tr>
+            <td style="padding:10px 0;font-weight:600;text-align:right;border-bottom:1px solid var(--border)">${maths ? maths + ' / 100' : '— / 100'}</td></tr>
         <tr><td style="padding:10px 0;color:var(--text-muted);border-bottom:1px solid var(--border)">Physics</td>
-            <td style="padding:10px 0;font-weight:600;text-align:right;border-bottom:1px solid var(--border)">${App.profile.physics??'—'} / 100</td></tr>
+            <td style="padding:10px 0;font-weight:600;text-align:right;border-bottom:1px solid var(--border)">${physics ? physics + ' / 100' : '— / 100'}</td></tr>
         <tr><td style="padding:10px 0;color:var(--text-muted);border-bottom:1px solid var(--border)">Chemistry</td>
-            <td style="padding:10px 0;font-weight:600;text-align:right;border-bottom:1px solid var(--border)">${App.profile.chemistry??'—'} / 100</td></tr>
+            <td style="padding:10px 0;font-weight:600;text-align:right;border-bottom:1px solid var(--border)">${chemistry ? chemistry + ' / 100' : '— / 100'}</td></tr>
         <tr><td style="padding:14px 0;font-weight:700;font-size:15px">TNEA Aggregate</td>
-            <td style="padding:14px 0;font-weight:900;color:var(--accent);font-size:24px;text-align:right">${agg>0?agg:'—'} / 200</td></tr>
+            <td style="padding:14px 0;font-weight:900;color:var(--accent);font-size:24px;text-align:right">${agg ? agg + ' / 200' : '— / 200'}</td></tr>
       </table>
       <div style="font-size:12px;color:var(--text-muted);margin-top:8px;text-align:center">
         Marks are locked after payment · Update costs ₹25
@@ -3324,6 +3345,14 @@ function handlePaymentSuccess(paymentId) {
   App.profile.hasPaid     = true;
   App.profile.marksLocked = true;
   App.userGrade           = 1;
+  if (App.profile.rank) {
+    const rankVerifyInput = document.getElementById('profileRankVerify');
+    if (rankVerifyInput) rankVerifyInput.value = App.profile.rank;
+  }
+  if (App.profile.applicationId) {
+    const appIdInput = document.getElementById('profileAppId');
+    if (appIdInput) appIdInput.value = App.profile.applicationId;
+  }
   App.slotsLeft           = Math.max(0, App.slotsLeft - 1);
   updateNav();   // immediately hide the "Get Premium" nav button and show crown badge
   // FIRESTORE: db.collection('users').doc(uid).update({ has_paid:true, razorpay_payment_id:paymentId })
