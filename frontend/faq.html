@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FAQ — PickMySeat</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="nav-container">
+      <div class="nav-brand">
+        <img class="brand-icon-img" src="logo.png" alt="PickMySeat" style="width:32px;height:32px"/>
+        <span class="brand-name">PickMySeat</span>
+      </div>
+    </div>
+  </nav>
+
+  <button onclick="window.close()" style="position:fixed;top:20px;right:20px;background:var(--surface2,#f5f5f5);border:1px solid var(--border2,#ddd);color:var(--text-primary,#1a1a1a);padding:8px 12px;border-radius:6px;cursor:pointer;font-size:14px;font-weight:600;font-family:inherit;z-index:1000;transition:all 0.2s ease">✕ Close</button>
+
+  <div style="max-width:900px;margin:0 auto;padding:60px 24px;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+
+    <h1 style="font-size:48px;font-weight:800;margin-bottom:8px;color:var(--text-primary,#1a1a1a)">Frequently Asked Questions</h1>
+    <p style="font-size:14px;color:var(--text-muted,#666);margin-bottom:40px">Everything you need to know about PickMySeat</p>
+
+    <h2 style="font-size:24px;font-weight:700;margin-top:32px;margin-bottom:16px;color:var(--text-primary,#1a1a1a)">General</h2>
+
+    <div style="margin-bottom:20px">
+      <p style="font-size:16px;font-weight:700;margin-bottom:6px;color:var(--text-primary,#1a1a1a)">What is PickMySeat?</p>
+      <p style="font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">PickMySeat is an AI-powered TNEA seat predictor. Enter your 12th marks and get predictions on which colleges and branches you're likely to get, based on 2021–2025 TNEA allotment data.</p>
+    </div>
+    <div style="margin-bottom:20px">
+      <p style="font-size:16px;font-weight:700;margin-bottom:6px;color:var(--text-primary,#1a1a1a)">Is PickMySeat affiliated with TNEA or Anna University?</p>
+      <p style="font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">No. We are an independent platform using publicly available TNEA historical data. For official counselling, always refer to tneaonline.org.</p>
+    </div>
+    <div style="margin-bottom:24px">
+      <p style="font-size:16px;font-weight:700;margin-bottom:6px;color:var(--text-primary,#1a1a1a)">How accurate are the predictions?</p>
+      <p style="font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">Predictions are based on 5 years of real TNEA allotment data (2021–2025) trained on 6 lakh+ student records. They are probability estimates, not guarantees — actual allotments depend on rank, seat availability, and competition each year.</p>
+    </div>
+
+    <h2 style="font-size:24px;font-weight:700;margin-top:32px;margin-bottom:16px;color:var(--text-primary,#1a1a1a)">Marks &amp; Aggregate</h2>
+
+    <div style="margin-bottom:20px">
+      <p style="font-size:16px;font-weight:700;margin-bottom:6px;color:var(--text-primary,#1a1a1a)">How is TNEA aggregate calculated?</p>
+      <p style="font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">Maths + (Physics ÷ 2) + (Chemistry ÷ 2). Maximum is 200.</p>
+    </div>
+    <div style="margin-bottom:20px">
+      <p style="font-size:16px;font-weight:700;margin-bottom:6px;color:var(--text-primary,#1a1a1a)">Can I change my marks after saving?</p>
+      <p style="font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">Marks are locked after first submission. Premium users can update marks once for ₹25 after board results are out.</p>
+    </div>
+    <div style="margin-bottom:24px">
+      <p style="font-size:16px;font-weight:700;margin-bottom:6px;color:var(--text-primary,#1a1a1a)">Why are my marks locked?</p>
+      <p style="font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">To prevent gaming predictions. Marks lock ensures predictions are based on your real scores.</p>
+    </div>
+
+    <h2 style="font-size:24px;font-weight:700;margin-top:32px;margin-bottom:16px;color:var(--text-primary,#1a1a1a)">Predictions</h2>
+
+    <div style="margin-bottom:20px">
+      <p style="font-size:16px;font-weight:700;margin-bottom:6px;color:var(--text-primary,#1a1a1a)">What does the probability percentage mean?</p>
+      <p style="font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">It's the likelihood of getting a seat in that college-branch combo based on your rank vs historical closing ranks.</p>
+    </div>
+    <div style="margin-bottom:20px">
+      <p style="font-size:16px;font-weight:700;margin-bottom:6px;color:var(--text-primary,#1a1a1a)">What is closing rank?</p>
+      <p style="font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">The rank of the last student allotted to that college-branch-community combination in a given year.</p>
+    </div>
+    <div style="margin-bottom:20px">
+      <p style="font-size:16px;font-weight:700;margin-bottom:6px;color:var(--text-primary,#1a1a1a)">Why does my community matter?</p>
+      <p style="font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">TNEA has separate seats for OC, BC, BCM, MBC, SC, SCA, ST. Closing ranks differ by community — your prediction is based on your specific community's historical data.</p>
+    </div>
+    <div style="margin-bottom:24px">
+      <p style="font-size:16px;font-weight:700;margin-bottom:6px;color:var(--text-primary,#1a1a1a)">Why is a course not showing for a college?</p>
+      <p style="font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">We only show courses that had actual allotments in 2021–2025. Newly added courses with no historical data won't appear.</p>
+    </div>
+
+    <h2 style="font-size:24px;font-weight:700;margin-top:32px;margin-bottom:16px;color:var(--text-primary,#1a1a1a)">Plans &amp; Payment</h2>
+
+    <div style="margin-bottom:20px">
+      <p style="font-size:16px;font-weight:700;margin-bottom:6px;color:var(--text-primary,#1a1a1a)">What's free on PickMySeat?</p>
+      <p style="font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">One free prediction without signup — enter marks, pick 1 college and 1 course. Registered (free) users get 5 colleges × 3 courses = 15 combo predictions.</p>
+    </div>
+    <div style="margin-bottom:20px">
+      <p style="font-size:16px;font-weight:700;margin-bottom:6px;color:var(--text-primary,#1a1a1a)">What does Premium (₹149) give me?</p>
+      <p style="font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">Rank prediction, AI-ordered Choice List, Full TNEA Counselling Simulation, unlimited college search, and the ability to update marks for ₹25 after board results.</p>
+    </div>
+    <div style="margin-bottom:20px">
+      <p style="font-size:16px;font-weight:700;margin-bottom:6px;color:var(--text-primary,#1a1a1a)">Is ₹149 a one-time payment?</p>
+      <p style="font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">Yes. One-time, lifetime access. No subscription.</p>
+    </div>
+    <div style="margin-bottom:20px">
+      <p style="font-size:16px;font-weight:700;margin-bottom:6px;color:var(--text-primary,#1a1a1a)">Can I get a refund?</p>
+      <p style="font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">Payments are non-refundable once prediction access is granted. Contact <a href="mailto:support.pickmyseat@gmail.com">support.pickmyseat@gmail.com</a> for payment issues.</p>
+    </div>
+    <div style="margin-bottom:24px">
+      <p style="font-size:16px;font-weight:700;margin-bottom:6px;color:var(--text-primary,#1a1a1a)">Is payment secure?</p>
+      <p style="font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">Yes. Payments are processed via Razorpay with bank-level encryption.</p>
+    </div>
+
+    <h2 style="font-size:24px;font-weight:700;margin-top:32px;margin-bottom:16px;color:var(--text-primary,#1a1a1a)">Counselling Simulation</h2>
+
+    <div style="margin-bottom:20px">
+      <p style="font-size:16px;font-weight:700;margin-bottom:6px;color:var(--text-primary,#1a1a1a)">What is the Counselling Simulation?</p>
+      <p style="font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">A step-by-step mock of the real TNEA counselling portal — status page, choice filling, allotment result, and provisional order. It's for practice only, not connected to actual TNEA.</p>
+    </div>
+    <div style="margin-bottom:20px">
+      <p style="font-size:16px;font-weight:700;margin-bottom:6px;color:var(--text-primary,#1a1a1a)">The simulation allotted me a college — is that my actual seat?</p>
+      <p style="font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">No. It's a simulation only. Your actual allotment will be on tneaonline.org.</p>
+    </div>
+    <div style="margin-bottom:20px">
+      <p style="font-size:16px;font-weight:700;margin-bottom:6px;color:var(--text-primary,#1a1a1a)">Can I rely on PickMySeat for my final college choice?</p>
+      <p style="font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">PickMySeat is a reference tool to help you understand your chances. Always cross-check with official TNEA data and consult your school or parents before finalising your choice list.</p>
+    </div>
+    <div style="margin-bottom:20px">
+      <p style="font-size:16px;font-weight:700;margin-bottom:6px;color:var(--text-primary,#1a1a1a)">Why might my actual result differ from the prediction?</p>
+      <p style="font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">TNEA allotments depend on the total number of applicants, new colleges or branches added, seat matrix changes, and competition from that year's student pool — all of which can shift closing ranks year to year.</p>
+    </div>
+    <div style="margin-bottom:24px">
+      <p style="font-size:16px;font-weight:700;margin-bottom:6px;color:var(--text-primary,#1a1a1a)">PickMySeat predicted I'd get a seat but I didn't. Why?</p>
+      <p style="font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">Predictions are based on historical data and are probabilistic in nature. A 70% probability still means a 30% chance of not getting that seat. We strongly recommend adding safer options with higher probabilities to your choice list.</p>
+    </div>
+
+    <h2 style="font-size:24px;font-weight:700;margin-top:32px;margin-bottom:16px;color:var(--text-primary,#1a1a1a)">2026 Rank List</h2>
+
+    <div style="margin-bottom:20px">
+      <p style="font-size:16px;font-weight:700;margin-bottom:6px;color:var(--text-primary,#1a1a1a)">What happens when the 2026 rank list is released?</p>
+      <p style="font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">Enter your Application ID and rank to verify against the official list. Predictions then use your real rank instead of a predicted one — making them significantly more accurate.</p>
+    </div>
+    <div style="margin-bottom:24px">
+      <p style="font-size:16px;font-weight:700;margin-bottom:6px;color:var(--text-primary,#1a1a1a)">Where do I find my Application ID?</p>
+      <p style="font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">It's in your TNEA registration confirmation or on tneaonline.org after logging in.</p>
+    </div>
+
+    <h2 style="font-size:24px;font-weight:700;margin-top:32px;margin-bottom:16px;color:var(--text-primary,#1a1a1a)">Account</h2>
+
+    <div style="margin-bottom:20px">
+      <p style="font-size:16px;font-weight:700;margin-bottom:6px;color:var(--text-primary,#1a1a1a)">I forgot my password. What do I do?</p>
+      <p style="font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">Click 'Forgot password?' on the login page. A reset link will be sent to your email.</p>
+    </div>
+    <div style="margin-bottom:20px">
+      <p style="font-size:16px;font-weight:700;margin-bottom:6px;color:var(--text-primary,#1a1a1a)">Can I use one account for multiple students?</p>
+      <p style="font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">No. One account per student. Each account has one set of marks and predictions.</p>
+    </div>
+    <div style="margin-bottom:24px">
+      <p style="font-size:16px;font-weight:700;margin-bottom:6px;color:var(--text-primary,#1a1a1a)">How do I contact support?</p>
+      <p style="font-size:15px;line-height:1.6;color:var(--text-secondary,#333)">Email <a href="mailto:support.pickmyseat@gmail.com">support.pickmyseat@gmail.com</a></p>
+    </div>
+
+  </div>
+
+  <footer class="footer" style="margin-top:60px;border-top:1px solid var(--border2)">
+    <div class="footer-container">
+      <div class="footer-brand">
+        <img class="brand-icon-img" src="logo.png" alt="PickMySeat" style="width:32px;height:32px"/>
+        <span class="brand-name">PickMySeat</span>
+        <p style="font-size:13px;color:var(--text-muted,#666);margin-top:8px">AI-powered TNEA seat predictor</p>
+      </div>
+      <div class="footer-links">
+        <span style="font-size:13px">Built on TNEA 2021–2025 open data</span>
+        <span>·</span>
+        <a href="privacy.html" target="_blank" rel="noopener noreferrer" style="font-size:13px;color:var(--accent);text-decoration:none;font-weight:500">Privacy Policy</a>
+        <span>·</span>
+        <a href="terms.html" target="_blank" rel="noopener noreferrer" style="font-size:13px;color:var(--accent);text-decoration:none;font-weight:500">Terms of Service</a>
+        <span>·</span>
+        <a href="mailto:support.pickmyseat@gmail.com" style="font-size:13px;color:var(--accent);text-decoration:none;font-weight:500">Contact: support.pickmyseat@gmail.com</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

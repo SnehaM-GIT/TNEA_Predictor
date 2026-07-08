@@ -749,11 +749,22 @@ function updateNav() {
   const navProf    = document.getElementById('navProfile');
   const tierBadge  = document.getElementById('navTierBadge');
 
-  // Free predict button — show for guests (3) and premium (1), hide for grade 2
-const freePredictBtn = document.getElementById('heroTryPredictionBtn');
-const getAccessBtn   = document.getElementById('heroGetAccessBtn');
-if (freePredictBtn) freePredictBtn.classList.toggle('hidden', !!App.currentUser);
-if (getAccessBtn)   getAccessBtn.classList.toggle('hidden', !!App.currentUser);
+  const freePredictBtn = document.getElementById('heroTryPredictionBtn');
+  const getAccessBtn   = document.getElementById('heroGetAccessBtn');
+
+  if (!App.currentUser) {
+    // Not logged in — show Try Free Prediction, hide Get Full Access
+    if (freePredictBtn) freePredictBtn.classList.remove('hidden');
+    if (getAccessBtn)   getAccessBtn.classList.add('hidden');
+  } else if (App.userGrade === 1) {
+    // Premium — hide both
+    if (freePredictBtn) freePredictBtn.classList.add('hidden');
+    if (getAccessBtn)   getAccessBtn.classList.add('hidden');
+  } else {
+    // Grade 2 logged in — hide Try Free, show Get Full Access
+    if (freePredictBtn) freePredictBtn.classList.add('hidden');
+    if (getAccessBtn)   getAccessBtn.classList.remove('hidden');
+  }
 
   // active nav link highlight
   document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
@@ -889,22 +900,7 @@ function initLanding() {
   loadDynamicTicker();     // then replace with real user names from API
   updateLiveCounts();
   observeScrollAnimations();
-  updateLandingHero();
   updateLandingForPremium();
-}
-
-// Hero CTA buttons depend on login state. Guests see "Try Free Prediction"
-// + "Get Full Access". Logged-in users get a single "Try a Prediction Now"
-// button that runs the full profile-based prediction on the dashboard (not
-// the limited guest free-predict flow), so the hero never sits empty.
-function updateLandingHero() {
-  const freeBtn    = document.getElementById('heroTryFreeBtn');
-  const accessBtn  = document.getElementById('heroGetAccessBtn');
-  const predictBtn = document.getElementById('heroTryPredictionBtn');
-  const loggedIn   = !!App.currentUser;
-  if (freeBtn)    freeBtn.style.display    = loggedIn ? 'none' : '';
-  if (accessBtn)  accessBtn.style.display  = loggedIn ? 'none' : '';
-  if (predictBtn) predictBtn.classList.toggle('hidden', !loggedIn);
 }
 
 function renderTicker(extraEvents = []) {
@@ -1404,7 +1400,11 @@ async function signupUser() {
   const email    = document.getElementById('signupEmail')?.value?.trim();
   const mobile   = document.getElementById('signupMobile')?.value?.trim();
   const password = document.getElementById('signupPassword')?.value;
-  const category = document.getElementById('signupCategory')?.value || 'OC';
+  const category = document.getElementById('signupCategory')?.value;
+  if (!category) {
+    showToast('Please select your community category', 'error');
+    return;
+  }
   const termsAccepted = document.getElementById('signupTermsCheckbox')?.checked;
   if (!termsAccepted) {
     showError('Please accept the Terms of Service and Privacy Policy to continue.');
@@ -3136,7 +3136,7 @@ function showVerificationRequiredModal(isGuest = false) {
   modal.id = 'verificationRequiredModal';
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px';
   modal.innerHTML = `
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:32px;max-width:420px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+    <div style="background:var(--surface1) !important;border:1px solid var(--border2);border-radius:var(--radius-lg);padding:32px;max-width:420px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);color:var(--text-primary) !important">
       <div style="font-size:40px;margin-bottom:12px">🔐</div>
       <h3 style="margin:0 0 10px;font-size:18px;color:var(--text-primary)">Verification Required</h3>
       <p style="color:var(--text-muted);font-size:14px;margin:0 0 24px;line-height:1.5">
@@ -3527,18 +3527,12 @@ async function verifyAndSaveRank() {
 // ============================================================
 // THEME (DARK/LIGHT MODE)
 // ============================================================
-function applyLogoTheme(isDark) {
-  const src = isDark ? 'logo-dark.png' : 'logo-light.png';
-  document.querySelectorAll('.brand-icon-img').forEach(img => { img.src = src; });
-}
-
 function initTheme() {
   const savedTheme = localStorage.getItem('pms_theme');
 
   // Default to light mode unless the user explicitly saved 'dark' previously
   if (savedTheme === 'dark') {
     document.documentElement.classList.add('dark-theme');
-    applyLogoTheme(true);
     const btn = document.getElementById('themeToggleBtn');
     if (btn) {
       btn.innerHTML = '☀️';
@@ -3546,7 +3540,6 @@ function initTheme() {
     }
   } else {
     document.documentElement.classList.remove('dark-theme');
-    applyLogoTheme(false);
     const btn = document.getElementById('themeToggleBtn');
     if (btn) {
       btn.innerHTML = '🌙';
@@ -3558,7 +3551,6 @@ function initTheme() {
 function toggleTheme() {
   const html = document.documentElement;
   const isDark = html.classList.toggle('dark-theme');
-  applyLogoTheme(isDark);
   const btn = document.getElementById('themeToggleBtn');
 
   if (isDark) {

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="icon" type="image/png" href="logo-light.png" />
+  <link rel="icon" type="image/png" href="logo.png" />
   <meta name="description" content="PickMySeat predicts your TNEA college seat. Enter your marks and get your top 5 college recommendations with admission probability." />
   <meta name="keywords" content="TNEA, engineering admission, Tamil Nadu, college predictor, seat allotment, TNEA 2026" />
   <meta property="og:title" content="PickMySeat — Know Your College Before Results" />
@@ -107,6 +107,9 @@
         <span class="price-new" style="font-size:28px">₹25</span>
         <span class="price-label">one-time marks update</span>
       </div>
+      <div style="background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.3);border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:var(--text-secondary)">
+        ✏️ <strong>Edit your marks below first</strong>, then click Pay ₹25 to save them. Your marks will be locked again after payment.
+      </div>
       <div class="form-group" style="margin-top:16px">
         <label>Mathematics <span class="label-note">/ 100</span></label>
         <input type="number" id="updateMath" min="0" max="100" class="text-input" placeholder="e.g. 92"/>
@@ -131,7 +134,7 @@
   <nav class="navbar" id="navbar">
     <div class="nav-container">
       <div class="nav-brand" onclick="navigateTo('landing')">
-        <img class="brand-icon-img brand-logo-light" src="logo-light.png" alt="PickMySeat"/>
+        <img class="brand-icon-img" src="logo.png" alt="PickMySeat"/>
      
         <span class="brand-name">PickMySeat</span>
         <span id="navTierBadge" class="nav-tier-badge hidden"></span>
@@ -196,7 +199,7 @@
 <button class="btn-primary btn-glow btn-large" id="heroTryPredictionBtn" onclick="navigateTo('free-predict')">
             🎯 Try Free Prediction
           </button>
-          <button class="btn-outline btn-large" id="heroGetAccessBtn" onclick="navigateTo('auth')">
+          <button class="btn-outline btn-large" id="heroGetAccessBtn" onclick="getFullAccess()">
             🚀 Get Full Access
           </button>
         </div>
@@ -316,6 +319,10 @@
           </div>
 
         </div>
+
+        <div style="text-align:center;margin-top:32px">
+          <a href="faq.html" target="_blank" rel="noopener noreferrer" style="font-size:14px;color:var(--accent);text-decoration:none;font-weight:600">Have questions? Read our FAQ →</a>
+        </div>
       </div>
     </section>
 
@@ -340,18 +347,16 @@
     <footer class="footer">
       <div class="footer-container">
         <div class="footer-brand">
-          <img class="brand-icon-img brand-logo-light" src="logo-light.png" alt="PickMySeat"/>
-        
-          <span class="brand-name">PickMySeat</span>
+          <div class="footer-brand-top">
+            <img class="brand-icon-img" src="logo.png" alt="PickMySeat"/>
+            <span class="brand-name">PickMySeat</span>
+          </div>
           <p>AI-powered TNEA seat predictor</p>
         </div>
         <div class="footer-links">
           <span>Built on TNEA 2021–2025 open data</span>
-          <span>·</span>
           <a href="privacy.html" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none;font-weight:500">Privacy Policy</a>
-          <span>·</span>
           <a href="terms.html" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none;font-weight:500">Terms of Service</a>
-          <span>·</span>
           <a href="mailto:support.pickmyseat@gmail.com" style="color:var(--accent);text-decoration:none;font-weight:500">Contact: support.pickmyseat@gmail.com</a>
         </div>
       </div>
@@ -529,7 +534,7 @@
     <div class="page-container narrow center-page">
       <div class="auth-box">
         <div class="auth-brand">
-          <img class="brand-icon-img large brand-logo-light" src="logo-light.png" alt="PickMySeat"/>
+          <img class="brand-icon-img large" src="logo.png" alt="PickMySeat"/>
           
           <h2>PickMySeat</h2>
         </div>
@@ -585,6 +590,19 @@
           <div class="form-group">
             <label>Mobile Number</label>
             <input type="tel" id="signupMobile" class="text-input" placeholder="99999 99999" maxlength="10" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,10)"/>
+          </div>
+          <div class="form-group">
+            <label>Community</label>
+            <select id="signupCategory" class="select-input full-width" required>
+              <option value="" disabled selected>Select your community</option>
+              <option value="OC">OC (Open Category)</option>
+              <option value="BC">BC (Backward Class)</option>
+              <option value="BCM">BCM (Backward Class Muslim)</option>
+              <option value="MBC">MBC (Most Backward Class)</option>
+              <option value="SC">SC (Scheduled Caste)</option>
+              <option value="SCA">SCA (Scheduled Caste Arunthathiyar)</option>
+              <option value="ST">ST (Scheduled Tribe)</option>
+            </select>
           </div>
           <div class="form-group">
             <label>Password</label>
