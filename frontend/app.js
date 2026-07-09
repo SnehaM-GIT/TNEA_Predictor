@@ -24,7 +24,6 @@ const App = {
   currentPage:     'landing',
   currentUser:     null,
   userGrade:       3,
-  liveCount:       300,
   slotsLeft:       23,
   rankPhase:       'pre',
   counsellingStep: 0,
@@ -898,7 +897,6 @@ function clearError() {
 function initLanding() {
   renderTicker();          // render static ticker immediately (no flash)
   loadDynamicTicker();     // then replace with real user names from API
-  updateLiveCounts();
   observeScrollAnimations();
   updateLandingForPremium();
 }
@@ -949,22 +947,6 @@ function renderTestimonials() {
         </div>
       </div>
     </div>`).join('');
-}
-
-async function updateLiveCounts() {
-  try {
-    const res = await fetch(`${API_BASE}/visitor-count`);
-    if (res.ok) {
-      const data = await res.json();
-      App.liveCount = data.count;
-    }
-  } catch(e) {
-    if (!App.liveCount || App.liveCount < 300) App.liveCount = 300;
-  }
-  const heroCount  = document.getElementById('heroLiveCount');
-  const modalCount = document.getElementById('liveCount');
-  if (heroCount)  heroCount.textContent  = App.liveCount;
-  if (modalCount) modalCount.textContent = App.liveCount;
 }
 
 function incrementPredictionCount() {
@@ -1944,16 +1926,12 @@ async function confirmMarksUpdate() {
         App.profile.marksLocked = true;
         App.profile.aggregate = calculateAggregate(App.profile.maths, App.profile.physics, App.profile.chemistry);
         closeMarksUpdate();
-        if (App.currentPage === 'dashboard') {
-          await renderDashboard();
-          setTimeout(async () => {
-            await renderComboProbCards();
-            await renderChoiceList();
-          }, 300);
-        }
-        if (App.currentPage === 'profile') {
-          renderProfile();
-        }
+        // All pages live in the DOM at once (just hidden via CSS), so refresh
+        // both dashboard and profile unconditionally instead of gating on
+        // App.currentPage — otherwise whichever page you didn't come from
+        // shows stale marks until its next full render.
+        renderDashboard();
+        renderProfile();
         showToast('Marks updated! Predictions are refreshing...', 'success');
       },
       modal: {
