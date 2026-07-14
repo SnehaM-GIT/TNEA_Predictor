@@ -74,13 +74,12 @@ def _match_confidence(rank_conf, status, safety_margin=0, closing_rank=1):
     rank_ratio = (closing_rank - safety_margin) / closing_rank
 
     if rank_ratio <= 1.0:
-        # attainable: 95 (very safe) down to 50 (right at the cutoff). Unchanged.
-        prob = 95 - int(rank_ratio * 45)
+        # attainable: 95 (huge safety margin) down to 80 (right at the cutoff line).
+        prob = 95 - (15 * rank_ratio)
     else:
-        # WONT_GET: decay from 50 toward the floor as the student falls further
-        # behind. Continuous at ratio == 1 (both branches give ~50). A near-miss
-        # keeps some late-round/waitlist hope; an impossible-miss sinks to the floor.
-        prob = 50 / rank_ratio
+        # beyond cutoff (WONT_GET): keep sloping down from 80, graded by how far
+        # behind. Continuous at ratio == 1 (both branches give exactly 80).
+        prob = 80 / rank_ratio
 
     return int(max(5, min(95, prob)))
 
