@@ -166,7 +166,12 @@ def _hybrid_confidence(rank_ratio, mark_ratio):
     1) SAFE     (rank_ratio <= 1):   80 + 15*(1 - clamp(mark_ratio,0,1))  -> [80,95]
     2) near-miss (1 < rank_ratio<=1.5): linear base 80 -> 53.33 on rank_ratio,
        plus a small mark nudge (+/-8) windowed to vanish at both ends.
-    3) far reach (rank_ratio > 1.5):  pure rank 80/rank_ratio (no mark influence).
+    3) far reach (rank_ratio > 1.5):  pure rank 80/rank_ratio (no mark influence),
+       with a gentler sub-ranged floor:
+         1.5 < rank_ratio <= 5   -> floor 15   (80/ratio is >=16 here, so inert)
+         rank_ratio > 5          -> floor 7
+       80/ratio slides continuously through both (80/5=16, 80/11.4=7), so the
+       floor change at ratio=5 causes no visible jump.
 
     Continuous at rank_ratio=1.5 by construction (window=0, base=53.33=80/1.5).
     Continuous at rank_ratio=1 when mark_ratio~1 (the usual case at a cutoff);
@@ -175,14 +180,17 @@ def _hybrid_confidence(rank_ratio, mark_ratio):
     if rank_ratio <= 1.0:
         nmr = min(1.0, max(0.0, mark_ratio))
         prob = 80 + 15 * (1 - nmr)
+        floor = 5
     elif rank_ratio <= 1.5:
         base = 80 + (_FAR_AT_1P5 - 80) * (rank_ratio - 1.0) / 0.5   # 80 -> 53.33
         window = 16 * (rank_ratio - 1.0) * (1.5 - rank_ratio)       # 0 at ends, 1 at mid
         nudge = max(-8.0, min(8.0, 15 * (1 - mark_ratio))) * window
         prob = base + nudge
+        floor = 5
     else:
         prob = 80 / rank_ratio
-    return int(max(5, min(95, prob)))
+        floor = 7 if rank_ratio > 5 else 15
+    return int(max(floor, min(95, prob)))
 
 
 def _match_confidence(rank_conf, status, safety_margin=0, closing_rank=1,
