@@ -61,19 +61,28 @@ def _status(margin):
 
 
 def _match_confidence(rank_conf, status, safety_margin=0, closing_rank=1):
-    if status == "WONT_GET":
-        return 15
-
+    # closing_rank unknown/invalid -> fall back to the rank-prediction confidence
     if closing_rank <= 0:
         return rank_conf
 
-    # rank_ratio = student_rank / closing_rank
-    # low ratio (rank 1 vs closing 28) = very safe = high probability
-    # high ratio (rank 27 vs closing 28) = risky = lower probability
+    # rank_ratio = student_rank / closing_rank   (safety_margin = closing_rank - student_rank)
+    #   ratio << 1 : student far ahead of the cutoff  -> very likely to get the seat
+    #   ratio ~ 1  : student sits right at the cutoff  -> ~coin flip
+    #   ratio > 1  : student behind the cutoff (WONT_GET) -> unlikely, but graded by
+    #                HOW far behind, not a flat constant. `status` is derived from the
+    #                same margin, so the ratio alone drives the confidence.
     rank_ratio = (closing_rank - safety_margin) / closing_rank
 
-    prob = 95 - int(rank_ratio * 45)
-    return max(48, min(95, prob))
+    if rank_ratio <= 1.0:
+        # attainable: 95 (very safe) down to 50 (right at the cutoff). Unchanged.
+        prob = 95 - int(rank_ratio * 45)
+    else:
+        # WONT_GET: decay from 50 toward the floor as the student falls further
+        # behind. Continuous at ratio == 1 (both branches give ~50). A near-miss
+        # keeps some late-round/waitlist hope; an impossible-miss sinks to the floor.
+        prob = 50 / rank_ratio
+
+    return int(max(5, min(95, prob)))
 
 
 def predict_colleges(marks, community, top_n=5, forced_rank=None):
