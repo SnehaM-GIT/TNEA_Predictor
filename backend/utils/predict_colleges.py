@@ -12,6 +12,7 @@ predict_colleges(marks, community, top_n=5)
   5. rank by college tier then branch competitiveness, return top_n
 """
 
+import numpy as np
 import pandas as pd
 from pathlib import Path
 
@@ -24,6 +25,89 @@ except ImportError:
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data" / "cleaned"
+
+# ── closing_rank -> closing_mark inversion  (HISTORICAL 2022-2025 ONLY) ─────────
+# Deliberately independent of rank_model_final.pkl (now 2026-primary) and of the
+# 2026 CDF. Built straight from ranks.csv, restricted to 2022/2024/2025 and
+# EXCLUDING both 2023 (mark-collapse anomaly) and 2026 (kept out of this feature
+# by contract). Percentile-based, per community, same recency weighting the rank
+# model used before the 2026 retrain (2023's weight dropped).
+INV_YEARS = [2022, 2024, 2025]           # 2023 excluded (anomaly); 2026 excluded (by contract)
+INV_WEIGHTS = {2022: 0.10, 2024: 0.25, 2025: 0.60}
+_INV = {}   # community -> {"marks": np.array asc, "norms": np.array}, plus "_T", "_years"
+
+
+def _build_closing_mark_index():
+    """Per-community percentile<->mark curve from 2022/2024/2025 overall ranks."""
+    df = pd.read_csv(DATA_DIR / "ranks.csv",
+                     usecols=["rank", "aggregate_mark", "community", "year"])
+    df = df[df["year"].isin(INV_YEARS)].copy()          # hard-exclude 2023 + 2026
+    df["community"] = df["community"].replace("BCM", "BC")
+    df["mr"] = (df["aggregate_mark"] * 2).round() / 2
+
+    totals = {y: int((df["year"] == y).sum()) for y in INV_YEARS}
+    wsum = sum(INV_WEIGHTS[y] for y in INV_YEARS)
+    T = sum(INV_WEIGHTS[y] * totals[y] for y in INV_YEARS) / wsum   # weighted cohort size
+
+    _INV["_T"] = T
+    _INV["_years"] = list(INV_YEARS)
+    _INV["_totals"] = totals
+
+    for comm in sorted(df["community"].unique()):
+        # weighted mean normalized-rank (overall_rank / cohort) per rounded mark
+        acc = {}   # mark -> [weighted_norm_sum, weight_sum]
+        for y in INV_YEARS:
+            sub = df[(df["year"] == y) & (df["community"] == comm)]
+            if sub.empty:
+                continue
+            norm_by_mark = sub.groupby("mr")["rank"].mean() / totals[y]
+            w = INV_WEIGHTS[y]
+            for mark, nr in norm_by_mark.items():
+                a = acc.setdefault(mark, [0.0, 0.0])
+                a[0] += w * nr
+                a[1] += w
+        if not acc:
+            continue
+        marks = np.array(sorted(acc), dtype=float)
+        norms = np.array([acc[m][0] / acc[m][1] for m in marks], dtype=float)
+        # enforce monotone (norm decreases as mark increases) for a stable inverse
+        norms = np.minimum.accumulate(norms)
+        _INV[comm] = {"marks": marks, "norms": norms}
+    return _INV
+
+
+def _inv():
+    if not _INV:
+        _build_closing_mark_index()
+    return _INV
+
+
+def _hist_forward_norm(mark, community):
+    """mark -> normalized rank, using the same 2022-2025 per-community curve."""
+    idx = _inv()
+    community = "BC" if community == "BCM" else community
+    c = idx.get(community)
+    if c is None:
+        return None
+    # marks ascending; norms descending -> np.interp needs increasing xp (marks)
+    return float(np.interp(mark, c["marks"], c["norms"]))
+
+
+def _closing_mark(closing_rank, community):
+    """closing_rank (overall) + community -> closing_mark, from 2022-2025 only."""
+    idx = _inv()
+    community = "BC" if community == "BCM" else community
+    c = idx.get(community)
+    if c is None or closing_rank is None or closing_rank <= 0:
+        return None
+    norm_q = closing_rank / idx["_T"]
+    marks, norms = c["marks"], c["norms"]
+    # invert: given norm, recover mark. norms are descending in mark, so sort by
+    # norm ascending to satisfy np.interp's increasing-xp requirement.
+    order = np.argsort(norms)
+    xp, fp = norms[order], marks[order]
+    norm_q = float(np.clip(norm_q, xp[0], xp[-1]))
+    return round(float(np.interp(norm_q, xp, fp)), 2)
 
 # college_type -> tier rank (lower = more prestigious / preferred)
 TIER_RANK = {
@@ -60,28 +144,61 @@ def _status(margin):
     return "SAFE"
 
 
-def _match_confidence(rank_conf, status, safety_margin=0, closing_rank=1):
-    # closing_rank unknown/invalid -> fall back to the rank-prediction confidence
-    if closing_rank <= 0:
-        return rank_conf
-
-    # rank_ratio = student_rank / closing_rank   (safety_margin = closing_rank - student_rank)
-    #   ratio << 1 : student far ahead of the cutoff  -> very likely to get the seat
-    #   ratio ~ 1  : student sits right at the cutoff  -> ~coin flip
-    #   ratio > 1  : student behind the cutoff (WONT_GET) -> unlikely, but graded by
-    #                HOW far behind, not a flat constant. `status` is derived from the
-    #                same margin, so the ratio alone drives the confidence.
-    rank_ratio = (closing_rank - safety_margin) / closing_rank
-
-    if rank_ratio <= 1.0:
-        # attainable: 95 (huge safety margin) down to 80 (right at the cutoff line).
-        prob = 95 - (15 * rank_ratio)
+def _confidence_from_ratio(ratio):
+    """Pure RANK curve (fallback when marks/inversion unavailable).
+    ratio <= 1: 95 -> 80.  ratio > 1: 80/ratio.  Continuous at 1. Floor 5."""
+    if ratio <= 1.0:
+        prob = 95 - (15 * ratio)
     else:
-        # beyond cutoff (WONT_GET): keep sloping down from 80, graded by how far
-        # behind. Continuous at ratio == 1 (both branches give exactly 80).
-        prob = 80 / rank_ratio
-
+        prob = 80 / ratio
     return int(max(5, min(95, prob)))
+
+
+# far-reach formula value exactly at the near-miss/far boundary (rank_ratio=1.5).
+# 80/1.5 = 53.33 — band 2's bottom is anchored to THIS (not a round 50) so there
+# is no jump into band 3.
+_FAR_AT_1P5 = 80.0 / 1.5
+
+
+def _hybrid_confidence(rank_ratio, mark_ratio):
+    """rank_ratio selects the band; mark_ratio (2022-2025 inversion) nudges.
+
+    1) SAFE     (rank_ratio <= 1):   80 + 15*(1 - clamp(mark_ratio,0,1))  -> [80,95]
+    2) near-miss (1 < rank_ratio<=1.5): linear base 80 -> 53.33 on rank_ratio,
+       plus a small mark nudge (+/-8) windowed to vanish at both ends.
+    3) far reach (rank_ratio > 1.5):  pure rank 80/rank_ratio (no mark influence).
+
+    Continuous at rank_ratio=1.5 by construction (window=0, base=53.33=80/1.5).
+    Continuous at rank_ratio=1 when mark_ratio~1 (the usual case at a cutoff);
+    a residual step there only appears if rank and mark signals disagree.
+    """
+    if rank_ratio <= 1.0:
+        nmr = min(1.0, max(0.0, mark_ratio))
+        prob = 80 + 15 * (1 - nmr)
+    elif rank_ratio <= 1.5:
+        base = 80 + (_FAR_AT_1P5 - 80) * (rank_ratio - 1.0) / 0.5   # 80 -> 53.33
+        window = 16 * (rank_ratio - 1.0) * (1.5 - rank_ratio)       # 0 at ends, 1 at mid
+        nudge = max(-8.0, min(8.0, 15 * (1 - mark_ratio))) * window
+        prob = base + nudge
+    else:
+        prob = 80 / rank_ratio
+    return int(max(5, min(95, prob)))
+
+
+def _match_confidence(rank_conf, status, safety_margin=0, closing_rank=1,
+                      student_mark=None, community=None):
+    # HYBRID: rank_ratio picks the band, mark_ratio (2022-2025 inversion) nudges.
+    if closing_rank and closing_rank > 0:
+        rank_ratio = (closing_rank - safety_margin) / closing_rank
+        if student_mark and student_mark > 0 and community is not None:
+            closing_mark = _closing_mark(closing_rank, community)
+            if closing_mark is not None:
+                return _hybrid_confidence(rank_ratio, closing_mark / student_mark)
+        # marks/inversion unavailable -> pure rank curve
+        return _confidence_from_ratio(rank_ratio)
+
+    # closing_rank unknown/invalid
+    return rank_conf
 
 
 def predict_colleges(marks, community, top_n=5, forced_rank=None):
@@ -141,7 +258,8 @@ def predict_colleges(marks, community, top_n=5, forced_rank=None):
             "closing_rank": int(row["predicted_closing_rank_2026"]),
             "safety_margin": margin,
             "status": status,
-            "match_confidence": int(_match_confidence(rank_conf, status, margin, int(row["predicted_closing_rank_2026"]))),
+            "match_confidence": int(_match_confidence(rank_conf, status, margin, int(row["predicted_closing_rank_2026"]),
+                                                       student_mark=marks, community=community)),
             "community_closing_ranks": comm_rank_map.get((code, str(row["branch_code"])), {}),
         })
 
