@@ -163,7 +163,14 @@ _FAR_AT_1P5 = 80.0 / 1.5
 def _hybrid_confidence(rank_ratio, mark_ratio):
     """rank_ratio selects the band; mark_ratio (2022-2025 inversion) nudges.
 
-    1) SAFE     (rank_ratio <= 1):   80 + 15*(1 - clamp(mark_ratio,0,1))  -> [80,95]
+    1) SAFE     (rank_ratio <= 1):   base 95 -> 80 linear on rank_ratio (0 -> 1),
+       plus a small mark nudge (+/-8, zero at mark_ratio==1) windowed to vanish
+       at both ends. rank_ratio (pred_rank/closing_rank) is the driver here
+       because mark_ratio alone is nearly flat: marks are compressed into a
+       0-200 scale, so two colleges with wildly different safety margins can
+       still have closing marks within a point of the student's mark. Using
+       mark_ratio as the sole driver (old formula) collapsed every SAFE
+       college to ~80%.
     2) near-miss (1 < rank_ratio<=1.5): linear base 80 -> 53.33 on rank_ratio,
        plus a small mark nudge (+/-8) windowed to vanish at both ends.
     3) far reach (rank_ratio > 1.5):  pure rank 80/rank_ratio (no mark influence),
@@ -174,12 +181,13 @@ def _hybrid_confidence(rank_ratio, mark_ratio):
        floor change at ratio=5 causes no visible jump.
 
     Continuous at rank_ratio=1.5 by construction (window=0, base=53.33=80/1.5).
-    Continuous at rank_ratio=1 when mark_ratio~1 (the usual case at a cutoff);
-    a residual step there only appears if rank and mark signals disagree.
+    Continuous at rank_ratio=1 by construction (window=0 on both sides, base=80).
     """
     if rank_ratio <= 1.0:
-        nmr = min(1.0, max(0.0, mark_ratio))
-        prob = 80 + 15 * (1 - nmr)
+        base = 95 - 15 * rank_ratio                        # 95 (ratio=0) -> 80 (ratio=1)
+        window = 4 * rank_ratio * (1.0 - rank_ratio)       # 0 at ends, 1 at ratio=0.5
+        nudge = max(-8.0, min(8.0, 15 * (1 - mark_ratio))) * window  # 0 at mark_ratio=1
+        prob = base + nudge
         floor = 5
     elif rank_ratio <= 1.5:
         base = 80 + (_FAR_AT_1P5 - 80) * (rank_ratio - 1.0) / 0.5   # 80 -> 53.33
