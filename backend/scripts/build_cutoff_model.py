@@ -1,22 +1,22 @@
 """
 build_cutoff_model.py  —  TNEA cutoff (closing-rank) predictor
 
-Approach: per-combo DAMPED weighted trend extrapolation.
+Approach: per-combo recency-weighted average of yearly closing ranks.
   The spec's "26k separate XGBoost models on <=4 points each" overfits badly
   (the old global XGBoost scored R2=0.05, MAE=42172). With only 1-4 yearly
-  points per (college,branch,community), a damped weighted trend is the
-  statistically sound choice.
+  points per (college,branch,community), a recency-weighted average (no trend,
+  no slope) is a robust, non-extrapolating choice.
 
 Data notes (verified against cutoffs.csv):
   * 2021 closing_rank is a DIFFERENT metric (community rank, max ~26k) vs
     2022-2025 overall rank (max ~239k). 2021 is EXCLUDED — mixing it corrupts
-    every trend.
+    every average.
   * Closing ranks of low-demand branches (filling 1-2 seats) are essentially
-    random year to year (overall MAE ~27k is irreducible there). What matters
-    for recommendations is the COMPETITIVE segment: closing_rank < 10000, where
-    MAE ~1700 / <5000 MAE ~620. Metrics are reported stratified.
-  * damp=0.3 nudges toward the historical trend while staying close to the
-    robust last-value baseline (pure trend extrapolates noise).
+    random year to year (full-set MAE is large and irreducible there). What
+    matters for recommendations is the COMPETITIVE segment: closing_rank < 10000.
+    Metrics are reported stratified.
+  * weight = year - 2019 (recent years weigh more); prediction is the weighted
+    mean, which stays inside the observed range and never extrapolates noise.
 
 Outputs (backend/data/cleaned/):
   distribution_2024.pkl    rank distribution per community per bucket (2022-2024)
@@ -46,9 +46,6 @@ BUCKETS = [
     ("rank_10000_plus",   10000,  10**9),
 ]
 YEAR_WEIGHT_BASE = 2019  # weight = year - base (recent years weigh more)
-DAMP = 0.3               # damping toward last-value baseline (tail only)
-SEG_THRESHOLD = 10000    # last_value < this -> persistence (beats trend on
-                         # competitive seats, validated); else damped trend
 MIN_YEAR = 2022          # 2021 excluded: incompatible rank metric
 
 
@@ -65,31 +62,26 @@ def build_distribution(ranks_df, years):
     return dist
 
 
-# ── trend fit + predict for one combo ─────────────────────────────────────────
-def fit_predict(years, values, target_year):
-    """Damped weighted linear extrapolation with clamps. Returns (pred, method)."""
+# ── recency-weighted average per combo ────────────────────────────────────────
+def fit_predict(years, values, target_year=None):
+    """Recency-weighted average of a combo's closing ranks. Returns (pred, method).
+
+    weight = year - YEAR_WEIGHT_BASE (recent years weigh more; same scheme used
+    elsewhere). No trend/slope, no damping — just the weighted mean. Single-point
+    combos fall back to that one value (persistence). `target_year` is ignored (a
+    weighted average has no year to extrapolate to); kept for signature stability.
+    """
     years = np.asarray(years, dtype=float)
     values = np.asarray(values, dtype=float)
     n = len(values)
     if n == 0:
         return None, "none"
-    last = values[-1]
-    vmin, vmax = values.min(), values.max()
-    lo_clamp, hi_clamp = max(1.0, 0.3 * vmin), 3.0 * vmax
-
-    if n == 1 or len(np.unique(years)) < 2:
-        return int(round(last)), "persistence"
-
-    # competitive seats: persistence empirically beats trend extrapolation
-    if last < SEG_THRESHOLD:
-        return int(round(last)), "persistence"
+    if n == 1:
+        return int(round(values[-1])), "persistence"
 
     w = years - YEAR_WEIGHT_BASE
-    slope, intercept = np.polyfit(years, values, 1, w=w)
-    raw = slope * target_year + intercept
-    pred = last + DAMP * (raw - last)          # damp toward last value
-    pred = float(np.clip(pred, lo_clamp, hi_clamp))
-    return int(round(max(1.0, pred))), "damped_trend"
+    wavg = float(np.sum(values * w) / np.sum(w))
+    return int(round(max(1.0, wavg))), "weighted_avg"
 
 
 def main():
@@ -213,11 +205,9 @@ def main():
         pred2026, method = fit_predict(yrs, vals, 2026)
         if pred2026 is None:
             continue
-        if method == "damped_trend":
-            w = np.array(yrs, dtype=float) - YEAR_WEIGHT_BASE
-            slope, intercept = np.polyfit(np.array(yrs, float), np.array(vals, float), 1, w=w)
-        else:
-            slope, intercept = 0.0, float(vals[-1])
+        # weighted average has no slope; store the prediction as a flat intercept
+        # so the pkl schema (slope/intercept/method/...) is unchanged for any reader.
+        slope, intercept = 0.0, float(pred2026)
         predictor[(cc, bc, comm)] = {
             "slope": float(slope), "intercept": float(intercept),
             "method": method, "n": len(yrs),
@@ -236,7 +226,7 @@ def main():
     print(f"Saved cutoff_lookup_2026.csv  ({len(lookup):,} rows)")
 
     meta = {
-        "method": f"per-combo damped weighted linear trend (damp={DAMP})",
+        "method": "per-combo recency-weighted average (weight = year - 2019)",
         "train_years": [2022, 2023, 2024],
         "val_year": 2025,
         "excluded_2021": "incompatible rank metric (community vs overall)",

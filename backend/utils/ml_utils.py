@@ -60,7 +60,7 @@ def predict_rank(marks, community, use_cdf=True):
         "range_min": int(max(1, rank - half)),
         "range_max": int(rank + half),
         "confidence": int(base["confidence"]),
-        "basis": model.get("basis_label", "percentile-based from 2022-2025 data"),
+        "basis": model.get("basis_label", "percentile-based from 2022-2026 data"),
     }
 
 
@@ -71,8 +71,8 @@ def predict_rank_adjusted(aggregate_mark, community, use_cdf=True):
     Args:
         aggregate_mark: 0-200
         community: OC, BC, SC, ST, MBC, SCA, BCM
-        use_cdf: True = use 2025 mark CDF (MAE ~589, default)
-                 False = use historical model with hybrid delta (MAE ~3096)
+        use_cdf: True = use 2026 mark CDF (MAE ~585, default)
+                 False = use historical model with hybrid delta (MAE ~3977)
 
     Returns:
         dict with rank, confidence, basis  OR  dict with 'error' key
@@ -85,12 +85,15 @@ def predict_rank_adjusted(aggregate_mark, community, use_cdf=True):
     if community not in model["communities"]:
         return {"error": f"Community {community} not in model"}
 
-    total_students = model.get("total_students_2025", 239299)
+    # primary_year keys are the current schema; *_2025 names are legacy aliases
+    total_students = (model.get("total_students_primary")
+                      or model.get("total_students_2025", 239299))
+    primary_year = model.get("primary_year", 2025)
     mark_rounded = round(aggregate_mark * 2) / 2
 
-    # ── PRIMARY: 2025 CDF ─────────────────────────────────────────────────────
-    if use_cdf and "mark_count_above_2025" in model:
-        cdf = model["mark_count_above_2025"]
+    # ── PRIMARY: current-year mark CDF ────────────────────────────────────────
+    cdf = model.get("mark_count_above_primary") or model.get("mark_count_above_2025")
+    if use_cdf and cdf is not None:
         if mark_rounded in cdf:
             pred_rank = max(1, cdf[mark_rounded] + 1)
             norm_rank = pred_rank / total_students
@@ -102,7 +105,7 @@ def predict_rank_adjusted(aggregate_mark, community, use_cdf=True):
                 "confidence": confidence,
                 "norm_rank": round(norm_rank, 4),
                 "delta_applied": 0.0,
-                "delta_source": "cdf_2025",
+                "delta_source": f"cdf_{primary_year}",
                 "basis": "cdf_exact",
             }
         # Mark outside CDF range — fall through to historical model
@@ -113,7 +116,8 @@ def predict_rank_adjusted(aggregate_mark, community, use_cdf=True):
 
     delta = model.get("hybrid_actual_delta", {}).get(
         community,
-        model.get("comm_actual_delta_2025", {}).get(community, 0.0)
+        (model.get("comm_actual_delta")
+         or model.get("comm_actual_delta_2025", {})).get(community, 0.0)
     )
     delta_source = "hybrid_actual"
 

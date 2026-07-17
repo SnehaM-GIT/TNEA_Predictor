@@ -33,6 +33,9 @@ class User(Base):
     preferred_colleges = Column(String, nullable=True)  # JSON string
     preferred_courses   = Column(String, nullable=True)  # JSON string
     application_id     = Column(String, nullable=True)
+    # True only when application_id was matched against the official rank list by
+    # /predict/verify-rank. /auth/update-profile must not overwrite a verified one.
+    application_id_verified = Column(Boolean, default=False, nullable=False, server_default="false")
     verified_aggregate = Column(Float, nullable=True)
     created_at    = Column(DateTime, default=datetime.utcnow)
 

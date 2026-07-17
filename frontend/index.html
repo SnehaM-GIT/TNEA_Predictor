@@ -36,34 +36,30 @@
   <div id="upgradeModal" class="modal-overlay hidden">
     <div class="modal-box">
       <button class="modal-close" onclick="closeUpgradeModal()">✕</button>
-      <div class="modal-badge">🔒 Premium Feature</div>
+      <div class="modal-badge">Premium Feature</div>
       <h2 class="modal-title">Unlock Full Access</h2>
       <p class="modal-subtitle" id="upgradeReason">This feature is available for Premium users.</p>
-      <div class="social-proof-bar">
-        <span>🔥</span>
-        <span id="liveCount">342</span> students already predicted their seat today
-      </div>
       <div class="price-block">
         <span class="price-old">₹500</span>
         <span class="price-new">₹149</span>
         <span class="price-label">one-time · lifetime access</span>
       </div>
       <div class="early-bird-badge">
-        ⏰ Early Bird — Only <span id="slotsLeft">23</span> slots left at this price
+        Early Bird — Only <span id="slotsLeft">23</span> slots left at this price
       </div>
       <ul class="feature-checklist">
-        <li>✅ Unlimited rank & seat predictions</li>
-        <li>✅ AI-generated Choice List (priority ordered)</li>
-        <li>✅ Full TNEA Counselling Simulation</li>
-        <li>✅ 15 college-course probability combos</li>
-        <li>✅ Pre & post board result analysis</li>
-        <li>✅ Rank verification & error checking</li>
+        <li>Unlimited rank & seat predictions</li>
+        <li>AI-generated Choice List (priority ordered)</li>
+        <li>Full TNEA Counselling Simulation</li>
+        <li>15 college-course probability combos</li>
+        <li>Pre & post board result analysis</li>
+        <li>Rank verification & error checking</li>
       </ul>
       <div class="fear-text">
-        😨 Without Choice Builder, you might miss your dream college
+        Without Choice Builder, you might miss your dream college
       </div>
       <button class="btn-primary btn-glow btn-full" onclick="initiatePayment()">
-        🚀 Get Premium for ₹149
+        Get Premium for ₹149
       </button>
       <p class="modal-footer-note">
         Students with Premium made 3x better college choices · Secure payment via Razorpay
@@ -78,7 +74,7 @@
       <h2 class="modal-title">Confirm Your Details</h2>
       <p class="modal-subtitle">
         Please verify your marks before payment.<br/>
-        <strong>⚠️ Marks can only be entered once. You'll need to pay ₹25 to update them later.</strong>
+        <strong>Marks can only be entered once. You'll need to pay ₹25 to update them later.</strong>
       </p>
       <div id="payConfirmContent" class="confirm-data-box"></div>
       <div class="confirm-notice">
@@ -96,7 +92,7 @@
     <div class="modal-box">
       <button class="modal-close" onclick="closeMarksUpdate()">✕</button>
       <div class="modal-badge" style="background:rgba(245,158,11,0.15);color:var(--warning);border-color:rgba(245,158,11,0.3)">
-        📝 Update Marks
+        Update Marks
       </div>
       <h2 class="modal-title">Update Your Marks</h2>
       <p class="modal-subtitle">
@@ -108,7 +104,7 @@
         <span class="price-label">one-time marks update</span>
       </div>
       <div style="background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.3);border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:var(--text-secondary)">
-        ✏️ <strong>Edit your marks below first</strong>, then click Pay ₹25 to save them. Your marks will be locked again after payment.
+        <strong>Edit your marks below first</strong>, then click Pay ₹25 to save them. Your marks will be locked again after payment.
       </div>
       <div class="form-group" style="margin-top:16px">
         <label>Mathematics <span class="label-note">/ 100</span></label>
@@ -157,19 +153,19 @@
           <div class="user-dropdown hidden" id="userDropdown">
             <div class="dropdown-info" id="dropdownInfo"></div>
             <hr class="dropdown-divider"/>
-            <button class="dropdown-item" onclick="navigateTo('profile')">✏️ Edit Profile</button>
-            <button class="dropdown-item" onclick="navigateTo('profile')">👤 Profile</button>
-            <button class="dropdown-item" onclick="navigateTo('dashboard')">📊 Dashboard</button>
+            <button class="dropdown-item" onclick="navigateTo('profile')">Edit Profile</button>
+            <button class="dropdown-item" onclick="navigateTo('profile')">Profile</button>
+            <button class="dropdown-item" onclick="navigateTo('dashboard')">Dashboard</button>
             <div class="dropdown-divider"></div>
-            <a href="privacy.html" target="_blank" rel="noopener noreferrer" class="dropdown-item" style="display:flex;align-items:center;text-decoration:none;color:var(--text-primary)">📋 Privacy Policy</a>
-            <a href="terms.html" target="_blank" rel="noopener noreferrer" class="dropdown-item" style="display:flex;align-items:center;text-decoration:none;color:var(--text-primary)">📜 Terms of Service</a>
+            <a href="privacy.html" target="_blank" rel="noopener noreferrer" class="dropdown-item" style="display:flex;align-items:center;text-decoration:none;color:var(--text-primary)">Privacy Policy</a>
+            <a href="terms.html" target="_blank" rel="noopener noreferrer" class="dropdown-item" style="display:flex;align-items:center;text-decoration:none;color:var(--text-primary)">Terms of Service</a>
             <hr class="dropdown-divider"/>
-            <button class="dropdown-item danger" onclick="logout()">🚪 Logout</button>
+            <button class="dropdown-item danger" onclick="logout()">Logout</button>
           </div>
         </div>
         <button class="btn-outline hidden" id="navLoginBtn" onclick="navigateTo('auth')">Login</button>
         <button class="btn-primary nav-premium hidden" id="navUpgradeBtn" onclick="showUpgradeModal('nav')">
-          ⚡ Get Premium
+          Get Premium
         </button>
       </div>
     </div>
@@ -183,9 +179,6 @@
       <div class="hero-bg-orb orb2"></div>
       <div class="hero-bg-orb orb3"></div>
       <div class="hero-content">
-        <div class="hero-badge animate-fade-in">
-          🔥 <span id="heroLiveCount">342</span> students predicted their seat today
-        </div>
         <h1 class="hero-title animate-slide-up">
           Know Your Seat<br/>
           <span class="gradient-text">Before Counselling Day</span>
@@ -197,17 +190,17 @@
         <div class="hero-actions animate-slide-up delay-2">
          
 <button class="btn-primary btn-glow btn-large" id="heroTryPredictionBtn" onclick="navigateTo('free-predict')">
-            🎯 Try Free Prediction
+            Try Free Prediction
           </button>
           <button class="btn-outline btn-large" id="heroGetAccessBtn" onclick="getFullAccess()">
-            🚀 Get Full Access
+            Get Full Access
           </button>
         </div>
         <div class="hero-stats animate-fade-in delay-3">
-          <div class="stat-chip">📊 TNEA 2021–2025 Data</div>
-          <div class="stat-chip">🏛️ 550+ Colleges</div>
-          <div class="stat-chip">🎓 AI Rank Prediction</div>
-          <div class="stat-chip">⚡ Results in 5 seconds</div>
+          <div class="stat-chip">TNEA 2021–2025 Data</div>
+          <div class="stat-chip">550+ Colleges</div>
+          <div class="stat-chip">AI Rank Prediction</div>
+          <div class="stat-chip">Results in 5 seconds</div>
         </div>
       </div>
     </section>
@@ -226,25 +219,21 @@
         <div class="steps-grid">
           <div class="step-card animate-on-scroll">
             <div class="step-number">01</div>
-            <div class="step-icon">📝</div>
             <h3>Enter Your Marks</h3>
             <p>Input your Maths, Physics and Chemistry scores. Our formula calculates your TNEA aggregate instantly.</p>
           </div>
           <div class="step-card animate-on-scroll">
             <div class="step-number">02</div>
-            <div class="step-icon">🤖</div>
             <h3>AI Predicts Your Rank</h3>
             <p>Our prediction model trained on 5 years of TNEA data gives you a precise rank band with probability scores.</p>
           </div>
           <div class="step-card animate-on-scroll">
             <div class="step-number">03</div>
-            <div class="step-icon">🏛️</div>
             <h3>See Your Colleges</h3>
             <p>Get a personalised list ordered by probability. Know exactly which colleges you'll likely get — before counselling.</p>
           </div>
           <div class="step-card animate-on-scroll">
             <div class="step-number">04</div>
-            <div class="step-icon">🎓</div>
             <h3>Simulate Counselling</h3>
             <p>Practice the real TNEA counselling process - lock your choices and see your allotment result before the actual day.</p>
           </div>
@@ -261,41 +250,41 @@
         </div>
         <div class="tiers-grid">
 
-          <div class="tier-card">
+          <div class="tier-card animate-on-scroll">
             <div class="tier-badge free">Free</div>
             <h3 class="tier-name">Explorer</h3>
             <p class="tier-desc">Quick prediction, no signup needed</p>
             <div class="tier-price">₹0</div>
             <ul class="tier-features">
-              <li class="included">✅ 1 free prediction</li>
-              <li class="included">✅ 1 college + 1 course</li>
-              <li class="included">✅ Probability score</li>
-              <li class="excluded">❌ Profile saved</li>
-              <li class="excluded">❌ Multiple combos</li>
-              <li class="excluded">❌ Choice list & simulation</li>
+              <li class="included">1 free prediction</li>
+              <li class="included">1 college + 1 course</li>
+              <li class="included">Probability score</li>
+              <li class="excluded">Profile saved</li>
+              <li class="excluded">Multiple combos</li>
+              <li class="excluded">Choice list & simulation</li>
             </ul>
             <button class="btn-outline btn-full" onclick="navigateTo('free-predict')">Try Free</button>
           </div>
 
-          <div class="tier-card">
+          <div class="tier-card animate-on-scroll">
             <div class="tier-badge registered">Registered</div>
             <h3 class="tier-name">Student</h3>
             <p class="tier-desc">Save profile, see all 15 combos</p>
             <div class="tier-price">₹0 <span class="tier-price-note">with signup</span></div>
             <ul class="tier-features">
-              <li class="included">✅ Profile saved</li>
-              <li class="included">✅ 3 courses + 5 colleges</li>
-              <li class="included">✅ 15 combo predictions</li>
-              <li class="included">✅ Marks-based probability</li>
-              <li class="excluded">❌ Rank prediction</li>
-              <li class="excluded">❌ AI Choice List</li>
-              <li class="excluded">❌ Counselling Simulation</li>
+              <li class="included">Profile saved</li>
+              <li class="included">3 courses + 5 colleges</li>
+              <li class="included">15 combo predictions</li>
+              <li class="included">Marks-based probability</li>
+              <li class="excluded">Rank prediction</li>
+              <li class="excluded">AI Choice List</li>
+              <li class="excluded">Counselling Simulation</li>
             </ul>
             <button class="btn-outline btn-full" onclick="navigateTo('auth')">Sign Up Free</button>
           </div>
 
-          <div class="tier-card tier-premium">
-            <div class="tier-badge premium">⚡ Premium</div>
+          <div class="tier-card tier-premium animate-on-scroll">
+            <div class="tier-badge premium">Premium</div>
             <div class="tier-popular">Most Popular</div>
             <h3 class="tier-name">Premium</h3>
             <p class="tier-desc">Full TNEA counselling intelligence</p>
@@ -305,17 +294,17 @@
               <span class="tier-price-note">one-time</span>
             </div>
             <ul class="tier-features">
-              <li class="included">✅ Everything in Student</li>
-              <li class="included">✅ Rank prediction + verification</li>
-              <li class="included">✅ AI Choice List (priority ordered)</li>
-              <li class="included">✅ Full Counselling Simulation</li>
-              <li class="included">✅ Pre & post board analysis</li>
-              <li class="included">✅ ₹25 marks update after board results</li>
+              <li class="included">Everything in Student</li>
+              <li class="included">Rank prediction + verification</li>
+              <li class="included">AI Choice List (priority ordered)</li>
+              <li class="included">Full Counselling Simulation</li>
+              <li class="included">Pre & post board analysis</li>
+              <li class="included">₹25 marks update after board results</li>
             </ul>
             <button class="btn-primary btn-glow btn-full" onclick="showUpgradeModal('tier')">
               Get Premium — ₹149
             </button>
-            <p class="tier-footer">⏰ Early bird pricing — limited slots</p>
+            <p class="tier-footer">Early bird pricing — limited slots</p>
           </div>
 
         </div>
@@ -371,7 +360,7 @@
       <button class="back-btn" onclick="navigateTo('landing')">← Back</button>
 
       <div class="free-predict-header">
-        <div class="free-badge">🎯 Free Prediction — No Signup</div>
+        <div class="free-badge">Free Prediction — No Signup</div>
         <h1>Try PickMySeat Free</h1>
         <p>Enter your marks, pick 1 college and 1 course. Get instant probability.</p>
         <div class="cookie-usage-bar" id="cookieUsageBar"></div>
@@ -380,7 +369,7 @@
       <div class="card" id="freePredictForm">
 
         <div class="form-section">
-          <h3 class="form-section-title">📝 Your Marks <span class="marks-note">(out of 100 each)</span></h3>
+          <h3 class="form-section-title">Your Marks <span class="marks-note">(out of 100 each)</span></h3>
           <div class="marks-grid">
             <div class="marks-field">
               <label>Mathematics <span class="label-note">/ 100</span></label>
@@ -411,7 +400,7 @@
         </div>
 
         <div class="form-section">
-          <h3 class="form-section-title">🏛️ Preferred College <span class="marks-note">(choose 1)</span></h3>
+          <h3 class="form-section-title">Preferred College <span class="marks-note">(choose 1)</span></h3>
           <div class="filter-row">
             <select class="select-input" id="freeCollegeType" onchange="filterFreeColleges()">
               <option value="">All Types</option>
@@ -425,7 +414,7 @@
         </div>
 
         <div class="form-section">
-          <h3 class="form-section-title">📚 Preferred Course <span class="marks-note">(choose 1)</span></h3>
+          <h3 class="form-section-title">Preferred Course <span class="marks-note">(choose 1)</span></h3>
           <select class="select-input full-width" id="freeCourse">
             <option value="">Select a course...</option>
           </select>
@@ -447,7 +436,7 @@
         </div>
 
         <button class="btn-primary btn-glow btn-full" onclick="runFreePrediction()">
-          🔮 Predict My Seat
+          Predict My Seat
         </button>
 
         <div class="login-nudge">
@@ -498,12 +487,13 @@
           </div>
         </div>
 
+        <div id="freeCommunityNote" class="community-fallback-note hidden"></div>
+
         <div class="free-result-list hidden" id="freeResultList"></div>
 
         <div class="result-message" id="resultMessage"></div>
 
         <div class="upgrade-nudge">
-          <div class="nudge-icon">🚀</div>
           <div class="nudge-text">
             <strong>See all 15 college-course combinations</strong>
             <span>Sign up free — 3 courses × 5 colleges with probabilities</span>
@@ -512,7 +502,6 @@
         </div>
 
         <div class="upgrade-nudge" style="margin-top:8px">
-          <div class="nudge-icon">⚡</div>
           <div class="nudge-text">
             <strong>Get AI Choice List + Counselling Simulation</strong>
             <span>Students with Premium made 3x better college choices</span>
@@ -521,7 +510,7 @@
         </div>
 
         <div class="used-notice">
-          🔒 You've used your free prediction.
+          You've used your free prediction.
           <button class="link-btn" onclick="navigateTo('auth')">Login to predict more →</button>
         </div>
       </div>
@@ -637,7 +626,7 @@
       <div class="profile-grid">
 
         <div class="profile-section-card">
-          <h3 class="profile-section-title">👤 Personal Information</h3>
+          <h3 class="profile-section-title">Personal Information</h3>
           <div class="form-group">
             <label>Full Name</label>
             <input type="text" id="profileName" class="text-input" placeholder="Your full name" oninput="markProfileDirty()"/>
@@ -652,7 +641,8 @@
           </div>
           <div class="form-group">
             <label>Application Number <span style="font-size:11px;color:var(--text-muted)">(optional)</span></label>
-            <input type="text" id="profileApplicationId" class="text-input" placeholder="e.g. TN2026XXXXXX" oninput="markProfileDirty()"/>
+            <input type="text" id="profileApplicationId" class="text-input" placeholder="e.g. 234567" maxlength="6" inputmode="numeric"
+              oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,6); markProfileDirty()"/>
           </div>
           <div class="form-group">
             <label>Category</label>
@@ -666,15 +656,15 @@
               <option value="SCA">SCA</option>
               <option value="ST">ST</option>
             </select>
-            <div class="marks-lock-note hidden" id="categoryLockNote">🔒 Category cannot be changed after initial submission. Contact support if this was entered incorrectly.</div>
+            <div class="marks-lock-note hidden" id="categoryLockNote">Category cannot be changed after initial submission. Contact support if this was entered incorrectly.</div>
           </div>
         </div>
 
         <div class="profile-section-card">
-          <h3 class="profile-section-title">📝 Your Marks <span class="marks-note">(out of 100 each)</span></h3>
+          <h3 class="profile-section-title">Your Marks <span class="marks-note">(out of 100 each)</span></h3>
 
           <div class="marks-locked-banner hidden" id="marksLockedBanner">
-            <span>🔒 Marks locked after first submission</span>
+            <span>Marks locked after first submission</span>
             <button class="link-btn" onclick="openMarksUpdate()">Update for ₹25 →</button>
           </div>
 
@@ -704,7 +694,7 @@
           </div>
 
           <div class="rank-section hidden" id="profileRankSection">
-            <h4 class="rank-title">🏆 Rank Information</h4>
+            <h4 class="rank-title">Rank Information</h4>
             <div class="rank-phase-toggle">
               <label class="radio-label">
                 <input type="radio" name="rankPhase" value="pre" onchange="setRankPhase('pre')" checked/>
@@ -722,20 +712,21 @@
             <div class="rank-verify-result hidden" id="rankVerifyResult"></div>
           </div>
 <div class="rank-section hidden" id="profileAppIdSection">
-  <h4 class="rank-title">📋 2026 Rank Verification (Optional)</h4>
+  <h4 class="rank-title">2026 Rank Verification (Optional)</h4>
   <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Optional — enter your Application ID and rank from the official TNEA rank list for more accurate predictions. You can still use all features without this.</p>
   <div class="form-group">
     <label>Application ID</label>
-    <input type="text" id="profileAppId" class="text-input" placeholder="e.g. TN2026XXXXXX"/>
+    <input type="text" id="profileAppId" class="text-input" placeholder="e.g. 234567" maxlength="6" inputmode="numeric"
+      oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,6)"/>
   </div>
   <div class="form-group">
     <label>Your TNEA Rank</label>
     <input type="number" id="profileRankVerify" class="text-input" placeholder="e.g. 4521"/>
   </div>
   <button class="btn-primary" onclick="verifyAndSaveRank()">
-    ✅ Verify My Rank
+    Verify My Rank
   </button>
-  <p style="font-size:11px;color:var(--text-muted);margin-top:8px;text-align:center">⚡ Without verification, predictions use your marks-based estimated rank. Verified rank gives significantly more accurate results.</p>
+  <p style="font-size:11px;color:var(--text-muted);margin-top:8px;text-align:center">Without verification, predictions use your marks-based estimated rank. Verified rank gives significantly more accurate results.</p>
   <div id="rankVerifyStatus" class="hidden" style="margin-top:12px;padding:12px;border-radius:8px;font-size:13px;font-weight:600"></div>
 </div>
 
@@ -743,7 +734,7 @@
 
         <div class="profile-section-card full-width" id="profileCollegesSection">
           <h3 class="profile-section-title">
-            🏛️ Preferred Colleges
+            Preferred Colleges
             <span class="marks-note">(up to 5)</span>
           </h3>
           <div class="preferred-grid" id="preferredCollegesGrid"></div>
@@ -751,7 +742,7 @@
 
         <div class="profile-section-card full-width" id="profileCoursesSection">
           <h3 class="profile-section-title">
-            📚 Preferred Courses
+            Preferred Courses
             <span class="marks-note">(up to 3)</span>
           </h3>
           <div class="preferred-grid" id="preferredCoursesGrid"></div>
@@ -761,7 +752,7 @@
 
       <div class="profile-actions">
         <button class="btn-ghost" onclick="navigateTo('dashboard')">Cancel</button>
-        <button class="btn-primary btn-glow" onclick="saveProfile()">💾 Save Profile</button>
+        <button class="btn-primary btn-glow" onclick="saveProfile()">Save Profile</button>
       </div>
 
     </div>
@@ -788,7 +779,7 @@
       <!-- Grade 1: Rank Input Section -->
       <div class="rank-input-section hidden" id="grade1RankInput">
         <div class="rank-input-card">
-          <h3 class="rank-input-title">🏆 Submit Your Actual Rank</h3>
+          <h3 class="rank-input-title">Submit Your Actual Rank</h3>
           <p class="rank-input-desc">Share your counselling rank to help improve predictions for future students</p>
           <div class="form-group">
             <label>Enter your actual rank</label>
@@ -801,20 +792,23 @@
 
       <div id="dashPredictionArea">
         <div class="dash-section-title">
-          <h2>🔮 Seat Predictions</h2>
+          <h2>Seat Predictions</h2>
           <p>All your college-course combinations ordered by probability</p>
         </div>
         <div class="combo-grid" id="comboProbGrid"></div>
       </div>
 
+      <!-- Premium Search Container -->
+      <div id="premiumSearchWrap"></div>
+
       <div class="locked-section" id="dashChoiceList" style="margin-top:40px">
         <div class="lock-overlay" id="choiceLockOverlay">
-          <span class="lock-icon">🔒</span>
+          <span class="lock-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
           <p>AI Choice List — Priority Ordered</p>
           <button class="btn-primary" onclick="showUpgradeModal('choice')">Unlock Premium — ₹149</button>
         </div>
         <div class="dash-section-title">
-          <h2>📋 AI Choice List</h2>
+          <h2>AI Choice List</h2>
           <p>Ordered by probability — highest to lowest. Submit in this order.</p>
         </div>
         <div class="choice-list-wrap" id="choiceListWrap"></div>
@@ -822,19 +816,16 @@
 
       <div class="locked-section" id="dashCounselling" style="margin-top:40px;margin-bottom:60px">
         <div class="lock-overlay" id="counsellingLockOverlay">
-          <span class="lock-icon">🔒</span>
+          <span class="lock-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
           <p>Full TNEA Counselling Simulation</p>
           <button class="btn-primary" onclick="showUpgradeModal('counselling')">Unlock Premium — ₹149</button>
         </div>
         <div class="dash-section-title">
-          <h2>🎓 Counselling Simulation</h2>
+          <h2>Counselling Simulation</h2>
           <p>Step-by-step mock TNEA counselling — practice before the real day</p>
         </div>
         <div class="counselling-sim" id="counsellingSim"></div>
       </div>
-
-      <!-- Premium Search Container -->
-      <div id="premiumSearchWrap"></div>
 
     </div>
   </div>

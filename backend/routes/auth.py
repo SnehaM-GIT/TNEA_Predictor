@@ -6,6 +6,7 @@ from models import User, PasswordResetToken
 import bcrypt
 import jwt
 import os
+import re
 import secrets
 import resend
 import traceback
@@ -233,6 +234,7 @@ def get_me(
             "preferred_colleges": user.preferred_colleges,
             "preferred_courses": user.preferred_courses,
             "application_id": user.application_id,
+            "application_id_verified": user.application_id_verified,
             "verified_aggregate": user.verified_aggregate,
         }
     except jwt.ExpiredSignatureError:
@@ -271,9 +273,34 @@ def update_profile(
             user.aggregate = data.maths + data.physics / 2 + data.chemistry / 2
         if data.preferred_colleges is not None: user.preferred_colleges = data.preferred_colleges
         if data.preferred_courses is not None: user.preferred_courses = data.preferred_courses
-        if data.application_id is not None: user.application_id = data.application_id
+        # A verified application_id was matched against the official rank list by
+        # /predict/verify-rank. This endpoint does no such check, so it must never
+        # overwrite one — reject rather than silently ignoring a real change.
+        incoming_app_id = (data.application_id or "").strip()
+        if incoming_app_id:
+            if user.application_id_verified:
+                if incoming_app_id != (user.application_id or ""):
+                    raise HTTPException(
+                        status_code=403,
+                        detail="Application ID is verified against the official TNEA rank list "
+                               "and cannot be changed here. Contact support if it is wrong."
+                    )
+                # Same value resent by an older client — nothing to change.
+            elif not re.fullmatch(r"\d{6}", incoming_app_id):
+                raise HTTPException(
+                    status_code=400,
+                    detail="Application ID must be exactly 6 digits"
+                )
+            else:
+                user.application_id = incoming_app_id
         db.commit()
-        return {"status": "profile updated", "marks_locked": user.marks_locked, "category_locked": user.category_locked}
+        return {
+            "status": "profile updated",
+            "marks_locked": user.marks_locked,
+            "category_locked": user.category_locked,
+            "application_id": user.application_id,
+            "application_id_verified": user.application_id_verified,
+        }
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired")
     except jwt.InvalidTokenError:
@@ -361,11 +388,11 @@ def recent_users(db: Session = Depends(get_db)):
         .all()
     )
     action_templates = [
-        "{name} just joined PickMySeat 🎉",
-        "{name} predicted their college seat 🎯",
-        "{name} is exploring TNEA colleges 🏛️",
-        "{name} checked their rank prediction 🏆",
-        "{name} unlocked 15 college combinations 🚀",
+        "{name} just joined PickMySeat",
+        "{name} predicted their college seat",
+        "{name} is exploring TNEA colleges",
+        "{name} checked their rank prediction",
+        "{name} unlocked 15 college combinations",
     ]
     result = []
     for u in users:

@@ -291,6 +291,9 @@ def verify_rank(
     if user:
         user.rank = official_rank
         user.application_id = submitted_app_id
+        # Matched against the official rank list above — mark it verified so
+        # /auth/update-profile can no longer overwrite it.
+        user.application_id_verified = True
         no_marks = (
             (user.maths is None or user.maths == 0) and
             (user.physics is None or user.physics == 0) and

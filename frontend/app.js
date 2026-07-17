@@ -24,7 +24,6 @@ const App = {
   currentPage:     'landing',
   currentUser:     null,
   userGrade:       3,
-  liveCount:       300,
   slotsLeft:       23,
   rankPhase:       'pre',
   counsellingStep: 0,
@@ -579,14 +578,14 @@ const DATA = {
   ],
 
   tickerEvents: [
-    'Priya from Chennai just predicted her seat 🎯',
-    'Karthik unlocked Premium access ⚡',
-    'Ananya got 94% probability for CSE at Anna Univ 🏛️',
-    'Vijay ran the Counselling Simulation 🎓',
-    'Deepika from Coimbatore got her AI Choice List 📋',
-    'Ravi predicted rank band: 1200–1800 🏆',
-    'Sneha unlocked 15 college-course combos 🚀',
-    '3 students joined PickMySeat in the last hour 🔥',
+    'Priya from Chennai just predicted her seat',
+    'Karthik unlocked Premium access',
+    'Ananya got 94% probability for CSE at Anna Univ',
+    'Vijay ran the Counselling Simulation',
+    'Deepika from Coimbatore got her AI Choice List',
+    'Ravi predicted rank band: 1200–1800',
+    'Sneha unlocked 15 college-course combos',
+    '3 students joined PickMySeat in the last hour',
   ],
 };
 
@@ -785,7 +784,7 @@ function updateNav() {
     navUpgrade.classList.toggle('hidden', App.userGrade === 1);
     if (tierBadge) {
       if (App.userGrade === 1) {
-        tierBadge.textContent = '👑 Premium';
+        tierBadge.textContent = 'Premium';
         tierBadge.classList.add('premium-active');
         tierBadge.classList.remove('hidden');
       } else {
@@ -898,7 +897,6 @@ function clearError() {
 function initLanding() {
   renderTicker();          // render static ticker immediately (no flash)
   loadDynamicTicker();     // then replace with real user names from API
-  updateLiveCounts();
   observeScrollAnimations();
   updateLandingForPremium();
 }
@@ -921,9 +919,9 @@ async function loadDynamicTicker() {
     // data is an array of { first_name, action } objects
     const dynamicEvents = (data || []).map(u => {
       const actions = [
-        `${u.first_name} just joined PickMySeat 🎉`,
-        `${u.first_name} predicted their college seat 🎯`,
-        `${u.first_name} is exploring TNEA colleges 🏛️`,
+        `${u.first_name} just joined PickMySeat`,
+        `${u.first_name} predicted their college seat`,
+        `${u.first_name} is exploring TNEA colleges`,
       ];
       return u.action || actions[Math.floor(Math.random() * actions.length)];
     });
@@ -951,37 +949,39 @@ function renderTestimonials() {
     </div>`).join('');
 }
 
-async function updateLiveCounts() {
-  try {
-    const res = await fetch(`${API_BASE}/visitor-count`);
-    if (res.ok) {
-      const data = await res.json();
-      App.liveCount = data.count;
-    }
-  } catch(e) {
-    if (!App.liveCount || App.liveCount < 300) App.liveCount = 300;
-  }
-  const heroCount  = document.getElementById('heroLiveCount');
-  const modalCount = document.getElementById('liveCount');
-  if (heroCount)  heroCount.textContent  = App.liveCount;
-  if (modalCount) modalCount.textContent = App.liveCount;
-}
-
 function incrementPredictionCount() {
   // No-op: visitor count is now tracked server-side by unique IP
 }
 
+// Reveals .animate-on-scroll elements by adding .visible (see styles.css).
+// Safe to call again after rendering new cards — already-revealed nodes are skipped.
 function observeScrollAnimations() {
-  const observer = new IntersectionObserver(entries => {
+  const els = document.querySelectorAll('.animate-on-scroll:not(.visible)');
+  if (!els.length) return;
+
+  // Reveal immediately (no animation) when motion is unwanted or unsupported,
+  // so the cards can never be stranded at opacity:0.
+  const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  if (reduced || !('IntersectionObserver' in window)) {
+    els.forEach(el => el.classList.add('visible'));
+    return;
+  }
+
+  const observer = new IntersectionObserver((entries, obs) => {
     entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.style.animation = 'slideUp 0.5s ease forwards';
-        observer.unobserve(entry.target);
-      }
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add('visible');
+      obs.unobserve(entry.target);
     });
-  }, { threshold:0.1 });
-  document.querySelectorAll('.animate-on-scroll').forEach(el => {
-    el.style.opacity = '0';
+  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+  els.forEach(el => {
+    // Stagger cards within the same grid row-group.
+    const siblings = el.parentElement
+      ? Array.from(el.parentElement.children).filter(c => c.classList.contains('animate-on-scroll'))
+      : [el];
+    const i = siblings.indexOf(el);
+    if (i > 0) el.style.setProperty('--reveal-delay', `${Math.min(i, 4) * 80}ms`);
     observer.observe(el);
   });
 }
@@ -1039,6 +1039,20 @@ function getProbClass(prob) {
   return           { cls:'low',  barCls:'low',  status:'Unlikely', statusCls:'status-unlikely' };
 }
 
+// The API sets no_community_data when a college-course combo has no cutoff row for
+// the student's community and it fell back to the OC figure (ml_service.py PATH 1).
+// Label that number rather than presenting it as the student's own community cutoff.
+function communityFallbackText(community) {
+  const c = (community || '').toUpperCase();
+  return (c && c !== 'OC')
+    ? `Based on OC cutoff data — limited ${c} data for this combo`
+    : 'Based on the closest available cutoff — limited data for this combo';
+}
+
+function communityFallbackHTML(community) {
+  return `<div class="community-fallback-note">${escapeHTML(communityFallbackText(community))}</div>`;
+}
+
 // ============================================================
 // FREE PREDICT — Grade 3
 // ============================================================
@@ -1051,14 +1065,14 @@ function initFreePredictPage() {
   freeSelectedCollege = null;
 
   if (used === '1') {
-    bar.textContent = '🔒 Free prediction used · Login to predict more';
+    bar.textContent = 'Free prediction used · Login to predict more';
     bar.style.display = 'inline-block';
     document.getElementById('freePredictForm')
       ?.querySelectorAll('input,select').forEach(el => el.disabled = true);
     const btn = document.querySelector('#freePredictForm .btn-primary.predict-btn');
     if (btn) btn.disabled = true;
   } else {
-    bar.textContent = '✅ 1 free prediction available — no signup needed';
+    bar.textContent = '1 free prediction available — no signup needed';
     bar.style.display = 'inline-block';
   }
 
@@ -1174,7 +1188,7 @@ async function runFreePrediction() {
   const branchObj  = BRANCHES.find(b => b.name === course || b.code === course);
   const branchCode = branchObj ? branchObj.code : course;
 
-  let prob = 0, rankBand = { low: 0, high: 0 }, cutoff = '—', ok = false, recs = [];
+  let prob = 0, rankBand = { low: 0, high: 0 }, cutoff = '—', ok = false, recs = [], respCommunity = '';
 
   try {
     showLoader();
@@ -1209,6 +1223,7 @@ async function runFreePrediction() {
     prob       = rec ? rec.match_confidence : 0;
     rankBand   = { low: data.student_rank_range?.[0], high: data.student_rank_range?.[1] };
     cutoff     = rec ? rec.closing_rank : '—';
+    respCommunity = data.community || '';
     ok = true;
   } catch(e) {
     console.error('[freePredict] failed:', e);
@@ -1224,10 +1239,12 @@ async function runFreePrediction() {
     renderFreeResult({
       agg, prob, rankBand, cutoff,
       college: `[${freeSelectedCollege.code}] ${freeSelectedCollege.name}`,
-      course: course || 'All branches'
+      course: course || 'All branches',
+      estimated: !!recs[0]?.no_community_data,
+      community: respCommunity
     });
   } else {
-    renderFreeResultList({ agg, rankBand, recs, course: course || 'All branches' });
+    renderFreeResultList({ agg, rankBand, recs, course: course || 'All branches', community: respCommunity });
   }
 
   setCookie('pms_free_used', '1', 7);
@@ -1237,10 +1254,10 @@ async function runFreePrediction() {
     ?.querySelectorAll('input,select').forEach(el => el.disabled = true);
   if (btn) btn.disabled = true;
   const bar = document.getElementById('cookieUsageBar');
-  if (bar) bar.textContent = '🔒 Free prediction used · Login to predict more';
+  if (bar) bar.textContent = 'Free prediction used · Login to predict more';
 }
 
-function renderFreeResult({ agg, prob, rankBand, cutoff, college, course }) {
+function renderFreeResult({ agg, prob, rankBand, cutoff, college, course, estimated, community }) {
   document.getElementById('resultCollegeName').textContent = college;
   document.getElementById('resultCourseName').textContent  = course;
   document.getElementById('resultAggregate').textContent   = `${agg} / 200`;
@@ -1260,14 +1277,22 @@ function renderFreeResult({ agg, prob, rankBand, cutoff, college, course }) {
 
   const msgEl = document.getElementById('resultMessage');
   if (prob >= 65) {
-    msgEl.textContent = `🎉 Strong chance! Your aggregate of ${agg} is above the typical cutoff for this college-course combo.`;
+    msgEl.textContent = `Strong chance! Your aggregate of ${agg} is above the typical cutoff for this college-course combo.`;
     msgEl.className   = 'result-message success';
   } else if (prob >= 35) {
-    msgEl.textContent = `⚡ Possible. You're in the competitive zone. Rank ${rankBand.low?.toLocaleString()}–${rankBand.high?.toLocaleString()} may get you in.`;
+    msgEl.textContent = `Possible. You're in the competitive zone. Rank ${rankBand.low?.toLocaleString()}–${rankBand.high?.toLocaleString()} may get you in.`;
     msgEl.className   = 'result-message warning';
   } else {
-    msgEl.textContent = `⚠️ Very competitive. Your aggregate of ${agg} is below the typical cutoff of ${cutoff}. Consider safer options.`;
+    msgEl.textContent = `Very competitive. Your aggregate of ${agg} is below the typical cutoff of ${cutoff}. Consider safer options.`;
     msgEl.className   = 'result-message danger';
+  }
+
+  // The closing rank above is OC's when the combo has no data for this community —
+  // say so rather than letting it read as their own cutoff.
+  const noteEl = document.getElementById('freeCommunityNote');
+  if (noteEl) {
+    noteEl.textContent = estimated ? communityFallbackText(community) : '';
+    noteEl.classList.toggle('hidden', !estimated);
   }
 
   document.querySelector('.probability-display')?.classList.remove('hidden');
@@ -1277,12 +1302,15 @@ function renderFreeResult({ agg, prob, rankBand, cutoff, college, course }) {
   document.getElementById('freeResultCard').scrollIntoView({ behavior:'smooth', block:'start' });
 }
 
-function renderFreeResultList({ agg, rankBand, recs, course }) {
+function renderFreeResultList({ agg, rankBand, recs, course, community }) {
   document.getElementById('resultCollegeName').textContent = 'Top colleges for your marks';
   document.getElementById('resultCourseName').textContent  = course;
 
   // single-result probability ring not applicable for a list
   document.querySelector('.probability-display')?.classList.add('hidden');
+
+  // per-row notes carry the fallback labelling for the list view
+  document.getElementById('freeCommunityNote')?.classList.add('hidden');
 
   const list = document.getElementById('freeResultList');
   if (list) {
@@ -1299,6 +1327,7 @@ function renderFreeResultList({ agg, rankBand, recs, course }) {
               </div>
               <div class="free-result-branch">${r.branch_name}</div>
               <div class="free-result-meta">Closing Rank: ${r.closing_rank} · Agg: ${agg}/200</div>
+              ${r.no_community_data ? communityFallbackHTML(community) : ''}
             </div>
             <div class="free-result-row-prob">
               <div class="free-result-pct" style="color:${r.match_confidence>=65?'var(--success)':r.match_confidence>=35?'var(--warning)':'var(--danger)'}">${r.match_confidence}%</div>
@@ -1446,7 +1475,7 @@ function simulateLogin(userData) {
   App.profile.mobile  = userData.mobile || App.profile.mobile || '';
   App.profile.hasPaid = userData.hasPaid || false;
   App.userGrade       = userData.hasPaid ? 1 : 2;
-  showToast(`Welcome${userData.name ? ', ' + userData.name.split(' ')[0] : ''}! 🎉`, 'success');
+  showToast(`Welcome${userData.name ? ', ' + userData.name.split(' ')[0] : ''}!`, 'success');
   // Resume an interrupted "Get Full Access" purchase: the guest started
   // checkout, hit the login gate, and just authenticated — send them
   // straight back into payment instead of the profile page.
@@ -1485,6 +1514,7 @@ function renderProfile() {
   document.getElementById('profileMobile').value   = App.profile.mobile        || '';
   const appIdBasicEl = document.getElementById('profileApplicationId');
   if (appIdBasicEl) appIdBasicEl.value = App.profile.applicationId || '';
+  applyAppIdLock();
   const catEl = document.getElementById('profileCategory');
   if (catEl) {
     catEl.value    = App.profile.category || '';
@@ -1519,7 +1549,7 @@ function renderProfile() {
   if (marksLockNote) {
     if (locked && App.userGrade !== 1) {
       marksLockNote.classList.remove('hidden');
-      marksLockNote.textContent = '🔒 Marks locked — contact support to update';
+      marksLockNote.textContent = 'Marks locked — contact support to update';
     } else {
       marksLockNote.classList.add('hidden');
     }
@@ -1602,7 +1632,7 @@ function prefillAndLockMarks() {
   const note = document.getElementById('marksLockNote');
   if (note) {
     note.classList.toggle('hidden', !(marksLocked && App.userGrade !== 1));
-    if (marksLocked) note.textContent = '🔒 Marks locked — contact support to update';
+    if (marksLocked) note.textContent = 'Marks locked — contact support to update';
   }
 
   // Category lock note
@@ -1628,13 +1658,14 @@ function setRankPhase(phase) {
 // PREFERRED COLLEGES — Grade 2: max 5, Grade 1: unlimited search
 // ============================================================
 async function renderPreferredColleges() {
+  const maxColleges = App.userGrade === 1 ? 999 : 5;
   if (COLLEGES.length === 0) await loadCollegesAndBranches();
   const grid = document.getElementById('preferredCollegesGrid');
   if (!grid) return;
   grid.innerHTML = '';
 
   const isPremium = App.userGrade === 1;
-  const max       = isPremium ? Infinity : 5;
+  const max       = isPremium ? Infinity : maxColleges;
   const current   = App.profile.preferredColleges;
 
   // Show added colleges
@@ -1653,13 +1684,13 @@ async function renderPreferredColleges() {
   });
 
   // Add slot — Grade 2: max 5, Grade 1: always show add
-  const canAdd = isPremium ? true : current.length < 5;
+  const canAdd = isPremium ? true : current.length < maxColleges;
   if (canAdd) {
     const addId = `addCollegeSearch_${Date.now()}`;
     grid.innerHTML += `
       <div class="preferred-slot add-slot" style="flex-direction:column;align-items:stretch;gap:8px;height:auto;padding:12px">
         <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">
-          ${isPremium ? '+ Add any college (Premium — unlimited)' : `+ Add College ${current.length+1} of 5`}
+          ${isPremium ? '+ Add any college (Premium — unlimited)' : `+ Add College ${current.length+1} of ${maxColleges}`}
         </div>
         <div id="${addId}"></div>
       </div>`;
@@ -1672,10 +1703,10 @@ async function renderPreferredColleges() {
     }, 0);
   }
 
-  if (!isPremium && current.length >= 5) {
+  if (App.userGrade !== 1 && current.length >= maxColleges) {
     grid.innerHTML += `
       <div style="grid-column:1/-1;font-size:13px;color:var(--text-muted);padding:8px 0">
-        Maximum 5 colleges for Student plan.
+        Maximum ${maxColleges} colleges for Student plan.
         <button class="link-btn" onclick="showUpgradeModal('colleges')">
           Upgrade to Premium for unlimited →
         </button>
@@ -1684,15 +1715,15 @@ async function renderPreferredColleges() {
 }
 
 async function renderPreferredCourses() {
+  const maxCourses = App.userGrade === 1 ? 999 : 3;
   if (BRANCHES.length === 0) await loadCollegesAndBranches();
   const collegeCodes = App.profile.preferredColleges.map(c => c.code);
   const availableBranches = await getBranchesForColleges(collegeCodes);
   const grid = document.getElementById('preferredCoursesGrid');
   if (!grid) return;
   grid.innerHTML = '';
-  const max = 3;
 
-  for (let i = 0; i < max; i++) {
+  for (let i = 0; i < maxCourses; i++) {
     const course = App.profile.preferredCourses[i];
     if (course) {
       grid.innerHTML += `
@@ -1735,7 +1766,7 @@ function addPreferredCollege(college) {
   App.profile.preferredColleges.push(college);
   renderPreferredColleges();
   renderPreferredCourses();   // rebuild course dropdown with the new union
-  showToast(`[${college.code}] ${college.name} added ✅`, 'success');
+  showToast(`[${college.code}] ${college.name} added`, 'success');
 }
 
 function removePreferredCollege(i) {
@@ -1758,8 +1789,9 @@ function addPreferredCourse(code) {
   if (App.profile.preferredCourses.find(c => c.code === code)) {
     showToast('Course already added','error'); renderPreferredCourses(); return;
   }
-  if (App.profile.preferredCourses.length >= 3) {
-    showToast('Maximum 3 courses','error'); return;
+  const maxCourses = App.userGrade === 1 ? 999 : 3;
+  if (App.profile.preferredCourses.length >= maxCourses) {
+    showToast(`Maximum ${maxCourses} courses`,'error'); return;
   }
   App.profile.preferredCourses.push(course);
   renderPreferredCourses();
@@ -1770,6 +1802,28 @@ function removePreferredCourse(i) {
   renderPreferredCourses();
 }
 
+// A verified application_id was matched against the official rank list, so the
+// profile form must not offer to edit it — /auth/update-profile rejects changes.
+function applyAppIdLock() {
+  const el = document.getElementById('profileApplicationId');
+  if (!el) return;
+  const locked = !!App.profile.applicationIdVerified;
+  el.disabled = locked;
+  el.classList.toggle('input-locked', locked);
+  if (locked) el.value = App.profile.applicationId || '';
+
+  let note = document.getElementById('appIdLockNote');
+  if (locked && !note) {
+    note = document.createElement('div');
+    note.id = 'appIdLockNote';
+    note.className = 'marks-lock-note';
+    note.textContent = 'Verified — locked. Contact support if this is wrong.';
+    el.insertAdjacentElement('afterend', note);
+  } else if (note) {
+    note.classList.toggle('hidden', !locked);
+  }
+}
+
 async function saveProfile() {
   const name  = document.getElementById('profileName')?.value?.trim();
   const email = document.getElementById('profileEmail')?.value?.trim();
@@ -1777,10 +1831,24 @@ async function saveProfile() {
   if (!name)  { showToast('Please enter your name','error');  return; }
   if (!email) { showToast('Please enter your email','error'); return; }
 
+  // Application Number is optional, but when given it must match the TNEA
+  // format: exactly 6 digits (every ID in the official rank list is 6 digits).
+  // A verified ID came from /predict/verify-rank and is locked — leave it alone.
+  const appIdVerified = !!App.profile.applicationIdVerified;
+  const appIdBasic = appIdVerified
+    ? ''
+    : (document.getElementById('profileApplicationId')?.value?.trim() || '');
+  if (appIdBasic && !/^\d{6}$/.test(appIdBasic)) {
+    showToast('Application Number must be exactly 6 digits (e.g. 234567)', 'error');
+    return;
+  }
+
   App.profile.name     = name;
   App.profile.email    = email;
   App.profile.mobile   = document.getElementById('profileMobile')?.value?.trim()    || '';
-  App.profile.applicationId = document.getElementById('profileApplicationId')?.value?.trim() || App.profile.applicationId || '';
+  App.profile.applicationId = appIdVerified
+    ? App.profile.applicationId
+    : (appIdBasic || App.profile.applicationId || '');
   App.profile.category = document.getElementById('profileCategory')?.value          || '';
 
   const marksWereLocked = App.profile.marksLocked;
@@ -1822,8 +1890,8 @@ async function saveProfile() {
             ? 'background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2);color:var(--success);padding:12px;border-radius:8px;font-size:13px;margin-top:8px'
             : 'background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:var(--danger);padding:12px;border-radius:8px;font-size:13px;margin-top:8px';
           verEl.textContent = within
-            ? `✅ Rank ${rank.toLocaleString()} verified — within predicted band`
-            : `⚠️ Rank ${rank.toLocaleString()} outside predicted band (${band.low.toLocaleString()}–${band.high.toLocaleString()}). Model updating.`;
+            ? `Rank ${rank.toLocaleString()} verified — within predicted band`
+            : `Rank ${rank.toLocaleString()} outside predicted band (${band.low.toLocaleString()}–${band.high.toLocaleString()}). Model updating.`;
         }
       }
     }
@@ -1842,6 +1910,11 @@ if (App.currentUser) {
       // Only send community when not already locked and user selected a value
       if (!App.profile.categoryLocked && App.profile.category) {
         body.community = App.profile.category;
+      }
+      // Only send the application_id while it is unverified. Once verified it is
+      // locked server-side and resending a different value is rejected with a 403.
+      if (!appIdVerified && appIdBasic) {
+        body.application_id = appIdBasic;
       }
       // Marks are locked server-side after first save — sending them again gets a 403
       // that discards the whole update, including preferences.
@@ -1863,6 +1936,10 @@ if (App.currentUser) {
       const result = await res.json().catch(() => ({}));
       if (result.category_locked) App.profile.categoryLocked = true;
       if (result.marks_locked)    App.profile.marksLocked    = true;
+      if (result.application_id_verified !== undefined) {
+        App.profile.applicationIdVerified = !!result.application_id_verified;
+        applyAppIdLock();
+      }
       saved = true;
     } catch(e) {
       showToast('No connection — changes not saved. Check your internet.', 'error');
@@ -1872,7 +1949,7 @@ if (App.currentUser) {
     }
     if (!saved) return;
   }
-  showToast('Profile saved ✅', 'success');
+  showToast('Profile saved', 'success');
   setTimeout(() => navigateTo('dashboard'), 800);
 }
 
@@ -1940,9 +2017,15 @@ async function confirmMarksUpdate() {
         App.profile.physics   = p;
         App.profile.chemistry = c;
         App.profile.marksLocked = true;
+        App.profile.aggregate = calculateAggregate(App.profile.maths, App.profile.physics, App.profile.chemistry);
         closeMarksUpdate();
-        showToast('Marks updated successfully ✅', 'success');
+        // All pages live in the DOM at once (just hidden via CSS), so refresh
+        // both dashboard and profile unconditionally instead of gating on
+        // App.currentPage — otherwise whichever page you didn't come from
+        // shows stale marks until its next full render.
         renderDashboard();
+        renderProfile();
+        showToast('Marks updated! Predictions are refreshing...', 'success');
       },
       modal: {
         ondismiss: function() { showToast('Payment cancelled', 'error'); }
@@ -1998,9 +2081,9 @@ function renderDashInfoCard() {
       ${App.profile.physics   != null ? `<span class="mark-chip">Physics: ${escapeHTML(App.profile.physics)}</span>` : ''}
       ${App.profile.chemistry != null ? `<span class="mark-chip">Chem: ${escapeHTML(App.profile.chemistry)}</span>`  : ''}
       ${App.profile.maths == null
-        ? `<span class="mark-chip" style="color:var(--warning)">⚠️ Add marks in Profile</span>` : ''}
+        ? `<span class="mark-chip" style="color:var(--warning)">Add marks in Profile</span>` : ''}
       ${App.profile.marksLocked
-        ? `<span class="mark-chip" style="color:var(--text-muted);border-color:rgba(245,158,11,0.3)">🔒 Marks locked</span>` : ''}
+        ? `<span class="mark-chip" style="color:var(--text-muted);border-color:rgba(245,158,11,0.3)">Marks locked</span>` : ''}
     </div>`;
   // Make card clickable only if key profile details are missing
   const _infoMissing = !App.profile.maths || !App.profile.physics || !App.profile.chemistry || !App.profile.category;
@@ -2018,7 +2101,7 @@ function renderDashAggCard() {
   const agg = calcAgg > 0 ? calcAgg : (App.profile.verifiedAggregate || 0);
   const aggLabel = calcAgg > 0 ? '' : (App.profile.verifiedAggregate ? ' <span style="font-size:12px;font-weight:500;color:var(--text-muted)">Official</span>' : '');
   const lockNote = App.profile.marksLocked
-    ? `<div class="agg-lock-row">🔒 Marks locked ·
+    ? `<div class="agg-lock-row">Marks locked ·
         ${App.userGrade === 1
           ? `<button class="link-btn" onclick="openMarksUpdate()">Update for ₹25 after board results</button>`
           : `<button class="link-btn" onclick="showUpgradeModal('marks-update')">Upgrade to Premium to receive advanced features and unlock marks</button>`}
@@ -2079,7 +2162,6 @@ async function renderComboProbCards() {
   if (!colleges.length || !courses.length) {
     grid.innerHTML = `
       <div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--text-muted)">
-        <div style="font-size:40px;margin-bottom:16px">🏛️</div>
         <p style="font-size:17px;font-weight:700;margin-bottom:8px;color:var(--text-dim)">No Preferences Added Yet</p>
         <p style="font-size:14px;margin-bottom:24px">
           Add your preferred colleges and courses in your profile to see probability predictions
@@ -2214,7 +2296,7 @@ async function renderComboProbCards() {
            <div style="margin-top:6px;font-size:11px;color:var(--text-muted)">
              ${(()=>{const cat=App.profile.category||'OC';const cols=cat==='OC'?['OC']:['OC',cat];return cols.filter(c=>combo.communityRanks[c]).map(c=>`<span style="margin-right:8px"><strong>${c==='OC'?'General':escapeHTML(c)}:</strong> ${combo.communityRanks[c].toLocaleString()}</span>`).join('');})()}
            </div>` : ''}
-           ${combo.estimated ? `<div class="combo-prob-label" style="font-size:11px;color:var(--text-muted)">⚠️ No historic data for your community — estimate based on overall cutoff</div>` : ''}
+           ${combo.estimated ? communityFallbackHTML(App.profile.category) : ''}
           </div>
           <span class="combo-status-tag ${pc.statusCls}">${pc.status}</span>
         </div>
@@ -2234,7 +2316,7 @@ function initPremiumSearch() {
 
   wrap.innerHTML = `
     <div class="dash-section-title" style="margin-top:40px">
-      <h2>🔍 Quick Prediction — Any College</h2>
+      <h2>Quick Prediction — Any College</h2>
       <p>Premium: search any of the 550+ colleges instantly</p>
     </div>
     <div class="card" style="display:flex;flex-direction:column;gap:16px">
@@ -2244,7 +2326,7 @@ function initPremiumSearch() {
         ${(BRANCHES.length ? BRANCHES : DATA.courses).map(c=>`<option value="${c.name}">${c.name}</option>`).join('')}
       </select>
       <button class="btn-primary btn-glow" onclick="runPremiumQuickPredict()">
-        🔮 Get Probability
+        Get Probability
       </button>
       <div id="premiumQuickResult" class="hidden"></div>
     </div>`;
@@ -2326,6 +2408,7 @@ async function runPremiumQuickPredict() {
             </div>
             <div style="font-size:14px;font-weight:600;color:var(--text-dim)">${course}</div>
             <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Closing Rank: ${cutoff} · Agg: ${agg}/200</div>
+            ${rec?.no_community_data ? communityFallbackHTML(data.community) : ''}
           </div>
           <div style="text-align:right">
             <div style="font-size:32px;font-weight:900;color:${prob>=65?'var(--success)':prob>=35?'var(--warning)':'var(--danger)'}">
@@ -2339,7 +2422,7 @@ async function runPremiumQuickPredict() {
     showError('No connection. Check your internet and retry.');
   } finally {
     hideLoader();
-    if (btn) { btn.disabled = false; btn.textContent = '🔮 Get Probability'; }
+    if (btn) { btn.disabled = false; btn.textContent = 'Get Probability'; }
   }
 }
 
@@ -2367,7 +2450,7 @@ async function renderRankCard() {
     card.innerHTML = `
       <div style="display:flex;gap:32px;flex-wrap:wrap;align-items:flex-start">
         <div>
-          <div style="font-size:13px;color:var(--text-muted);margin-bottom:6px">🏆 Your Verified Rank</div>
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:6px">Your Verified Rank</div>
           <div style="font-size:36px;font-weight:900;color:var(--accent)">#${App.profile.rank.toLocaleString()}</div>
         </div>
       </div>`;
@@ -2401,7 +2484,7 @@ async function renderRankCard() {
   card.innerHTML = `
     <div style="display:flex;gap:32px;flex-wrap:wrap;align-items:flex-start">
       <div>
-        <div style="font-size:13px;color:var(--text-muted);margin-bottom:6px">📊 Predicted Rank Band</div>
+        <div style="font-size:13px;color:var(--text-muted);margin-bottom:6px">Predicted Rank Band</div>
         <div style="font-size:36px;font-weight:900;color:var(--accent)">
           ${agg > 0
             ? `${rankBand.low.toLocaleString()} – ${rankBand.high.toLocaleString()}`
@@ -2493,7 +2576,7 @@ async function renderChoiceList() {
 
   wrap.innerHTML = `
     <div style="font-size:12px;color:var(--text-muted);margin-bottom:16px;font-style:italic;padding:10px 14px;background:var(--surface2);border-radius:8px">
-      🤖 AI-generated priority order based on your marks and TNEA 2021–2025 cutoff data.
+      AI-generated priority order based on your marks and TNEA 2021–2025 cutoff data.
       Submit your choices in this exact order for the best outcome.
     </div>
     ${viable.map((combo,idx) => {
@@ -2518,7 +2601,7 @@ async function renderChoiceList() {
     }).join('')}
     ${unlikely.length > 0 ? `
       <div class="choice-no-chance">
-        ⚠️ ${unlikely.length} combination${unlikely.length>1?'s':''} below 35% probability —
+        ${unlikely.length} combination${unlikely.length>1?'s':''} below 35% probability —
         you are unlikely to be allotted these with your current marks:<br/>
         <span style="font-size:12px;margin-top:6px;display:block">
           ${unlikely.map(c=>`[${c.college.code}] ${c.college.name} · ${c.course.name} (${c.prob}%)`).join(' | ')}
@@ -2655,7 +2738,13 @@ function simToggleChoice(collegeCode, branchCode, branchName, collegeName) {
   } else {
     App.simChoices.push({ collegeCode, branchCode, branchName, collegeName, order: App.simChoices.length+1 });
   }
+  const simCollegeListEl = document.getElementById('simCollegeList');
+  const savedScrollTop = simCollegeListEl ? simCollegeListEl.scrollTop : 0;
   renderCounsellingSimulation();
+  setTimeout(() => {
+    const newSimCollegeListEl = document.getElementById('simCollegeList');
+    if (newSimCollegeListEl && savedScrollTop) newSimCollegeListEl.scrollTop = savedScrollTop;
+  }, 50);
 }
 
 function simClearChoices() { App.simChoices=[]; renderCounsellingSimulation(); }
@@ -2686,7 +2775,7 @@ async function renderCounsellingSimulation() {
   const sim = document.getElementById('counsellingSim');
   if (!sim) return;
 
-  const stepLabels = ['📋 Status','✏️ Choice Filling','🏛️ Allotment','📄 Order'];
+  const stepLabels = ['Status','Choice Filling','Allotment','Order'];
   const indicator = `<div class="sim-progress">
     ${stepLabels.map((lbl,i)=>`
       <div class="sim-prog-item ${i===App.simStep?'active':i<App.simStep?'done':''}">
@@ -2728,7 +2817,7 @@ function simRenderStatus() {
       </div>
       <div class="sim-status-row">
         <div class="sim-status-cell"><span>Random Number</span><strong>${rnd}</strong></div>
-        <div class="sim-status-cell"><span>Upload Status</span><strong class="sim-ok">✅ Completed successfully</strong></div>
+        <div class="sim-status-cell"><span>Upload Status</span><strong class="sim-ok">Completed successfully</strong></div>
       </div>
       <div class="sim-status-row">
         <div class="sim-status-cell"><span>Is Eminent Sports Person</span><strong>No</strong></div>
@@ -2736,7 +2825,7 @@ function simRenderStatus() {
       </div>
       <div class="sim-status-row">
         <div class="sim-status-cell"><span>Ex-Serviceman</span><strong>No</strong></div>
-        <div class="sim-status-cell"><span>Certificate Verification Status</span><strong class="sim-ok">✅ Completed successfully</strong></div>
+        <div class="sim-status-cell"><span>Certificate Verification Status</span><strong class="sim-ok">Completed successfully</strong></div>
       </div>
     </div>
     ${!p.rank ? '<div class="sim-warn">ℹ️ Official rank not yet verified — simulation will use your <strong>predicted rank</strong> (based on marks). Enter your TNEA rank in Profile once released for exact results.</div>' : ''}
@@ -2877,7 +2966,7 @@ async function simRenderChoiceFilling() {
     <div style="display:flex;gap:12px;margin-top:20px;flex-wrap:wrap">
       <button class="btn-ghost" onclick="simGoToStep(0)">← Back</button>
       <button class="btn-primary btn-glow" onclick="simLockAndAllot()" ${App.simChoices.length===0?'style="opacity:0.5;cursor:not-allowed"':''}>
-        🔒 Lock Choices & Simulate Allotment
+        Lock Choices & Simulate Allotment
       </button>
     </div>
   </div>`;
@@ -2896,12 +2985,12 @@ function simRenderAllotment() {
   // Banner shown when allotment used a predicted (not official) rank
   const rankBanner = (rankSource === 'predicted' && rankUsed)
     ? `<div style="margin-bottom:14px;padding:10px 14px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:8px;font-size:13px;color:var(--text-muted)">
-        ⚠️ Using your <strong>predicted rank (${rankUsed})</strong> — official TNEA rank not yet verified.
+        Using your <strong>predicted rank (${rankUsed})</strong> — official TNEA rank not yet verified.
         Allotment result is an estimate. Enter your actual rank in Profile once the rank list is released.
        </div>`
     : rankSource === 'fallback'
       ? `<div style="margin-bottom:14px;padding:10px 14px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:8px;font-size:13px;color:var(--text-muted)">
-          ⚠️ No rank or marks found. Add your marks in Profile so a predicted rank can be calculated.
+          No rank or marks found. Add your marks in Profile so a predicted rank can be calculated.
          </div>`
       : '';
 
@@ -2910,12 +2999,11 @@ function simRenderAllotment() {
     <div class="sim-gov-hdr"><div class="sim-gov-title">GOVERNMENT OF TAMIL NADU</div><div class="sim-gov-sub">TAMIL NADU ENGINEERING ADMISSIONS — 2026</div></div>
     ${rankBanner}
     <div class="sim-no-allotment">
-      <div style="font-size:48px;margin-bottom:12px">😔</div>
       <h3>No Seat Allotted in Round 1</h3>
       <p>Your rank is above the cutoff for all your selected choices. Add more colleges or try Round 2.</p>
       <div style="display:flex;gap:12px;margin-top:20px;justify-content:center;flex-wrap:wrap">
         <button class="btn-ghost" onclick="simGoToStep(1)">← Add More Choices</button>
-        <button class="btn-outline" onclick="resetCounselling()">🔄 Restart</button>
+        <button class="btn-outline" onclick="resetCounselling()">Restart</button>
       </div>
     </div>
   </div>`;
@@ -2958,7 +3046,7 @@ function simRenderAllotment() {
         ${TFC_LIST.map(t=>`<option>${t}</option>`).join('')}
       </select>
     </div>
-<div class="sim-confirm-note">⚠️ In the real portal, this action cannot be reversed. Here it's a simulation.</div>
+<div class="sim-confirm-note">In the real portal, this action cannot be reversed. Here it's a simulation.</div>
 <div id="simMoveUpwardNote" class="hidden" style="margin-top:10px;padding:10px 14px;background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.3);border-radius:8px;font-size:12px;color:var(--text-muted)">
   ℹ️ <strong>Note:</strong> Selecting "Move Upward" means in real TNEA counselling, you may get a seat in a higher-priority college from your choices list. The probability of getting into those colleges can be checked using the <strong>Seat Predictions</strong> feature on your dashboard.
 </div>
@@ -2996,12 +3084,12 @@ function simRenderProvisionalOrder() {
       <p class="sim-prov-disclaimer">* This is a <strong>simulation only</strong>. Your actual allotment order will be on <a href="https://tneaonline.org" target="_blank">tneaonline.org</a></p>
     </div>
 <div style="display:flex;gap:12px;margin-top:20px;justify-content:center;flex-wrap:wrap">
-      <button class="btn-outline" onclick="resetCounselling()">🔄 Restart Simulation</button>
-      <button class="btn-outline" onclick="downloadSimulationPDF()">📄 Download PDF</button>
+      <button class="btn-outline" onclick="resetCounselling()">Restart Simulation</button>
+      <button class="btn-outline" onclick="downloadSimulationPDF()">Download PDF</button>
       
     </div>
     <div style="margin-top:16px;padding:12px 16px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:8px;font-size:12px;color:var(--text-muted);line-height:1.6">
-      ⚠️ <strong>Disclaimer:</strong> This simulation is for reference purposes only. Predictions are based on historical TNEA data (2021–2025) and may not reflect actual 2026 counselling outcomes. Actual allotments depend on rank, availability of seats, and counselling rounds. PickMySeat is not responsible for any decisions made based on this simulation.
+      <strong>Disclaimer:</strong> This simulation is for reference purposes only. Predictions are based on historical TNEA data (2021–2025) and may not reflect actual 2026 counselling outcomes. Actual allotments depend on rank, availability of seats, and counselling rounds. PickMySeat is not responsible for any decisions made based on this simulation.
     </div>
   </div>`;
 }
@@ -3080,7 +3168,7 @@ function downloadSimulationPDF() {
       </table>
     </div>
     <div class="disclaimer">
-      ⚠️ <strong>Disclaimer:</strong> This simulation is for reference purposes only. Predictions are based on historical TNEA data (2021–2025) and may not reflect actual 2026 counselling outcomes. Actual allotments depend on rank, availability of seats, and counselling rounds. PickMySeat is not responsible for any decisions made based on this simulation.
+      <strong>Disclaimer:</strong> This simulation is for reference purposes only. Predictions are based on historical TNEA data (2021–2025) and may not reflect actual 2026 counselling outcomes. Actual allotments depend on rank, availability of seats, and counselling rounds. PickMySeat is not responsible for any decisions made based on this simulation.
     </div>
   </body></html>`;
 
@@ -3137,7 +3225,6 @@ function showVerificationRequiredModal(isGuest = false) {
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px';
   modal.innerHTML = `
     <div style="background:var(--surface1) !important;border:1px solid var(--border2);border-radius:var(--radius-lg);padding:32px;max-width:420px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);color:var(--text-primary) !important">
-      <div style="font-size:40px;margin-bottom:12px">🔐</div>
       <h3 style="margin:0 0 10px;font-size:18px;color:var(--text-primary)">Verification Required</h3>
       <p style="color:var(--text-muted);font-size:14px;margin:0 0 24px;line-height:1.5">
         ${isGuest
@@ -3185,15 +3272,15 @@ function simDrop(e, idx) {
 function showUpgradeModal(source) {
   const reasons = {
     'nav':          'Upgrade to Premium for rank prediction, AI Choice List and counselling simulation.',
-    'rank':         '🏆 Rank Prediction & Verification requires Premium access.',
-    'choice':       '📋 AI Choice List is a Premium-only feature.',
-    'counselling':  '🎓 Full Counselling Simulation is available for Premium users only.',
-    'result':       '🚀 See all college-course combinations with detailed probabilities.',
+    'rank':         'Rank Prediction & Verification requires Premium access.',
+    'choice':       'AI Choice List is a Premium-only feature.',
+    'counselling':  'Full Counselling Simulation is available for Premium users only.',
+    'result':       'See all college-course combinations with detailed probabilities.',
     'tier':         'Get complete TNEA counselling intelligence for just ₹149.',
     'cta':          'Students with Premium made 3x better college choices.',
-    'marks-update': '📝 Marks update after board results requires Premium access.',
-    'colleges':     '🏛️ Add unlimited colleges with Premium. Search all 550+ colleges.',
-    'hero':         '🚀 Unlock rank prediction, AI Choice List and full counselling simulation for ₹149.',
+    'marks-update': 'Marks update after board results requires Premium access.',
+    'colleges':     'Add unlimited colleges with Premium. Search all 550+ colleges.',
+    'hero':         'Unlock rank prediction, AI Choice List and full counselling simulation for ₹149.',
   };
   const el = document.getElementById('upgradeReason');
   const sl = document.getElementById('slotsLeft');
@@ -3224,7 +3311,10 @@ function initiatePayment() {
     return;
   }
   closeUpgradeModal();
-  const agg     = calculateAggregate(App.profile.maths||0, App.profile.physics||0, App.profile.chemistry||0);
+  const maths     = App.profile.maths || parseFloat(document.getElementById('profileMaths')?.value) || null;
+  const physics   = App.profile.physics || parseFloat(document.getElementById('profilePhysics')?.value) || null;
+  const chemistry = App.profile.chemistry || parseFloat(document.getElementById('profileChemistry')?.value) || null;
+  const agg       = (maths && physics && chemistry) ? calculateAggregate(maths, physics, chemistry) : null;
   const content = document.getElementById('payConfirmContent');
   if (content) {
     content.innerHTML = `
@@ -3234,13 +3324,13 @@ function initiatePayment() {
         <tr><td style="padding:10px 0;color:var(--text-muted);border-bottom:1px solid var(--border)">Email</td>
             <td style="padding:10px 0;font-weight:600;text-align:right;border-bottom:1px solid var(--border)">${escapeHTML(App.profile.email)||'—'}</td></tr>
         <tr><td style="padding:10px 0;color:var(--text-muted);border-bottom:1px solid var(--border)">Mathematics</td>
-            <td style="padding:10px 0;font-weight:600;text-align:right;border-bottom:1px solid var(--border)">${App.profile.maths??'—'} / 100</td></tr>
+            <td style="padding:10px 0;font-weight:600;text-align:right;border-bottom:1px solid var(--border)">${maths ? maths + ' / 100' : '— / 100'}</td></tr>
         <tr><td style="padding:10px 0;color:var(--text-muted);border-bottom:1px solid var(--border)">Physics</td>
-            <td style="padding:10px 0;font-weight:600;text-align:right;border-bottom:1px solid var(--border)">${App.profile.physics??'—'} / 100</td></tr>
+            <td style="padding:10px 0;font-weight:600;text-align:right;border-bottom:1px solid var(--border)">${physics ? physics + ' / 100' : '— / 100'}</td></tr>
         <tr><td style="padding:10px 0;color:var(--text-muted);border-bottom:1px solid var(--border)">Chemistry</td>
-            <td style="padding:10px 0;font-weight:600;text-align:right;border-bottom:1px solid var(--border)">${App.profile.chemistry??'—'} / 100</td></tr>
+            <td style="padding:10px 0;font-weight:600;text-align:right;border-bottom:1px solid var(--border)">${chemistry ? chemistry + ' / 100' : '— / 100'}</td></tr>
         <tr><td style="padding:14px 0;font-weight:700;font-size:15px">TNEA Aggregate</td>
-            <td style="padding:14px 0;font-weight:900;color:var(--accent);font-size:24px;text-align:right">${agg>0?agg:'—'} / 200</td></tr>
+            <td style="padding:14px 0;font-weight:900;color:var(--accent);font-size:24px;text-align:right">${agg ? agg + ' / 200' : '— / 200'}</td></tr>
       </table>
       <div style="font-size:12px;color:var(--text-muted);margin-top:8px;text-align:center">
         Marks are locked after payment · Update costs ₹25
@@ -3326,10 +3416,18 @@ function handlePaymentSuccess(paymentId) {
   App.profile.hasPaid     = true;
   App.profile.marksLocked = true;
   App.userGrade           = 1;
+  if (App.profile.rank) {
+    const rankVerifyInput = document.getElementById('profileRankVerify');
+    if (rankVerifyInput) rankVerifyInput.value = App.profile.rank;
+  }
+  if (App.profile.applicationId) {
+    const appIdInput = document.getElementById('profileAppId');
+    if (appIdInput) appIdInput.value = App.profile.applicationId;
+  }
   App.slotsLeft           = Math.max(0, App.slotsLeft - 1);
   updateNav();   // immediately hide the "Get Premium" nav button and show crown badge
   // FIRESTORE: db.collection('users').doc(uid).update({ has_paid:true, razorpay_payment_id:paymentId })
-  showToast('🎉 Premium unlocked! Welcome to full access.', 'success', 5000);
+  showToast('Premium unlocked! Welcome to full access.', 'success', 5000);
   setTimeout(() => navigateTo('dashboard'), 1000);
 }
 
@@ -3417,7 +3515,8 @@ async function restoreSessionFromToken() {
     App.userGrade            = data.grade === '1' ? 1 : 2;
 App.profile.preferredColleges = data.preferred_colleges ? JSON.parse(data.preferred_colleges) : [];
     App.profile.preferredCourses  = data.preferred_courses  ? JSON.parse(data.preferred_courses)  : [];
-    App.profile.applicationId     = data.application_id || '';
+    App.profile.applicationId         = data.application_id || '';
+    App.profile.applicationIdVerified = !!data.application_id_verified;
     App.profile.verifiedAggregate = data.verified_aggregate || null;
 
     // Auto-clear stale course codes from pre-fix data
@@ -3471,14 +3570,34 @@ async function checkRankListStatus() {
   }
 }
 
+const RANK_VERIFY_BASE_CSS = 'margin-top:12px;padding:12px;border-radius:8px;font-size:13px;font-weight:600';
+
+function showRankVerifyError(msg) {
+  const el = document.getElementById('rankVerifyStatus');
+  if (!el) { showToast(msg, 'error'); return; }
+  el.classList.remove('hidden');
+  el.style.cssText = `background:rgba(239,68,68,0.1);border:1px solid var(--error);color:var(--error);${RANK_VERIFY_BASE_CSS}`;
+  el.textContent = msg;
+}
+
+function hideRankVerifyStatus() {
+  document.getElementById('rankVerifyStatus')?.classList.add('hidden');
+}
+
 async function verifyAndSaveRank() {
   const appId = document.getElementById('profileAppId')?.value?.trim();
   const rank  = parseInt(document.getElementById('profileRankVerify')?.value);
   const name  = App.profile.name || '';
 
-  if (!appId) { showToast('Please enter your Application ID', 'error'); return; }
-  if (!rank)  { showToast('Please enter your rank', 'error'); return; }
+  if (!appId) { showRankVerifyError('Please enter your Application ID'); return; }
+  if (!/^\d{6}$/.test(appId)) {
+    showRankVerifyError('Application ID must be exactly 6 digits (e.g. 234567)');
+    return;
+  }
+  if (!rank)  { showRankVerifyError('Please enter your rank'); return; }
   // Note: rank verification is optional — users can access all features without verifying
+
+  hideRankVerifyStatus();
 
   const btn = document.querySelector('#profileAppIdSection .btn-primary');
   if (btn) { btn.disabled = true; btn.textContent = 'Verifying...'; }
@@ -3496,13 +3615,14 @@ async function verifyAndSaveRank() {
       if (statusEl) {
         statusEl.classList.remove('hidden');
         statusEl.style.cssText = 'background:rgba(239,68,68,0.1);border:1px solid var(--error);color:var(--error);margin-top:12px;padding:12px;border-radius:8px;font-size:13px;font-weight:600';
-        statusEl.textContent = `❌ ${data.detail}`;
+        statusEl.textContent = `${data.detail}`;
       }
       return;
     }
 
-    App.profile.applicationId     = appId;
-    App.profile.rank              = data.rank;
+    App.profile.applicationId         = appId;
+    App.profile.applicationIdVerified = true;   // matched against the official rank list
+    App.profile.rank                  = data.rank;
     if (data.verified_aggregate != null) {
       App.profile.verifiedAggregate = data.verified_aggregate;
     }
@@ -3510,17 +3630,17 @@ async function verifyAndSaveRank() {
     if (statusEl) {
       statusEl.classList.remove('hidden');
       statusEl.style.cssText = 'background:rgba(16,185,129,0.1);border:1px solid var(--success);color:var(--success);margin-top:12px;padding:12px;border-radius:8px;font-size:13px;font-weight:600';
-      statusEl.textContent = `✅ Rank #${data.rank.toLocaleString()} verified! Your predictions are now based on your official rank.`;
+      statusEl.textContent = `Rank #${data.rank.toLocaleString()} verified! Your predictions are now based on your official rank.`;
     }
 
-    showToast(`Rank ${data.rank.toLocaleString()} verified ✅`, 'success');
+    showToast(`Rank ${data.rank.toLocaleString()} verified`, 'success');
     setTimeout(() => navigateTo('dashboard'), 1500);
 
   } catch(e) {
     showError('No connection. Check your internet and retry.');
   } finally {
     hideLoader();
-    if (btn) { btn.disabled = false; btn.textContent = '✅ Verify My Rank'; }
+    if (btn) { btn.disabled = false; btn.textContent = 'Verify My Rank'; }
   }
 }
 // ============================================================

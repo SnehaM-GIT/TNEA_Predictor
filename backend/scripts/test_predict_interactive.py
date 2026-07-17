@@ -41,7 +41,7 @@ def main():
 This tool predicts your expected TNEA rank and top 5 colleges based on:
   • Aggregate marks (0-200)
   • Community category (OC, BC, SC, ST, MBC, SCA)
-  • Historical data from 2022-2025
+  • Historical data from 2022-2026
   
 Predictions are based on Method 3 (Rank Distribution + Cutoff Patterns)
     """)
@@ -166,7 +166,7 @@ Try retaking the exam or look for more colleges in your range.
    • MARGINAL colleges: Apply with caution (risky)
    • Also apply to more colleges below this list as backup
    
-⚠️  Note: These predictions are based on 2022-2025 patterns.
+⚠️  Note: These predictions are based on 2022-2026 patterns.
    Actual 2026 closing ranks may vary based on competition level.
             """)
 
