@@ -18,10 +18,12 @@ from pathlib import Path
 
 try:
     from .ml_utils import predict_rank          # as package: backend.utils
+    from . import seat_adjustment as sa
 except ImportError:
     import sys
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     from ml_utils import predict_rank           # as flat script
+    import seat_adjustment as sa
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data" / "cleaned"
@@ -109,24 +111,82 @@ def _closing_mark(closing_rank, community):
     norm_q = float(np.clip(norm_q, xp[0], xp[-1]))
     return round(float(np.interp(norm_q, xp, fp)), 2)
 
-# college_type -> tier rank (lower = more prestigious / preferred)
-TIER_RANK = {
-    "University Departments": 0,
-    "Constituent Colleges": 1,
-    "Government Colleges": 2,
-    "Government Aided Colleges": 3,
-    "Cecri And Cipet": 4,
-    "Self Financing Engineering Colleges": 5,
-}
+# college_type -> tier rank (lower = more prestigious / preferred).
+# Single source of truth lives in seat_adjustment.py (also needed there for
+# same-tier fallback averaging); re-exported here for backward compat.
+TIER_RANK = sa.TIER_RANK
 SAFE_MARGIN = 500  # margin above which a seat is "SAFE"
 
 _CACHE = {}
+
+
+_SEAT_COMMS = ["OC", "BC", "MBC", "SC", "SCA", "ST"]
 
 
 def _load():
     if not _CACHE:
         lk = pd.read_csv(DATA_DIR / "cutoff_lookup_2026.csv")
         lk["community"] = lk["community"].replace("BCM", "BC")
+        lk["college_code"] = lk["college_code"].astype(int)
+        lk["branch_code"] = lk["branch_code"].astype(str)
+
+        sa_cache = sa._load()
+        combos_2026 = sa_cache["combos_2026"]
+
+        # Seat matrix is authoritative for what exists in 2026: drop combos
+        # the model knows about historically but that are absent from it.
+        combo_key = list(zip(lk["college_code"], lk["branch_code"]))
+        lk = lk[[k in combos_2026 for k in combo_key]].reset_index(drop=True)
+        lk["imputed_base"] = False
+
+        # Combos present in the 2026 matrix with no model row at all (brand
+        # new branch/college offering) — impute a base closing rank from the
+        # same branch across same-tier colleges that do have a prediction.
+        existing = set(zip(lk["college_code"], lk["branch_code"]))
+        missing = combos_2026 - existing
+        new_rows = []
+        for (ccode, bcode) in missing:
+            tier = sa_cache["tier_of"](ccode)
+            for comm in _SEAT_COMMS:
+                seats = sa_cache["seats_2026"].get((ccode, bcode, comm), 0)
+                if seats <= 0:
+                    continue
+                base_rank = sa.fallback_closing_rank(bcode, comm, tier, lk)
+                if base_rank is None:
+                    continue
+                new_rows.append({
+                    "college_code": ccode, "branch_code": bcode,
+                    "community": comm, "predicted_closing_rank_2026": base_rank,
+                    "imputed_base": True,
+                })
+        if new_rows:
+            lk = pd.concat([lk, pd.DataFrame(new_rows)], ignore_index=True)
+
+        # Post-hoc seat-matrix adjustment: scale each combo's base closing
+        # rank by seats_2026 / historical_avg_seats (capped 0.5-2.0). Does
+        # NOT touch cutoff_predictor.pkl — this only reshapes its output.
+        factors, seats_col, hist_col, years_col, limited_col = [], [], [], [], []
+        for r in lk.itertuples():
+            adj = sa.get_seat_adjustment(r.college_code, r.branch_code, r.community)
+            factors.append(adj["seat_adjustment_factor"])
+            seats_col.append(adj["seats_2026"])
+            hist_col.append(adj["historical_avg_seats"])
+            years_col.append(adj["sample_years_count"])
+            limited_col.append(adj["limited_data"] or bool(r.imputed_base))
+        lk["seat_adjustment_factor"] = factors
+        lk["seats_2026"] = seats_col
+        lk["historical_avg_seats"] = hist_col
+        lk["sample_years_count"] = years_col
+        lk["limited_data"] = limited_col
+        lk["closing_rank_unadjusted"] = lk["predicted_closing_rank_2026"].round().astype(int)
+        lk["predicted_closing_rank_2026"] = (
+            lk["predicted_closing_rank_2026"] * lk["seat_adjustment_factor"]
+        ).round().astype(int)
+        # Seat matrix reserves 0 seats for this community at this combo in
+        # 2026 (common: ST/SCA brackets at small colleges) — no seats means
+        # no admission chance under that community this year, drop it.
+        lk = lk[lk["seats_2026"] > 0].reset_index(drop=True)
+
         cc = pd.read_csv(DATA_DIR / "college_codes.csv")
         cr = pd.read_csv(DATA_DIR / "course_codes.csv")
         _CACHE["lookup"] = lk
@@ -272,6 +332,12 @@ def predict_colleges(marks, community, top_n=5, forced_rank=None):
             "branch_code": bcode,
             "branch_name": branches.get(bcode, f"Branch {bcode}"),
             "closing_rank": int(row["predicted_closing_rank_2026"]),
+            "closing_rank_unadjusted": int(row["closing_rank_unadjusted"]),
+            "seat_adjustment_factor": float(row["seat_adjustment_factor"]),
+            "seats_2026": row["seats_2026"],
+            "historical_avg_seats": row["historical_avg_seats"],
+            "sample_years_count": int(row["sample_years_count"]),
+            "limited_data": bool(row["limited_data"]),
             "safety_margin": margin,
             "status": status,
             "match_confidence": int(_match_confidence(rank_conf, status, margin, int(row["predicted_closing_rank_2026"]),
@@ -286,6 +352,7 @@ def predict_colleges(marks, community, top_n=5, forced_rank=None):
         "community": community,
         "recommendations": recs,
         "verified_rank": forced_rank is not None,
+        "seat_data_source": sa.SEAT_DATA_SOURCE,
     }
 
 

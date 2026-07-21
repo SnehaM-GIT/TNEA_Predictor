@@ -1,0 +1,145 @@
+
+====================================================================================================
+STAGE-BY-STAGE INDEPENDENT RE-DERIVATION (cross-check against actual _load() output)
+====================================================================================================
+raw cutoff_lookup_2026.csv rows (community-level):         15,022
+rows kept after 2026-seat-matrix combo exclusion:           13,684  (1,338 rows dropped, 465 distinct combos)
+combos in 2026 matrix with NO cutoff_lookup row at all:        156
+  -> of those, combos that got >=1 imputed row:                141
+  -> of those, combos that produced ZERO imputed rows:          15  (no branch-code match anywhere else in lookup for fallback)
+imputed rows added (seats_2026 > 0 only):                      736
+rows with 0 2026-seats that must be dropped pre-final:         402
+FINAL row count from real _load() pipeline:                 14,018
+independently re-derived expected final count:              14,018  MATCH
+
+combos in 2026 matrix, absent from cutoff_lookup, that produced NO imputed row at all:
+  college=1112   branch=CU   R M D Engineering College, Kavaraipettai, Gummidipoondi Branch CU
+  college=1113   branch=CU   R M K Engineering College (Autonomous), Kavaraipettai,  Branch CU
+  college=1113   branch=CV   R M K Engineering College (Autonomous), Kavaraipettai,  Branch CV
+  college=1113   branch=EG   R M K Engineering College (Autonomous), Kavaraipettai,  Branch EG
+  college=1113   branch=VL   R M K Engineering College (Autonomous), Kavaraipettai,  Branch VL
+  college=1128   branch=VL   R M K College of Engineering and Technology, Puduvoyal, Branch VL
+  college=1408   branch=VL   I F E T College of Engineering (Autonomous), Gangarampa Branch VL
+  college=2361   branch=CQ   Sasi Creative School of Archiecture, Pollachi Main Road Branch CQ
+  college=2361   branch=DV   Sasi Creative School of Archiecture, Pollachi Main Road Branch DV
+  college=2361   branch=GL   Sasi Creative School of Archiecture, Pollachi Main Road Branch GL
+  college=2633   branch=AI   Vidhya Vikkas College of Engineering and Technology, Va Agricultural and Irrigation Engineering (SS)
+  college=2707   branch=VL   Erode Sengunthar Engineering College (Autonomous), Thud Branch VL
+  college=2726   branch=DS   S N S College of Technology (Autonomous), Kalappatti Po Branch DS
+  college=5008   branch=EU   Thiagarajar College of Engineering (Autonomous),Tiruppa Branch EU
+  college=5914   branch=VL   SOLAMALAI COLLEGE OF ENGINEERIG, Veerapanjan, Madurai D Branch VL
+
+====================================================================================================
+ANOMALY CHECKS ACROSS ALL COMBOS (full dataset, not a sample)
+====================================================================================================
+[1] predicted_closing_rank_2026 <= 0 or non-numeric:      0 / 14018
+[2] match_confidence outside 0-100 range:                  0 / 14018  (formula floors at 5 / caps at 95 by construction, so this should always be 0)
+[3] seat_adjustment_factor hit the clip boundary (0.5/2.0):   2480 / 14018
+
+top 15 by how far the raw (unclamped) ratio overshot the cap:
+ college  branch  comm seats_2026   hist_avg  raw_ratio  clamped_to  overshoot
+    4677      AD   MBC         33       1.00     33.000       2.000     31.000
+    4928      CS    SC         24       1.00     24.000       2.000     22.000
+    2683      AD    BC         22       1.00     22.000       2.000     20.000
+    2338      AG    BC         17       1.00     17.000       2.000     15.000
+    4986      ME    OC         17       1.00     17.000       2.000     15.000
+    2602      CS    BC         17       1.00     17.000       2.000     15.000
+    2683      CS    BC         29       1.75     16.571       2.000     14.571
+    4978      BM    BC         33       2.00     16.500       2.000     14.500
+    2602      IT    BC         16       1.00     16.000       2.000     14.000
+    4961      EC    BC         16       1.00     16.000       2.000     14.000
+    4978      BT    BC         16       1.00     16.000       2.000     14.000
+    2356      ME    OC         16       1.00     16.000       2.000     14.000
+    4677      AD    SC         24       1.50     16.000       2.000     14.000
+    2628      EC    SC         16       1.00     16.000       2.000     14.000
+    4978      CS    SC         20       1.33     15.038       2.000     13.038
+
+[4] seats_2026 == 0 rows surviving into final lookup:     0 / 14018  (must be 0 - confirms the drop-zero-seat-rows step worked)
+
+[5] rows with null/zero historical_avg_seats:              0 / 14018
+    divide-by-zero guard held for all of them (factor forced to 1.0, limited_data=True): True
+
+====================================================================================================
+IMPUTED COMBOS DETAIL (736 rows, brand-new 2026 offerings)
+====================================================================================================
+predicted_closing_rank_2026 distribution across imputed rows:
+  min=1,436  max=238,657  median=161,152.00  mean=156,152.47
+
+random sample of 20 imputed combos vs CSE/ECE at the same college:
+college_name                                  branch_name                            imputed_rank    CSE(OC)    ECE(OC)
+Meenakshi Sundararajan Engineering College,   Branch AL                                    44,835     47,216     42,708
+College 1111                                  Computer Science and Engineering            171,662    171,662    182,211
+Narasus Sarathy Institute of Technology, Poo  Computer Science and Engineering (AI        120,784    221,412    152,845
+College 2378                                  Computer Science and Engineering            171,662    171,662        N/A
+Jairupaa College of Engineering, Thottiapala  Mechanical Engineering                      161,152    197,322     99,808
+T S M Jain College of Technology, Melur Vill  Electronics and Communication Enginee       125,374    150,908    125,374
+Adhi College of Engineering and Technology,   Branch SC                                   116,741    163,933    120,046
+K L N College of Engineering (Autonomous), P  Electronics Engineering (VLSI Design         77,138     51,713     73,483
+P B College of Engineering, Irungkattukottai  Civil Engineering                           154,697    239,089    226,506
+College 4747                                  Computer Science and Engineering (AI        206,819    171,662    182,211
+College 1111                                  Information Technology                      173,848    171,662    182,211
+College 1111                                  Electronics and Communication Enginee       182,211    171,662    182,211
+Indira Institute of Engineering and Technolo  Civil Engineering                           154,697    161,882    367,688
+Sri Ranganathar Institute of Engineering and  Branch SC                                   116,741    175,195    123,720
+PSG Institute of Technology and Applied Rese  Branch DA                                   178,419      3,727      5,223
+Mahakavi Bharathiyar College of Engineering   Civil Engineering                           154,697    318,212    254,450
+Sri Shanmugha College of Engineering and Tec  Branch AL                                    44,835    113,516     92,737
+AAA College of Engineering and Technology, K  Electronics Engineering (VLSI Design         77,138     99,324    124,454
+AVS College of Technology, Attur Main Road,   Branch SC                                   116,741    219,976    156,803
+College 4925                                  Electrical and Electronics Engineerin       185,482    380,754        N/A
+
+====================================================================================================
+DROPPED COMBOS DETAIL (465 combos absent from 2026 seat matrix)
+====================================================================================================
+random sample of 20 dropped rows, independently re-checked against the raw seat_matrix_2026.csv (not the cached combo set):
+college_name                                  branch_name                       comm  verification
+Mahendra Institute of Engineering and Techno  Aeronautical Engineering            SC  CONFIRMED ABSENT from 2026 matrix
+Sri Krishna College of Technology (Autonomou  Computer Science and Engineerin     BC  CONFIRMED ABSENT from 2026 matrix
+Sri Krishna College of Technology (Autonomou  Computer Science and Engineerin     SC  CONFIRMED ABSENT from 2026 matrix
+Annai Vailankanni College of Engineering, Po  Computer Science and Engineerin     BC  CONFIRMED ABSENT from 2026 matrix
+Sri Sivasubramaniya Nadar College of Enginee  Mechanical Engineering              ST  CONFIRMED ABSENT from 2026 matrix
+College 5851                                  Artificial Intelligence and Dat     OC  CONFIRMED ABSENT from 2026 matrix
+Sri Krishna College of Technology (Autonomou  Electrical and Electronics Engi     BC  CONFIRMED ABSENT from 2026 matrix
+Vivekanandha College of Technology for Women  Electronics and Communication E    MBC  CONFIRMED ABSENT from 2026 matrix
+P.S.R.R College of Engineering , Appayanaick  Electronics and Communication E    MBC  CONFIRMED ABSENT from 2026 matrix
+Gnanamani College of Technology, Pachal Post  Chemical Engineering                BC  CONFIRMED ABSENT from 2026 matrix
+Bannari Amman Institute of Technology (Auton  Branch AL                           ST  CONFIRMED ABSENT from 2026 matrix
+K S R Institute for Engineering and Technolo  Electronics and Communication E     SC  CONFIRMED ABSENT from 2026 matrix
+St. Joseph’s Institute of Technology, Jeppia  Artificial Intelligence and Dat     SC  CONFIRMED ABSENT from 2026 matrix
+Agni College of Technology, Old Mahabalipura  Mechanical and Automation Engin    MBC  CONFIRMED ABSENT from 2026 matrix
+Sri Krishna College of Technology (Autonomou  Electrical and Electronics Engi     OC  CONFIRMED ABSENT from 2026 matrix
+Sri Krishna College of Technology (Autonomou  Electronics and Communication E     BC  CONFIRMED ABSENT from 2026 matrix
+Mahendra Engineering College (Autonomous), M  Chemical Engineering                SC  CONFIRMED ABSENT from 2026 matrix
+PSG Institute of Technology and Applied Rese  Computer Science and Business S     OC  CONFIRMED ABSENT from 2026 matrix
+Muthayammal College of Engineering, Kakkaver  Artificial Intelligence and Dat    SCA  CONFIRMED ABSENT from 2026 matrix
+Sri Krishna College of Technology (Autonomou  Branch SC                           BC  CONFIRMED ABSENT from 2026 matrix
+
+mismatches found: 0 / 20 (should be 0 - confirms exclusion is a real seat-matrix absence, not a code bug)
+
+====================================================================================================
+SUMMARY
+====================================================================================================
+stage                                                         rows    distinct combos
+------------------------------------------------------- ---------- ------------------
+0. raw cutoff_lookup_2026.csv                               15,022              3,663
+1. after 2026-seat-matrix exclusion                         13,684              3,198
+2. after imputing brand-new 2026 offerings                  14,420              3,339
+3. FINAL (after dropping 0-seat community rows)             14,018              3,339
+
+anomaly check counts:
+  [1] bad predicted_closing_rank_2026:        0
+  [2] probability outside 0-100:              0
+  [3] seat_adjustment_factor at clip boundary: 2480
+  [4] seats_2026==0 leaked into final lookup:  0
+  [5] null/zero historical_avg_seats rows:     0  (guard held: True)
+
+probability distribution, ALL 14018 rows, fixed test rank=20,000:
+  BEFORE adjustment (closing_rank_unadjusted): min=5 max=93 mean=90.0 median=93.0
+  AFTER  adjustment (predicted_closing_rank_2026): min=5 max=94 mean=90.5 median=93.0
+
+same distribution, 13282 NON-IMPUTED rows only (closing_rank_unadjusted is a real cutoff_predictor.pkl output here, not a fallback average):
+  BEFORE adjustment: min=5 max=93 mean=89.9 median=93.0
+  AFTER  adjustment: min=5 max=94 mean=90.4 median=93.0
+
+seat_adjustment_factor distribution, ALL 14018 rows:
+  min=0.500 max=2.000 mean=1.278 median=1.103

@@ -8,6 +8,7 @@ import math
 
 from predict_colleges import predict_colleges
 from ml_utils import predict_rank
+from seat_adjustment import SEAT_DATA_SOURCE
 
 
 def _json_safe(obj):
@@ -30,14 +31,16 @@ def get_rank_prediction(marks: float, community: str):
     return result
 
 
-# Lazy caches built from cutoff_lookup_2026.csv (the per-combo model output;
+# Lazy caches built from cutoff_lookup_2026.csv (the per-combo model output,
+# post-hoc adjusted by seat_adjustment.py against the 2026 seat matrix;
 # cutoff_model_meta.pkl holds only training metadata, not combos).
 _OFFERED_COMBOS = None   # set of (college_code, branch_code) offered at all
-_COMBO_CLOSING  = None   # dict (college_code, branch_code) -> {community: closing rank}
+_COMBO_CLOSING  = None   # dict (college_code, branch_code) -> {community: adjusted closing rank}
+_COMBO_META     = None   # dict (college_code, branch_code) -> {community: seat-adjustment meta}
 
 
 def _load_combo_caches():
-    global _OFFERED_COMBOS, _COMBO_CLOSING
+    global _OFFERED_COMBOS, _COMBO_CLOSING, _COMBO_META
     if _OFFERED_COMBOS is None:
         import math
         try:
@@ -47,22 +50,32 @@ def _load_combo_caches():
                 lookup["college_code"].astype(int),
                 lookup["branch_code"].astype(str)))
             _COMBO_CLOSING = {}
+            _COMBO_META = {}
             for r in lookup.itertuples():
                 try:
                     closing = r.predicted_closing_rank_2026
                     if closing is None or (isinstance(closing, float)
                        and math.isnan(closing)):
                         continue
-                    _COMBO_CLOSING.setdefault(
-                        (int(r.college_code), str(r.branch_code)), {}
-                    )[str(r.community)] = int(closing)
+                    key = (int(r.college_code), str(r.branch_code))
+                    comm = str(r.community)
+                    _COMBO_CLOSING.setdefault(key, {})[comm] = int(closing)
+                    _COMBO_META.setdefault(key, {})[comm] = {
+                        "closing_rank_unadjusted": int(r.closing_rank_unadjusted),
+                        "seat_adjustment_factor":  float(r.seat_adjustment_factor),
+                        "seats_2026":              r.seats_2026,
+                        "historical_avg_seats":    r.historical_avg_seats,
+                        "sample_years_count":      int(r.sample_years_count),
+                        "limited_data":            bool(r.limited_data),
+                    }
                 except (ValueError, TypeError):
                     continue
         except Exception as e:
             print(f"_load_combo_caches error: {e}")
             _OFFERED_COMBOS = set()
             _COMBO_CLOSING = {}
-    return _OFFERED_COMBOS, _COMBO_CLOSING
+            _COMBO_META = {}
+    return _OFFERED_COMBOS, _COMBO_CLOSING, _COMBO_META
 
 
 def get_college_predictions_filtered(
@@ -97,7 +110,7 @@ def get_college_predictions_filtered(
             rmin, rmax = int(rk["range_min"]), int(rk["range_max"])
 
         _, colleges, branches = _load()
-        offered, combo_closing = _load_combo_caches()
+        offered, combo_closing, combo_meta = _load_combo_caches()
 
         recs = []
         for ccode in preferred_colleges:
@@ -117,7 +130,8 @@ def get_college_predictions_filtered(
                     "rank_band_high":   rmax,
                 }
 
-                # College does not offer this branch at all
+                # Not offered at all, OR historically offered but absent from
+                # the 2026 seat matrix (seat matrix is authoritative for 2026)
                 if (ccode, bcode) not in offered:
                     rec.update({
                         "not_offered":      True,
@@ -130,12 +144,15 @@ def get_college_predictions_filtered(
                     continue
 
                 per_comm = combo_closing.get((ccode, bcode), {})
+                meta_comm = combo_meta.get((ccode, bcode), {})
                 closing  = per_comm.get(community)
+                meta     = meta_comm.get(community)
 
                 # No cutoff for this specific community — use best available
                 if closing is None:
-                    fallback = per_comm.get("OC") or (min(per_comm.values()) if per_comm else None)
-                    if fallback is None:
+                    fallback_comm = "OC" if per_comm.get("OC") is not None else (
+                        min(per_comm, key=per_comm.get) if per_comm else None)
+                    if fallback_comm is None:
                         # No data at all for this combo
                         rec.update({
                             "no_community_data": True,
@@ -146,7 +163,8 @@ def get_college_predictions_filtered(
                         })
                         recs.append(rec)
                         continue
-                    closing = fallback
+                    closing = per_comm[fallback_comm]
+                    meta = meta_comm.get(fallback_comm)
                     rec["no_community_data"] = True
 
                 margin = closing - pred_rank
@@ -158,6 +176,12 @@ def get_college_predictions_filtered(
                     "match_confidence": int(_match_confidence(rank_conf, status, margin, closing,
                                                               student_mark=marks, community=community)),
                     "community_closing_ranks": dict(per_comm),
+                    "closing_rank_unadjusted": meta["closing_rank_unadjusted"] if meta else None,
+                    "seat_adjustment_factor":  meta["seat_adjustment_factor"]  if meta else None,
+                    "seats_2026":              meta["seats_2026"]             if meta else None,
+                    "historical_avg_seats":    meta["historical_avg_seats"]   if meta else None,
+                    "sample_years_count":      meta["sample_years_count"]     if meta else None,
+                    "limited_data":            meta["limited_data"]           if meta else True,
                 })
                 recs.append(rec)
 
@@ -175,6 +199,7 @@ def get_college_predictions_filtered(
             "recommendations":    recs,
             "message":            None,
             "verified_rank":      forced_rank is not None,
+            "seat_data_source":   SEAT_DATA_SOURCE,
         })
 
     # ------------------------------------------------------------------ #
@@ -214,6 +239,7 @@ def get_college_predictions_filtered(
         df = df.copy()
         df["safety_margin"] = df["predicted_closing_rank_2026"] - pred_rank
         df["status"]        = df["safety_margin"].apply(_status)
+        _, combo_closing, combo_meta = _load_combo_caches()
 
         recs = []
         for _, row in df.iterrows():
@@ -223,6 +249,7 @@ def get_college_predictions_filtered(
             margin  = int(row["safety_margin"])
             status  = row["status"]
             closing = int(row["predicted_closing_rank_2026"])
+            meta    = combo_meta.get((code, bcode), {}).get(community)
             recs.append({
                 "rank":             len(recs) + 1,
                 "college_code":     code,
@@ -236,7 +263,13 @@ def get_college_predictions_filtered(
                 "status":           status,
                 "match_confidence": int(_match_confidence(rank_conf, status, margin, closing,
                                                           student_mark=marks, community=community)),
-                "community_closing_ranks": _load_combo_caches()[1].get((code, bcode), {}),
+                "community_closing_ranks": combo_closing.get((code, bcode), {}),
+                "closing_rank_unadjusted": meta["closing_rank_unadjusted"] if meta else None,
+                "seat_adjustment_factor":  meta["seat_adjustment_factor"]  if meta else None,
+                "seats_2026":              meta["seats_2026"]             if meta else None,
+                "historical_avg_seats":    meta["historical_avg_seats"]   if meta else None,
+                "sample_years_count":      meta["sample_years_count"]     if meta else None,
+                "limited_data":            meta["limited_data"]           if meta else True,
             })
 
         recs.sort(key=lambda x: x["match_confidence"], reverse=True)
@@ -252,6 +285,7 @@ def get_college_predictions_filtered(
             "recommendations":    recs,
             "message":            "No matches found. Try broadening your filters." if not recs else None,
             "verified_rank":      forced_rank is not None,
+            "seat_data_source":   SEAT_DATA_SOURCE,
         })
 
     # ------------------------------------------------------------------ #
