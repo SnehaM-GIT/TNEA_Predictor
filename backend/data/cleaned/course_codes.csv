@@ -52,7 +52,7 @@ GR,Geo-Informatics Engineering (SS)
 HM,Hotel Management
 HT,Handloom and Textile Technology
 IB,Industrial Bio-Technology
-IC,Information and Communication Engineering
+IC,Instrumentation and Control Engineering
 IE,Industrial Engineering
 IG,Geo- Informatics Engineering (SS)
 IM,Information Technology (SS)
@@ -63,11 +63,11 @@ IY,Instrumentation and Control Engineering (SS)
 IZ,Information Technology (SS)
 LD,Leather Technology
 LE,Leather Technology
-MA,Material Science and Engineering
+MA,Material Science and Engineering (SS)
 MC,Mechatronics
 MD,Medical Electronics
 ME,Mechanical Engineering
-MF,Mechanical (Manufacturing)
+MF,Mechanical Engineering (Manufacturing)
 MG,Mechanical and Automation Engineering (SS)
 MH,Mechanical Engineering (Sandwich)
 MI,Mining Engineering
@@ -75,8 +75,8 @@ MM,Manufacturing Engineering (SS)
 MN,Manufacturing Engineering
 MO,Mechanical and Mechatronics Engineering (Additive Manufacturing)
 MR,Marine Engineering (SS)
-MS,Mechanical Engineering (SS)
-MT,Mechanical and Automation Engineering
+MS,Mechanical Engineering (Sandwich) (SS)
+MT,Metallurgical Engineering
 MU,Mechanical and Automation Engineering
 MY,Metallurgical Engineering (SS)
 MZ,Mechatronics (SS)
@@ -91,7 +91,7 @@ PH,Pharmaceutical Technology
 PL,Polymer Technology
 PM,Pharmaceutical Technology (SS)
 PN,Petroleum Engineering and Technology (SS)
-PP,Production Engineering
+PP,Petroleum Engineering and Technology (SS)
 PR,Production Engineering (Sandwich) (SS)
 PS,Printing and Packaging Technology
 PT,Printing and Packaging Technology
