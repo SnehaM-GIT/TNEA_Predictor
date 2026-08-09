@@ -14,7 +14,7 @@ production rank model (rank_model_final.pkl) + 2026 cutoff lookup.
 Rank is OPTIONAL in every path: leave it blank and it is predicted from
 marks + community; type a number to use your own.
 
-Run from: C:/Users/CHARANJAGAN/TNEA/TNEA_Predictor/
+Run from: C:/Users/chara/TNEA/TNEA_Predictor/
     python backend/scripts/test_prediction_paths.py
 """
 

@@ -5,7 +5,7 @@ INTERACTIVE TNEA RANK & COLLEGE PREDICTOR
 
 Test the rank model and college prediction system end-to-end.
 
-Run from: C:/Users/CHARANJAGAN/TNEA/TNEA_Predictor/
+Run from: C:/Users/chara/TNEA/TNEA_Predictor/
     python backend/scripts/test_predict_interactive.py
 """
 
