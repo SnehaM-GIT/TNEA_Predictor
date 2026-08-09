@@ -25,4 +25,6 @@ Thumbs.db
 
 # Data files (large)
 backend/data/raw/
-backend/data/cleaned/
+backend/data/cleaned/*
+# except the seat matrix — runtime input for /predict/colleges, must be deployed
+!backend/data/cleaned/seat_matrix_2026.csv
